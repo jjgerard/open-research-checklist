@@ -1,3 +1,9 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Unofficial prototype: an interactive, filterable version of Ulster University's From Closed to Open open research guide.">
 <title>From Closed to Open</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,7 +30,7 @@
   --exp:#c4d3f0; --exp-soft:#22325a; --rec:#7fcf9e; --rec-soft:#183126; --go:#b9a2ea; --go-soft:#2a2340; color-scheme:dark}
 
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);padding-inline:16px;padding-block:0 48px}
+body{margin:0;-webkit-text-size-adjust:100%;background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);padding-inline:16px;padding-block:0 48px}
 .wrap{max-width:1120px;margin:0 auto}
 a{color:var(--accent-ink)}
 a:focus-visible,button:focus-visible,input:focus-visible+label,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
@@ -130,9 +136,38 @@ details[open] .t::after{content:"  −"}
 footer{border-top:1px solid var(--line);margin-top:24px;padding-top:20px;display:grid;gap:14px;font-size:14px;color:var(--muted);max-width:76ch}
 footer h2{font-size:18px;color:var(--ink)}
 footer p{margin:0}
+/* phones and small tablets */
+.mbar{display:none}
+@media (max-width:900px){
+  .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:5;align-items:center;justify-content:space-between;gap:12px;
+    background:var(--ink);color:var(--bg);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -2px 10px rgba(0,0,0,.15)}
+  .mbar b{font:700 18px var(--display);font-variant-numeric:tabular-nums}
+  .mbar span{font-size:14px}
+  .mbar a{color:var(--ink);background:var(--bg);text-decoration:none;font-weight:600;font-size:14px;padding:8px 12px;border-radius:2px;white-space:nowrap}
+  body{padding-block-end:84px}
+  .rail{scroll-margin-top:16px}
+}
+@media (max-width:600px){
+  header{padding-block:20px 24px;gap:10px}
+  .crumbs{display:none}
+  .lede{font-size:16px}
+  .brandline svg{width:26px;height:34px}
+  .flabel{min-width:0;width:100%}
+  .seg{display:grid;grid-template-columns:1fr 1fr;border-radius:6px;width:100%}
+  .seg button{padding:9px 8px}
+  .seg button+button{border-left:0}
+  .seg button:nth-child(even){border-left:1px solid var(--line)}
+  .seg button:nth-child(n+3){border-top:1px solid var(--line)}
+  .stage{padding:8px 10px}
+  .stage .nm{font-size:13px}
+  .item{padding:12px}
+  .group h2{font-size:21px}
+  .chip label{padding:7px 12px}
+}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 </style>
-
+</head>
+<body>
 <div class="proto">UNOFFICIAL PROTOTYPE · a format proposal, not a published University resource</div>
 <div class="masthead">
   <div class="mh-top">
@@ -170,7 +205,7 @@ footer p{margin:0}
   <div class="main">
     <div id="list"></div>
 
-    <aside class="rail" aria-label="Your progress">
+    <aside class="rail" id="rail" aria-label="Your progress">
       <div class="card">
         <h3>Your progress</h3>
         <div class="big" id="pct">0<span> of 0</span></div>
@@ -207,6 +242,7 @@ footer p{margin:0}
     </aside>
   </div>
 
+  <div class="mbar"><span><b id="mDone">0</b> of <span id="mTotal">0</span> done</span><a href="#rail">Progress &amp; PDF</a></div>
   <footer>
     <h2>About this prototype</h2>
     <p>The content comes from <em>From Closed to Open: Practices and Guidelines for Open Research at Ulster University</em> by Hanna, L., Evans, E., Bond, R., Butter, S., Cahoon, A., Casey, F., McChesney, I. and Shukla, P. (2026), developed by the Open &amp; Responsible Research Workstream and licensed <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. It was inspired by the <a href="https://www.surrey.ac.uk/sites/default/files/2023-10/open-research-checklist.pdf">University of Surrey Open Research Checklist</a> and CONUL's <a href="https://zenodo.org/records/17021307">Navigating open research</a>.</p>
@@ -372,6 +408,7 @@ function renderList(){
 function renderRail(){
   const items=I.filter(applies), d=items.filter(x=>state.done.has(x.id)).length;
   document.getElementById("pct").innerHTML=`${d}<span> of ${items.length}</span>`;
+  const md=document.getElementById("mDone"); if(md){md.textContent=d;document.getElementById("mTotal").textContent=items.length;}
   document.getElementById("pctNote").textContent = state.ctx.size? "actions that apply to your project" : "actions in total (pick what your project involves to narrow this)";
 }
 function render(){renderTrack();renderList();renderRail();if(document.getElementById("pdfScope"))updatePdfCount();
@@ -527,3 +564,6 @@ document.getElementById("pdfBtn").addEventListener("click",async()=>{
 
 renderCtx(); render();
 </script>
+
+</body>
+</html>
