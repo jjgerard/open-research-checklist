@@ -1,0 +1,529 @@
+<title>From Closed to Open</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a working tool. Stage track across the top, filters, then a checklist column with a progress rail beside it (stacks on phones). */
+:root{
+  /* Approximate Ulster palette: swap in official brand values from the University brand guidelines */
+  --band:#10203f; --band-ink:#ffffff; --band-muted:#b8c4dc;
+  --bg:#f3f5f8; --surface:#ffffff; --ink:#10203f; --muted:#56627a; --line:#d9dfe8;
+  --accent:#0072ce; --accent-soft:#e2eefb; --accent-ink:#00508f;
+  --exp:#10203f; --exp-soft:#dfe5f0; --rec:#2f7a4f; --rec-soft:#e2f2e8; --go:#6b4fa3; --go-soft:#eee8f7;
+  --display:"Source Sans 3", "Segoe UI", Arial, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1426; --surface:#16213a; --ink:#e8edf6; --muted:#9ba8c0; --line:#283654;
+  --accent:#5fa8ff; --accent-soft:#132a4c; --accent-ink:#a9cdff;
+  --exp:#c4d3f0; --exp-soft:#22325a; --rec:#7fcf9e; --rec-soft:#183126; --go:#b9a2ea; --go-soft:#2a2340; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1426; --surface:#16213a; --ink:#e8edf6; --muted:#9ba8c0; --line:#283654;
+  --accent:#5fa8ff; --accent-soft:#132a4c; --accent-ink:#a9cdff;
+  --exp:#c4d3f0; --exp-soft:#22325a; --rec:#7fcf9e; --rec-soft:#183126; --go:#b9a2ea; --go-soft:#2a2340; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);padding-inline:16px;padding-block:0 48px}
+.wrap{max-width:1120px;margin:0 auto}
+a{color:var(--accent-ink)}
+a:focus-visible,button:focus-visible,input:focus-visible+label,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+
+.proto{font:500 12px/1.4 var(--mono);letter-spacing:.04em;color:var(--band-ink);background:var(--accent);padding:6px 16px;text-align:center;margin-inline:-16px}
+.masthead{background:var(--band);color:var(--band-ink);margin-inline:-16px;padding-inline:16px;margin-bottom:24px}
+.mh-top{max-width:1120px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 20px;padding-block:14px;border-bottom:1px solid rgba(255,255,255,.18)}
+.wordmark{font:800 22px/1 var(--display);letter-spacing:-.01em;color:var(--band-ink)}
+.wordmark span{font-weight:400;color:var(--band-muted);margin-left:10px;padding-left:10px;border-left:1px solid var(--band-muted);font-size:17px}
+.crumbs{font-size:14px;color:var(--band-muted)}
+header{max-width:1120px;margin:0 auto;padding-block:30px 34px;display:grid;gap:14px}
+.brandline{display:flex;align-items:center;gap:14px}
+.brandline svg{flex:none}
+h1{font-size:clamp(32px,5.5vw,52px);font-weight:800;line-height:1.02;letter-spacing:-.015em;color:var(--band-ink)}
+.lede{max-width:64ch;color:var(--band-muted);margin:0;font-size:18px}
+.lede strong{color:var(--band-ink)}
+
+/* stage track */
+.track{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-block:8px 18px}
+.stage{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:4px;padding:10px 12px;text-align:left;cursor:pointer;display:grid;gap:6px;font:inherit;min-width:0}
+.stage:hover{border-color:var(--accent)}
+.stage[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stage[aria-pressed="true"] .ct{color:var(--bg);opacity:.8}
+.stage .nm{font:600 14px/1.2 var(--body)}
+.stage .ct{font:500 11px/1 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+@media (max-width:760px){.track{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* filters */
+.filters{display:grid;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:14px 16px;margin-bottom:20px}
+.frow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.flabel{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);min-width:130px}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip label{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14px;cursor:pointer;user-select:none;background:var(--bg)}
+.chip input:checked+label{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip label:hover{border-color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{appearance:none;border:0;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;padding:5px 12px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+/* main grid */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:24px;align-items:start}
+@media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+.group{display:grid;gap:8px;margin-bottom:26px}
+.group h2{font-size:24px;font-weight:800;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.group h2 small{font:500 12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.sub{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:8px}
+
+.item{background:var(--surface);border:1px solid var(--line);border-radius:10px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 12px;padding:12px 14px;border-radius:4px;border-left:4px solid var(--line)}
+.item:has(.b.exp){border-left-color:var(--ink)}
+.item.done{opacity:.62}
+.item.done .t{text-decoration:line-through;text-decoration-color:var(--muted)}
+.cb{width:22px;height:22px;margin-top:2px;accent-color:var(--accent);cursor:pointer}
+.item details{min-width:0}
+.item summary{cursor:pointer;list-style:none;display:grid;gap:6px}
+.item summary::-webkit-details-marker{display:none}
+.t{font-weight:600;font-size:16.5px;line-height:1.35}
+.t::after{content:"  +";color:var(--muted);font-weight:400}
+details[open] .t::after{content:"  −"}
+.meta{display:flex;flex-wrap:wrap;gap:6px}
+.b{font:500 11px/1 var(--mono);padding:4px 7px;border-radius:5px;letter-spacing:.02em;white-space:nowrap}
+.b.exp{background:var(--exp-soft);color:var(--exp)}
+.b.rec{background:var(--rec-soft);color:var(--rec)}
+.b.go{background:var(--go-soft);color:var(--go)}
+.b.eff{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.b.tag{background:var(--accent-soft);color:var(--accent-ink)}
+.body{display:grid;gap:8px;padding-top:10px;font-size:15px;max-width:68ch}
+.why{margin:0}
+.why b{font-weight:600}
+.detail{margin:0;color:var(--muted)}
+.links{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;padding:0;list-style:none}
+.links a{font-weight:600;text-underline-offset:3px}
+.help{font-size:14px;color:var(--muted);margin:0}
+.help b{color:var(--ink);font-weight:600}
+.copyable{font-family:var(--mono);font-size:13px;user-select:all;color:var(--ink)}
+.empty{color:var(--muted);padding:20px;border:1px dashed var(--line);border-radius:10px}
+
+/* rail */
+.rail{display:grid;gap:14px}
+@media (max-width:900px){.rail{position:static}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:4px;border-top:4px solid var(--accent);padding:16px;display:grid;gap:10px}
+.card h3{font-size:16px}
+.big{font:700 40px/1 var(--display);font-variant-numeric:tabular-nums}
+.big span{font-size:18px;color:var(--muted);font-weight:500}
+.rail p{margin:0;font-size:14px;color:var(--muted)}
+.btn{appearance:none;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font:600 14px var(--body);padding:9px 12px;border-radius:2px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn:hover{border-color:var(--accent)}
+.legend{display:grid;gap:8px;font-size:14px}
+.fl{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+#pdfScope{font:inherit;font-size:14px;padding:7px 8px;border:1px solid var(--line);border-radius:2px;background:var(--bg);color:var(--ink);width:100%}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px}
+.chk input{accent-color:var(--accent);width:16px;height:16px}
+.small{font-size:13px;color:var(--muted)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.legend div{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:start}
+#copyStatus{font-size:13px;color:var(--rec);min-height:1em}
+#copyFallback{width:100%;min-height:120px;font:12px/1.4 var(--mono);background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px}
+
+footer{border-top:1px solid var(--line);margin-top:24px;padding-top:20px;display:grid;gap:14px;font-size:14px;color:var(--muted);max-width:76ch}
+footer h2{font-size:18px;color:var(--ink)}
+footer p{margin:0}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+
+<div class="proto">UNOFFICIAL PROTOTYPE · a format proposal, not a published University resource</div>
+<div class="masthead">
+  <div class="mh-top">
+    <span class="wordmark">Ulster University<span>Open Research</span></span>
+    <span class="crumbs">Research › Resources › Open research › Practices and guidelines</span>
+  </div>
+  <header>
+    <div class="brandline">
+      <svg width="34" height="44" viewBox="0 0 34 44" aria-hidden="true"><path d="M9 20V12a8 8 0 0 1 16 0v1" fill="none" stroke="var(--band-ink)" stroke-width="4" stroke-linecap="round"/><circle cx="17" cy="30" r="12" fill="none" stroke="var(--band-ink)" stroke-width="4"/><circle cx="17" cy="30" r="3.5" fill="var(--band-ink)"/></svg>
+      <h1>From Closed to Open</h1>
+    </div>
+    <p class="lede"><strong>As open as possible, as closed as necessary.</strong> Pick where you are in your project and what it involves. You'll see the open research actions that apply to you, what's expected versus optional, and who can help. Tick things off as you go; your progress stays in this browser.</p>
+  </header>
+</div>
+<div class="wrap">
+
+  <nav class="track" id="track" aria-label="Research stage"></nav>
+
+  <section class="filters" aria-label="Filters">
+    <div class="frow">
+      <span class="flabel">My project involves</span>
+      <div class="frow" id="ctx"></div>
+    </div>
+    <div class="frow">
+      <span class="flabel">Show</span>
+      <div class="seg" id="lvl">
+        <button type="button" data-v="all" aria-pressed="true">Everything</button>
+        <button type="button" data-v="exp" aria-pressed="false">Expected only</button>
+        <button type="button" data-v="quick" aria-pressed="false">Quick wins</button>
+        <button type="button" data-v="todo" aria-pressed="false">Not done yet</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="main">
+    <div id="list"></div>
+
+    <aside class="rail" aria-label="Your progress">
+      <div class="card">
+        <h3>Your progress</h3>
+        <div class="big" id="pct">0<span> of 0</span></div>
+        <p id="pctNote">actions that apply to your project</p>
+        <button type="button" class="btn" id="copyBtn">Copy my checklist</button>
+        <p>Paste into a DMP, PDR or supervision record.</p>
+        <span id="copyStatus" role="status"></span>
+        <textarea id="copyFallback" hidden readonly aria-label="Checklist text to copy"></textarea>
+        <button type="button" class="btn ghost" id="resetBtn">Clear my ticks</button>
+        <span id="resetConfirm" hidden>
+          <button type="button" class="btn" id="resetYes">Yes, clear all</button>
+        </span>
+      </div>
+      <div class="card">
+        <h3>Download as a PDF form</h3>
+        <p>A fillable PDF built from your selections, with tick boxes and notes fields for Adobe Acrobat Reader.</p>
+        <label class="fl" for="pdfScope">Include</label>
+        <select id="pdfScope">
+          <option value="project">All stages for my project</option>
+          <option value="screen">Only what's on screen now</option>
+        </select>
+        <span class="chk"><input type="checkbox" id="pdfTicks" checked><label for="pdfTicks">Pre-tick what I've done</label></span>
+        <button type="button" class="btn" id="pdfBtn">Download PDF form</button>
+        <span id="pdfCount" class="small"></span>
+        <span id="pdfStatus" role="status" class="small"></span>
+      </div>
+      <div class="card legend">
+        <h3>What the labels mean</h3>
+        <div><span class="b exp">Expected</span><span>Required by University policy or a funder in most cases.</span></div>
+        <div><span class="b rec">Recommended</span><span>Good practice for most projects.</span></div>
+        <div><span class="b go">Going further</span><span>Worth doing where it fits your discipline.</span></div>
+        <div><span class="b eff">~ 10 min</span><span>Rough effort, from a few minutes to a whole-project commitment.</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    <h2>About this prototype</h2>
+    <p>The content comes from <em>From Closed to Open: Practices and Guidelines for Open Research at Ulster University</em> by Hanna, L., Evans, E., Bond, R., Butter, S., Cahoon, A., Casey, F., McChesney, I. and Shukla, P. (2026), developed by the Open &amp; Responsible Research Workstream and licensed <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. It was inspired by the <a href="https://www.surrey.ac.uk/sites/default/files/2023-10/open-research-checklist.pdf">University of Surrey Open Research Checklist</a> and CONUL's <a href="https://zenodo.org/records/17021307">Navigating open research</a>.</p>
+    <p>The guide and its checklist are combined into one page here. Each action has been given a short title, a one-line reason, an effort estimate and an "applies if" tag. <strong>These labels are draft tagging for illustration only</strong>; the workstream would need to confirm which items are genuinely required by policy or funders.</p>
+    <p>Missing a practice? The guide asks for suggestions via <a href="https://www.ulster.ac.uk/staff/l-hanna">the workstream lead</a>. For examples from colleagues, see the <a href="https://www.ulster.ac.uk/research/resources/open-research/get-inspired-by-open-research-at-ulster">Ulster open research case studies</a>.</p>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script>
+const U = "https://www.ulster.ac.uk/research/resources/";
+const L = "https://guides.library.ulster.ac.uk/openaccess/";
+const STAGES = [
+  {id:"plan",    name:"Plan"},
+  {id:"conduct", name:"Conduct"},
+  {id:"publish", name:"Publish"},
+  {id:"share",   name:"Share data & code"},
+  {id:"teach",   name:"Teach"},
+  {id:"all",     name:"All stages"}
+];
+const CTX = [
+  {id:"people",  name:"Human participants / personal data"},
+  {id:"code",    name:"Code or software"},
+  {id:"quant",   name:"Quantitative / hypothesis-testing"},
+  {id:"partners",name:"External or commercial partners"},
+  {id:"funded",  name:"External funding (e.g. UKRI)"},
+  {id:"indig",   name:"Indigenous data"},
+  {id:"pgr",     name:"I'm a PGR"},
+  {id:"teach",   name:"I teach"}
+];
+const EFF = {quick:"~ 10 min", some:"~ a few hours", big:"ongoing"};
+const LVL = {exp:["exp","Expected"], rec:["rec","Recommended"], go:["go","Going further"]};
+
+// stage, group, title, why, detail, level, effort, tags, links, help
+const I = [
+ ["plan","Before you start","Map what counts as data in your project","Data isn't just numbers. Interviews, images, archives, scripts and artworks all need managing.","The concept of data can seem science-focused, but it is equally relevant to arts, humanities and social sciences.","rec","quick",[],[["What is research data?",U+"rdm/intro-to-rdm"]]],
+ ["plan","Before you start","Bring in a statistician or data scientist early","Analysis choices made at design stage are hard to undo later.","If you are new to data analytics, consider collaborating with a statistician or data analyst/scientist.","rec","some",["quant"],[]],
+ ["plan","Before you start","Write a Data Management Plan","Most funders require one, and it becomes the place to record every decision below.","Create a Data Management Plan (DMP) for all research proposals.","exp","some",[],[["DMP guidance",U+"rdm/rdm-planning-before-commencing-a-funding-application"]],"Research Data Management team"],
+ ["plan","Before you start","Look for existing open data, code and outputs to reuse","Reuse saves time and credits other researchers.","Reuse and build on other researchers' openly available data, software and other research outputs.","rec","some",[],[["Open research practices",U+"open-research/openess"]]],
+ ["plan","Before you start","Note anything that limits how open you can be","Commercial, security or ethical limits are easier to plan around than to discover late.","Identify commercial, security, or ethical factors that may affect the openness of your research.","rec","quick",[],[]],
+ ["plan","Agreements & approvals","Agree IP and data sharing in collaboration contracts","Ownership disputes at publication stage are avoidable if settled up front.","Define IP ownership and data sharing arrangements in collaboration agreements and other research contracts, and include them in your DMP.","exp","some",["partners"],[],"University IP Manager: <span class='copyable'>ipmanagement@ulster.ac.uk</span>"],
+ ["plan","Agreements & approvals","Get advice on sharing sensitive data","Ethics, Governance and GDPR teams can tell you what's shareable before you collect anything.","Seek advice from the relevant University Ethics Committee, Research Governance or the University GDPR team on sharing sensitive data, and record any decisions in your DMP.","rec","some",["people"],[["Sharing sensitive data",U+"rdm/archiving-and-sharing-completed-research-data/archiving-and-sharing-sensitive-data"],["Ethics",U+"governance-and-ethics/ethics/low"],["Research Governance","https://www.ulster.ac.uk/departments/research/research-governance"],["GDPR","https://www.ulster.ac.uk/about/ous/data-protection-and-information-compliance/gdpr"]]],
+ ["plan","Agreements & approvals","Ask for permission to share data in your consent forms","If consent doesn't cover sharing, you usually can't share later.","Support FAIR data sharing in your ethics application. Use informed consent, requesting permission to share your data through the ethics and governance approval process (RG1a), linking this to your DMP.","rec","quick",["people"],[["Consent and personal data",U+"open-research/sensitive-or-personal"],["Ethics and governance approval",U+"governance-and-ethics/ethics"]]],
+ ["plan","Agreements & approvals","Follow the CARE principles","Indigenous communities have rights over how their data is used.","Be aware of, and follow, the CARE principles if you are generating, managing, storing or archiving Indigenous data.","exp","some",["indig"],[["CARE principles","https://www.gida-global.org/care"]]],
+ ["plan","Agreements & approvals","Choose licences for your planned outputs","Deciding now avoids conflicts with publishers and partners later.","Consider open licensing for all planned research outputs, taking into account funder and institutional regulations, ownership, commercial interests and sensitivity. Record licensing decisions in your DMP.","rec","quick",[],[["Licensing and copyright",U+"open-research/licensing-and-copyright"]]],
+ ["plan","Agreements & approvals","Have Research Development review data sharing agreements","They spot restrictive terms before you sign.","Review any data sharing agreements at the pre-award stage with the Research Development Team and reflect any requirements in your DMP.","rec","quick",["partners","funded"],[["Research Development","https://www.ulster.ac.uk/departments/research/research-development"]],"Research Development Team"],
+ ["plan","Agreements & approvals","Cost data preparation and storage into your bid","Preparing data for sharing takes time. Most funders will pay for it if you ask.","Include costs for open data and data sharing activities, such as data preparation and storage, in research funding applications.","exp","quick",["funded"],[["Costing RDM",U+"rdm/rdm-planning-before-commencing-a-funding-application"]]],
+ ["plan","Study design","Consider co-production or participatory design","Involving the people affected can improve relevance and trust.","Use appropriate methods, including co-production and participatory design, when designing your study.","go","big",[],[["Collaborative platforms",U+"open-research/openess/collaborative-platforms"]]],
+ ["plan","Study design","Preregister your study","A public, timestamped plan shows which analyses were planned in advance and which were exploratory.","Preregister your research by publicly documenting hypotheses, methods and analysis plans before data collection (e.g. via OSF).","go","some",["quant"],[["Preregistration",U+"open-research/openess/preregistration"]]],
+ ["plan","Study design","Submit a Registered Report","Peer review happens before results exist, so publication doesn't depend on the findings.","Publish a Registered Report to gain peer review and in-principle acceptance of your study protocol before conducting your research.","go","big",["quant"],[]],
+
+ ["conduct","Keep your plan alive","Review and update your DMP","A DMP written once and forgotten doesn't help at the deposit stage.","Review and update your DMP throughout your project lifecycle.","exp","quick",[],[["DMP guidance",U+"rdm/rdm-planning-before-commencing-a-funding-application"]]],
+ ["conduct","Keep your plan alive","Log key decisions in a timestamped notebook","Makes changes to your plan transparent and defensible.","Document data collection and key decisions using timestamped electronic notebooks or platforms (e.g. OSF) to maintain transparency and track changes to your research plan.","rec","some",[],[]],
+ ["conduct","Keep your plan alive","Co-deliver research with collaborators or communities","Shared ownership of findings can widen reach and impact.","Use collaborative methodologies to create research findings and co-deliver research activities.","go","big",[],[["Example: five films","https://www.ulster.ac.uk/insight/in-focus/open-research-july-2026/they-said-they-didnt-know-enough.-then-they-made-five-films"]]],
+ ["conduct","Describe your data","Create metadata as you go","Reconstructing it at the end is far slower than recording it now.","Create and update quality metadata for your research outputs throughout the research process.","rec","some",[],[["Types of metadata",U+"rdm/types-of-metadata"]]],
+ ["conduct","Describe your data","Use your field's naming conventions and structures","Others in your discipline will understand your files without asking you.","Follow established data structures, naming conventions and taxonomies relevant to your research discipline.","rec","quick",[],[]],
+ ["conduct","Describe your data","Write a README, codebook or data dictionary","Without documentation, shared data is close to unusable.","Produce clear documentation on your metadata such as README files, codebooks or data dictionaries.","rec","some",[],[["Documentation guidance",U+"rdm/types-of-metadata"]]],
+ ["conduct","Code & workflows","Keep code in a version-controlled repository","Gives you history, backup and an easy route to sharing.","Use code repositories to develop software and apply appropriate open-source licences.","rec","quick",["code"],[["Open research software",U+"open-research/openess/open-research-software"]]],
+ ["conduct","Code & workflows","Make your analysis reproducible from raw data","Anyone, including future you, can rerun and check the results.","Use reproducible code and workflows to ensure analyses can be repeated and verified from raw data through to final results, supported by clear documentation and code comments.","rec","big",["code","quant"],[]],
+ ["conduct","Code & workflows","Use an open project space","Keeps related outputs together and discoverable.","Use open-source project management tools (e.g. Zenodo Communities, Figshare Projects).","go","quick",[],[["Zenodo Communities","https://zenodo.org/communities"],["Figshare Projects","https://info.figshare.com/user-guide/projects/"]]],
+ ["conduct","Code & workflows","Work in open notebooks","Shares the process as well as the result.","Use Open Notebooks and Open Processes (e.g. GitHub, OpenLabNotebooks, Jupyter Notebooks, SciNote, LabArchives) to document and share your work.","go","some",["code"],[]],
+
+ ["publish","Pure & your profile","Connect your ORCID to Pure","Your outputs follow you, and funders increasingly ask for an ORCID.","Create your ORCID ID or link an existing ORCID to Pure.","rec","quick",[],[["Pure and ORCID",U+"outputs/puresupport/pure-and-orcid"]]],
+ ["publish","Pure & your profile","Keep your Pure profile up to date","Pure feeds REF, reporting and your public profile.","Keep your Pure profile up to date to improve the visibility and discoverability of your research.","exp","quick",[],[["Pure support",U+"outputs/puresupport/resources"]]],
+ ["publish","Pure & your profile","Add keywords to your Pure outputs","Helps search engines and colleagues find your work.","Use keywords in Pure to make your research outputs more discoverable.","rec","quick",[],[]],
+ ["publish","Pure & your profile","Create a Pure Datasets record for published data","Counts toward reporting and links your data to your papers.","Create a metadata record in Pure Datasets for published research data to support reporting and enhance your research profile.","exp","quick",[],[["Pure Datasets","https://pure.ulster.ac.uk/en/datasets/"],["Archiving and sharing data",U+"rdm/archiving-and-sharing-completed-research-data"]]],
+ ["publish","Pure & your profile","Check altmetrics and citations in Pure","See where your work is being discussed.","Monitor the reach and impact of your research using altmetrics and citation data in the Pure Portal.","go","quick",[],[["Citations and altmetrics (PDF)","https://www.ulster.ac.uk/__data/assets/pdf_file/0006/1898781/citations-and-altmetrics-in-pure.pdf"]]],
+ ["publish","Articles & proceedings","Post a preprint","Gets your findings out months before formal publication.","Share a preprint of your article to enable early dissemination of your research.","rec","quick",[],[["Publishing open access",U+"open-research/openess/publish-open-access"]]],
+ ["publish","Articles & proceedings","Publish open access, using Ulster's agreements","Many journals are already covered at no cost to you.","Make research articles and conference proceedings open access. Explore publisher agreements and UKRI open access funding available at Ulster. Use Think. Check. Submit. to select a trusted journal.","exp","quick",[],[["Publisher agreements",L+"publishers"],["UKRI OA funding",L+"funder_requirements/journals"],["Think. Check. Submit.","https://thinkchecksubmit.org/"]],"Library Open Access team"],
+ ["publish","Articles & proceedings","Add a rights retention statement on submission","Lets you share your accepted manuscript regardless of publisher terms.","Include a rights retention statement in all submitted articles and conference proceedings.","exp","quick",[],[["Rights retention",L+"rightsretention"]]],
+ ["publish","Articles & proceedings","Include a data access statement","Required even when there's no data. Say so explicitly.","Include a data access statement in all your research publications, including those that do not contain data (e.g. theoretical work or review articles).","exp","quick",[],[["Data access statements",U+"rdm/rdm-support"]]],
+ ["publish","Articles & proceedings","Choose a reuse-friendly licence (e.g. CC BY)","Determines whether others can legally reuse your work.","Apply copyright licences that support the sharing and reuse of your research outputs.","rec","quick",[],[["Copyright and licences",L+"copyright_and_licences"]]],
+ ["publish","Articles & proceedings","Take part in open peer review","Makes the review process visible and credits reviewers.","Participate in peer review models that make elements of the peer review process open.","go","some",[],[]],
+ ["publish","Articles & proceedings","Apply for Open Science Badges","A visible signal that your data or materials are open.","Apply for an Open Research Badge when publishing in journals that offer Open Science Badges.","go","quick",[],[["Open Science Badges","https://www.cos.io/initiatives/badges"]]],
+ ["publish","Books & theses","Make UKRI-funded books and chapters open access","A UKRI condition of funding.","Meet funder requirements by making UKRI funded books and book chapters open access.","exp","some",["funded"],[["UKRI book requirements",L+"funder_requirements#s-lg-box-wrapper-19656826"]]],
+ ["publish","Books & theses","Consider open access for other books and chapters","Reaches readers who can't access expensive monographs.","Consider making other books and book chapters open access where possible.","rec","some",[],[["Publishing OA books",L+"publishingOA/books"]]],
+ ["publish","Books & theses","Make your PhD thesis openly available","Early access builds your profile while you job-hunt.","Make your PhD thesis openly available as early as possible.","exp","quick",["pgr"],[["Depositing your thesis",U+"open-research/openess/depositing-and-sharing-your-thesis"]]],
+ ["publish","Reach & credit","Get a DOI for every citeable digital output","Makes posters, slides, software and data citeable.","Request a DOI for all digital outputs that are citeable and part of the scholarly record.","rec","quick",[],[["Scholarly identifiers",U+"open-research/openess/scholarly-identifiers"]]],
+ ["publish","Reach & credit","Keep a record of your open research activity","Useful evidence for promotion, PDR and narrative CVs.","Keep a record of open research practices and activities to help demonstrate your impact.","rec","quick",[],[]],
+ ["publish","Reach & credit","Share plain-language summaries","Reaches people outside your field.","Share plain-language summaries of your research through social media, blogs and open educational resources.","rec","some",[],[["UCommunicate training",U+"impact/training/ucommunicate"]]],
+
+ ["share","","Deposit data behind your publications in a trusted repository","Repositories give long-term access and a DOI.","Make research data supporting your publications openly available by depositing it in a trusted data repository.","exp","some",[],[["Publish and preserve data",U+"rdm/archiving-and-sharing-completed-research-data/publish-and-preserve-your-research-data"]],"Research Data Management team"],
+ ["share","","Check and meet your funder's data requirements","Funders differ on what to share, where and when.","Comply with funder requirements for open access to research data.","exp","quick",["funded"],[["Funder requirements",U+"rdm/archiving-and-sharing-completed-research-data"]]],
+ ["share","","Apply a reuse licence to data and code","Unlicensed data and code can't legally be reused.","Apply copyright licences that support the sharing and reuse of your research data and code.","rec","quick",[],[["Licensing and copyright",U+"open-research/licensing-and-copyright"]]],
+ ["share","","Share the code needed to interpret your data","Data without the analysis code is often hard to verify.","Share any software or algorithms needed to interpret open data alongside the dataset.","rec","some",["code"],[["Open research software",U+"open-research/openess/open-research-software"]]],
+ ["share","","Cite datasets in your publications","Gives credit and links papers to evidence.","Cite open data in all related publications.","rec","quick",[],[["Citing data",U+"rdm/archiving-and-sharing-completed-research-data"]]],
+
+ ["teach","","Use and share open educational resources","Saves preparation time and benefits other educators.","Use, adapt, create and share open educational resources to support teaching and learning.","rec","some",["teach"],[["Open research practices",U+"open-research/openess"]]],
+ ["teach","","Use open publications and data in teaching","Students can access the materials after the module ends.","Use open research publications and open data in your teaching.","rec","quick",["teach"],[]],
+ ["teach","","Embed open research in methods modules","The next generation of researchers starts with good habits.","Embed open research principles and practices into taught research methods and research practice modules.","go","big",["teach"],[["Teaching resources",U+"open-research/resources"]]]
+].map((r,i)=>({id:"i"+i,stage:r[0],group:r[1],title:r[2],why:r[3],detail:r[4],lvl:r[5],eff:r[6],tags:r[7],links:r[8],help:r[9]||""}));
+
+const store = {
+  get(k,d){try{const v=localStorage.getItem("c2o:"+k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem("c2o:"+k,JSON.stringify(v))}catch(e){}}
+};
+let state = {
+  stage: store.get("stage","plan"),
+  ctx: new Set(store.get("ctx",[])),
+  lvl: "all",
+  done: new Set(store.get("done",[]))
+};
+if(!STAGES.some(s=>s.id===state.stage)) state.stage="plan";
+
+const applies = x => x.tags.length===0 || x.tags.some(t=>state.ctx.has(t)) || state.ctx.size===0;
+const ctxName = id => (CTX.find(c=>c.id===id)||{}).name||id;
+const esc = s => s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function renderCtx(){
+  const el=document.getElementById("ctx");
+  el.innerHTML = CTX.map(c=>`<span class="chip"><input type="checkbox" id="ctx-${c.id}" ${state.ctx.has(c.id)?"checked":""}><label for="ctx-${c.id}">${c.name}</label></span>`).join("");
+  CTX.forEach(c=>document.getElementById("ctx-"+c.id).addEventListener("change",e=>{
+    e.target.checked?state.ctx.add(c.id):state.ctx.delete(c.id);
+    store.set("ctx",[...state.ctx]); render();
+  }));
+}
+function renderTrack(){
+  const el=document.getElementById("track");
+  el.innerHTML = STAGES.map(s=>{
+    const items=I.filter(x=>(s.id==="all"||x.stage===s.id)&&applies(x));
+    const d=items.filter(x=>state.done.has(x.id)).length;
+    const p=items.length?Math.round(d/items.length*100):0;
+    return `<button type="button" class="stage" data-s="${s.id}" aria-pressed="${state.stage===s.id}"><span class="nm">${s.name}</span><span class="ct">${d} / ${items.length}</span><span class="bar"><i style="width:${p}%"></i></span></button>`;
+  }).join("");
+  el.querySelectorAll(".stage").forEach(b=>b.addEventListener("click",()=>{state.stage=b.dataset.s;store.set("stage",state.stage);render();}));
+}
+function itemHTML(x){
+  const [cls,lab]=LVL[x.lvl];
+  const tags=x.tags.map(t=>`<span class="b tag">if: ${ctxName(t).split(" (")[0].split(" /")[0]}</span>`).join("");
+  const links=x.links.length?`<ul class="links">${x.links.map(l=>`<li><a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])} ↗</a></li>`).join("")}</ul>`:"";
+  const help=x.help?`<p class="help"><b>Who can help:</b> ${x.help}</p>`:"";
+  return `<div class="item ${state.done.has(x.id)?"done":""}">
+    <input type="checkbox" class="cb" id="cb-${x.id}" data-id="${x.id}" ${state.done.has(x.id)?"checked":""} aria-label="Mark done: ${esc(x.title)}">
+    <details><summary><span class="t">${esc(x.title)}</span><span class="meta"><span class="b ${cls}">${lab}</span><span class="b eff">${EFF[x.eff]}</span>${tags}</span></summary>
+    <div class="body"><p class="why"><b>Why:</b> ${esc(x.why)}</p><p class="detail">${esc(x.detail)}</p>${links}${help}</div></details></div>`;
+}
+function visible(){
+  return I.filter(x=>{
+    if(state.stage!=="all"&&x.stage!==state.stage) return false;
+    if(!applies(x)) return false;
+    if(state.lvl==="exp"&&x.lvl!=="exp") return false;
+    if(state.lvl==="quick"&&x.eff!=="quick") return false;
+    if(state.lvl==="todo"&&state.done.has(x.id)) return false;
+    return true;
+  });
+}
+function renderList(){
+  const v=visible(), el=document.getElementById("list");
+  if(!v.length){el.innerHTML=`<p class="empty">Nothing matches these filters. Try "Everything" or another stage.</p>`;return;}
+  const stages=state.stage==="all"?STAGES.filter(s=>s.id!=="all"):STAGES.filter(s=>s.id===state.stage);
+  el.innerHTML=stages.map(s=>{
+    const its=v.filter(x=>x.stage===s.id); if(!its.length) return "";
+    const d=its.filter(x=>state.done.has(x.id)).length;
+    let html=`<section class="group"><h2>${s.name}<small>${d} of ${its.length} done</small></h2>`, g=null;
+    its.forEach(x=>{ if(x.group&&x.group!==g){g=x.group;html+=`<div class="sub">${esc(g)}</div>`;} html+=itemHTML(x); });
+    return html+`</section>`;
+  }).join("");
+  el.querySelectorAll(".cb").forEach(cb=>cb.addEventListener("change",()=>{
+    cb.checked?state.done.add(cb.dataset.id):state.done.delete(cb.dataset.id);
+    store.set("done",[...state.done]); render();
+  }));
+}
+function renderRail(){
+  const items=I.filter(applies), d=items.filter(x=>state.done.has(x.id)).length;
+  document.getElementById("pct").innerHTML=`${d}<span> of ${items.length}</span>`;
+  document.getElementById("pctNote").textContent = state.ctx.size? "actions that apply to your project" : "actions in total (pick what your project involves to narrow this)";
+}
+function render(){renderTrack();renderList();renderRail();if(document.getElementById("pdfScope"))updatePdfCount();
+  document.querySelectorAll("#lvl button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===state.lvl));}
+
+document.querySelectorAll("#lvl button").forEach(b=>b.addEventListener("click",()=>{state.lvl=b.dataset.v;render();}));
+
+document.getElementById("copyBtn").addEventListener("click",()=>{
+  const lines=["Open research checklist ("+new Date().toISOString().slice(0,10)+")",""];
+  STAGES.filter(s=>s.id!=="all").forEach(s=>{
+    const its=I.filter(x=>x.stage===s.id&&applies(x)); if(!its.length) return;
+    lines.push(s.name.toUpperCase());
+    its.forEach(x=>lines.push(`[${state.done.has(x.id)?"x":" "}] ${x.title} (${LVL[x.lvl][1]})`));
+    lines.push("");
+  });
+  const text=lines.join("\n"), st=document.getElementById("copyStatus"), fb=document.getElementById("copyFallback");
+  const fallback=()=>{fb.value=text;fb.hidden=false;fb.focus();fb.select();st.textContent="Select-all is done. Press Ctrl/Cmd+C to copy.";};
+  try{navigator.clipboard.writeText(text).then(()=>{st.textContent="Copied to clipboard.";fb.hidden=true;},fallback);}catch(e){fallback();}
+});
+document.getElementById("resetBtn").addEventListener("click",()=>{document.getElementById("resetConfirm").hidden=false;});
+document.getElementById("resetYes").addEventListener("click",()=>{state.done.clear();store.set("done",[]);document.getElementById("resetConfirm").hidden=true;render();});
+
+// ---------- PDF form export ----------
+let dlPromise = null;
+function getDownloads(){
+  if(!dlPromise) dlPromise = (window.claude && window.claude.use) ? window.claude.use("downloads").catch(()=>null) : Promise.resolve(null);
+  return dlPromise;
+}
+const WIN = "‘’“”–—•…·";
+const safe = t => String(t).replace(/[‐‑]/g,"-").replace(/[−]/g,"-").replace(/›/g,">").replace(/[^\x20-\x7E\xA0-\xFF‘’“”–—•…·]/g,"");
+const SHORT = {people:"Personal data",code:"Code",quant:"Quantitative",partners:"Partners",funded:"Funded",indig:"Indigenous data",pgr:"PGR",teach:"Teaching"};
+
+async function buildPdf(opts){
+  const {PDFDocument, StandardFonts, rgb, PDFName, PDFString} = PDFLib;
+  const hex = h => rgb(parseInt(h.slice(1,3),16)/255, parseInt(h.slice(3,5),16)/255, parseInt(h.slice(5,7),16)/255);
+  const NAVY=hex("#10203f"), BLUE=hex("#0072ce"), MUTED=hex("#56627a"), LINE=hex("#d9dfe8"), PALE=hex("#b8c4dc"), WHITE=rgb(1,1,1);
+  const LVC={exp:NAVY, rec:hex("#2f7a4f"), go:hex("#6b4fa3")};
+  const doc = await PDFDocument.create();
+  doc.setTitle("From Closed to Open: Open Research Checklist");
+  doc.setSubject("Fillable open research checklist (unofficial prototype)");
+  const F = await doc.embedFont(StandardFonts.Helvetica), FB = await doc.embedFont(StandardFonts.HelveticaBold), FI = await doc.embedFont(StandardFonts.HelveticaOblique);
+  const form = doc.getForm();
+  const W=595.28, H=841.89, M=42, CW=W-2*M;
+  let page, y, pageNo=0;
+  const text=(s,x,yy,f,size,color)=>page.drawText(safe(s),{x,y:yy,font:f,size,color});
+  const right=(s,x,yy,f,size,color)=>text(s,x-f.widthOfTextAtSize(safe(s),size),yy,f,size,color);
+  const wrap=(s,f,size,w)=>{const out=[];let line="";safe(s).split(/\s+/).forEach(word=>{const t=line?line+" "+word:word;if(f.widthOfTextAtSize(t,size)>w&&line){out.push(line);line=word;}else line=t;});if(line)out.push(line);return out;};
+  const link=(url,x1,y1,x2,y2)=>{const a=doc.context.register(doc.context.obj({Type:"Annot",Subtype:"Link",Rect:[x1,y1,x2,y2],Border:[0,0,0],A:{Type:"Action",S:"URI",URI:PDFString.of(url)}}));page.node.addAnnot(a);};
+  const footer=()=>{text("Unofficial prototype. Content: Hanna, L. et al. (2026) From Closed to Open, Ulster University. CC BY 4.0. Labels are draft tagging for illustration.",M,24,F,7,MUTED);right("Page "+pageNo,W-M,24,F,7,MUTED);};
+  const newPage=(first)=>{
+    if(page) footer();
+    page=doc.addPage([W,H]); pageNo++;
+    const h=first?150:40;
+    page.drawRectangle({x:0,y:H-h,width:W,height:h,color:NAVY});
+    text("From Closed to Open",M,H-26,FB,first?11:11,first?PALE:WHITE);
+    if(!first){right("Open research checklist",W-M,H-26,F,10,PALE);y=H-h-22;return;}
+    text("Open research checklist",M,H-80,FB,28,WHITE);
+    text("As open as possible, as closed as necessary  ·  Ulster University open research guide",M,H-102,F,11,PALE);
+    page.drawRectangle({x:0,y:H-h-16,width:W,height:16,color:BLUE});
+    const ban="UNOFFICIAL PROTOTYPE  ·  A FORMAT PROPOSAL, NOT A PUBLISHED UNIVERSITY RESOURCE";
+    text(ban,(W-FB.widthOfTextAtSize(ban,7.5))/2,H-h-11,FB,7.5,WHITE);
+    y=H-h-40;
+  };
+  const label=(s,x,yy)=>text(s.toUpperCase(),x,yy,FB,8,MUTED);
+  const tfield=(name,x,yy,w,h,val,multi)=>{const f=form.createTextField(name); if(multi) f.enableMultiline(); if(val) f.setText(safe(val)); f.addToPage(page,{x,y:yy,width:w,height:h,borderColor:LINE,borderWidth:1,backgroundColor:WHITE,textColor:NAVY,font:F}); f.setFontSize(multi?9:10);};
+  const cbox=(name,x,yy,size,on)=>{const c=form.createCheckBox(name); c.addToPage(page,{x,y:yy,width:size,height:size,borderColor:NAVY,borderWidth:1,backgroundColor:WHITE,textColor:NAVY}); if(on) c.check();};
+
+  newPage(true);
+  wrap("Fill this in on screen in Adobe Acrobat Reader (or any PDF reader with form support) and save it. Tick each action as you complete it, or note why it does not apply. Underlined titles link to University guidance.",F,9.5,CW).forEach(l=>{text(l,M,y,F,9.5,NAVY);y-=12.5;});
+  y-=26;
+  label("Name",M,y+20); tfield("name",M,y,CW*0.48,16);
+  label("Date reviewed",M+CW*0.52,y+20); tfield("date",M+CW*0.52,y,CW*0.48,16,new Date().toLocaleDateString("en-GB"));
+  y-=42; label("Project or thesis title",M,y+20); tfield("project",M,y,CW,16);
+  y-=40;
+  label('My project involves (items tagged "if:" only apply when ticked)',M,y); y-=18;
+  CTX.forEach((cx,i)=>{const xx=M+(i%2)*CW/2, yy=y-Math.floor(i/2)*17; cbox("ctx_"+cx.id,xx,yy-3,11,state.ctx.has(cx.id)); text(cx.name,xx+17,yy-1,F,9.5,NAVY);});
+  y-=Math.ceil(CTX.length/2)*17+8;
+  if(opts.note){ wrap(opts.note,FI,8.5,CW).forEach(l=>{text(l,M,y,FI,8.5,MUTED);y-=11;}); y-=4; }
+  label("Key",M,y); y-=14;
+  [["exp","Required by University policy or a funder in most cases."],["rec","Good practice for most projects."],["go","Worth doing where it fits your discipline."]].forEach(([k,t])=>{text(LVL[k][1].toUpperCase(),M,y,FB,7.5,LVC[k]);text(t,M+80,y,F,9,NAVY);y-=13;});
+  y-=10;
+
+  const stages = STAGES.filter(s=>s.id!=="all");
+  for(const s of stages){
+    const its = opts.items.filter(x=>x.stage===s.id); if(!its.length) continue;
+    if(y<140) newPage(false);
+    page.drawRectangle({x:M,y:y-6,width:CW,height:24,color:NAVY}); text(s.name,M+8,y+1,FB,13,WHITE); y-=26;
+    let g=null;
+    for(const it of its){
+      const tl=wrap(it.title,FB,10.5,CW-150), wl=wrap(it.why,F,8.8,CW-150);
+      const need=tl.length*13+wl.length*11+20+(it.help?11:0)+(it.group&&it.group!==g?14:0);
+      if(y-need<50){newPage(false);label(s.name+" (continued)",M,y);y-=16;}
+      if(it.group&&it.group!==g){g=it.group;text(g.toUpperCase(),M,y,FB,8,BLUE);y-=14;}
+      const top=y; cbox("done_"+it.id,M,y-4,13,opts.ticks&&state.done.has(it.id));
+      const x0=M+22, url=it.links.length?it.links[0][1]:null;
+      tl.forEach(l=>{text(l,x0,y,FB,10.5,NAVY); if(url){const tw=FB.widthOfTextAtSize(l,10.5);page.drawLine({start:{x:x0,y:y-1.5},end:{x:x0+tw,y:y-1.5},thickness:.6,color:BLUE});link(url,x0,y-3,x0+tw,y+10);} y-=13;});
+      wl.forEach(l=>{text(l,x0,y,F,8.8,MUTED);y-=11;});
+      right(LVL[it.lvl][1].toUpperCase(),W-M,top,FB,7.5,LVC[it.lvl]);
+      right(EFF[it.eff],W-M,top-10,F,7.5,MUTED);
+      if(it.tags.length) right("if: "+it.tags.map(t=>SHORT[t]).join(" / "),W-M,top-20,F,7.5,BLUE);
+      if(it.help){text("Who can help: "+it.help.replace(/<[^>]+>/g,""),x0,y,FI,8,MUTED);y-=11;}
+      y-=4; page.drawLine({start:{x:M,y:y+2},end:{x:W-M,y:y+2},thickness:.5,color:LINE}); y-=12;
+    }
+    if(y<90) newPage(false);
+    label("Notes, decisions or reasons something does not apply",M,y); y-=46;
+    tfield("notes_"+s.id,M,y,CW,40,"",true); y-=26;
+  }
+  if(y<120) newPage(false);
+  text("About this checklist",M,y,FB,11,NAVY); y-=14;
+  wrap("Content from Hanna, L., Evans, E., Bond, R., Butter, S., Cahoon, A., Casey, F., McChesney, I. and Shukla, P. (2026) From Closed to Open: Practices and Guidelines for Open Research at Ulster. Ulster University. CC BY 4.0. Inspired by the University of Surrey Open Research Checklist v2.0 and CONUL's Navigating open research. This is an unofficial format prototype: the labels, effort estimates and \"if:\" tags are draft illustrations that the Open & Responsible Research Workstream would need to confirm.",F,8.5,CW).forEach(l=>{text(l,M,y,F,8.5,MUTED);y-=11;});
+  footer();
+  return await doc.save();
+}
+
+function pdfItems(){
+  const scope=document.getElementById("pdfScope").value;
+  if(scope==="screen") return visible();
+  return I.filter(applies);
+}
+function pdfNote(){
+  const scope=document.getElementById("pdfScope").value, parts=[];
+  if(state.ctx.size) parts.push("Tailored to: "+[...state.ctx].map(ctxName).join("; ")+".");
+  if(scope==="screen"){
+    if(state.stage!=="all") parts.push("Stage: "+STAGES.find(s=>s.id===state.stage).name+".");
+    const lv={exp:"Expected items only.",quick:"Quick wins only.",todo:"Items not yet done."}[state.lvl]; if(lv) parts.push(lv);
+  }
+  return parts.join(" ");
+}
+function updatePdfCount(){
+  const n=pdfItems().length;
+  document.getElementById("pdfCount").textContent = n+" action"+(n===1?"":"s")+" will be included.";
+  document.getElementById("pdfBtn").disabled = n===0;
+}
+document.getElementById("pdfScope").addEventListener("change",updatePdfCount);
+document.getElementById("pdfBtn").addEventListener("click",async()=>{
+  const st=document.getElementById("pdfStatus"), btn=document.getElementById("pdfBtn");
+  if(typeof PDFLib==="undefined"){st.textContent="The PDF builder didn't load. Check your connection and reload the page.";return;}
+  btn.disabled=true; st.textContent="Building your PDF…";
+  try{
+    const bytes=await buildPdf({items:pdfItems(),ticks:document.getElementById("pdfTicks").checked,note:pdfNote()});
+    const name="From-Closed-to-Open-checklist.pdf";
+    const dl=await getDownloads();
+    if(dl){
+      try{await dl.save({filename:name,data:new Blob([bytes],{type:"application/pdf"})});st.textContent="PDF saved.";}
+      catch(e){st.textContent = e&&e.code==="declined" ? "Download cancelled." : "This view can't save files. Open the page in a browser to download.";}
+    }else{
+      const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([bytes],{type:"application/pdf"}));a.download=name;document.body.appendChild(a);a.click();a.remove();
+      st.textContent="PDF downloaded.";
+    }
+  }catch(e){st.textContent="Couldn't build the PDF: "+(e&&e.message||e);}
+  btn.disabled=false;
+});
+
+renderCtx(); render();
+</script>
