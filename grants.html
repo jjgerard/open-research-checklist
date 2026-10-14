@@ -624,6 +624,7 @@ return-to-research-support-bursary|Return to research support bursary|STFC|O|
 knowledge-transfer-partnership|Knowledge Transfer Partnership (rolling)|IUK, AHRC, BBSRC, ESRC, EPSRC, NERC, STFC|O|
 researching-me-cfs-priority-area|Researching ME/CFS: priority area|MRC|O|
 `.trim().split("\n");
+const CG={AHRC:"ahrc",BBSRC:"bbsrc",EPSRC:"epsrc",ESRC:"esrc",MRC:"mrc",NERC:"nerc",STFC:"stfc","Innovate UK":"innovate-uk"};
 const UKRI_ROW_LINKS=[UKFIND,["UKRI: how applicants use the Funding Service",UK+"develop-your-application/how-applicants-use-the-ukri-funding-service/"],["UKRI: eligible and non-eligible costs",UK+"develop-your-application/what-costs-are-eligible-for-ukri-funding"],["UKRI: individual eligibility",UK+"before-you-apply/individual-eligibility/"]];
 UKRI_ROWS.forEach(r=>{
   const [slug,n,cos,s,dl]=r.split("|"), co=cos.split(", ").map(c=>COUNCIL[c]||c);
@@ -639,7 +640,7 @@ UKRI_ROWS.forEach(r=>{
     status:(s==="O"?"Open":"Upcoming")+": "+(dl?`closes ${fmtShort(dl)}`:(s==="O"?"no closing date":"opening date to be confirmed")),
     elig:"Eligibility, remit and limits are set per call. Read the call page, then UKRI's general guidance and your council's guidance.",
     route:"See the call page (UKRI Funding Service or Innovation Funding Service)",
-    dl:dl||"",type:g[0],links:[["Call page",UKO+slug+"/"]].concat(UKRI_ROW_LINKS)};
+    dl:dl||"",type:g[0],links:[["Call page",UKO+slug+"/"]].concat(co.filter(c=>CG[c]).slice(0,3).map(c=>[c+" guidance for applicants","https://www.ukri.org/councils/"+CG[c]+"/guidance-for-applicants/"]),UKRI_ROW_LINKS)};
   SCH.push(o);
 });
 
@@ -665,12 +666,8 @@ const UKFUT=["UKRI future opportunities","https://www.ukri.org/apply-for-funding
   elig:"Not yet open for applications, or listed only as an upcoming launch. Dates may change, and full details appear in the funding finder when the call launches.",route:"See the call page when it opens",
   links:(lu?[[ln,lu]]:[]).concat([UKFUT,UKFIND])}));
 
-/* UKRI umbrella: council guidance */
-SCH.unshift({id:"ukri-resp",f:"UKRI",co:["AHRC","BBSRC","EPSRC","ESRC","MRC","NERC","STFC","Innovate UK","Research England"],n:"UKRI: where to start (council guidance for applicants)",sub:"Guidance for every council, funding modes and how UKRI assesses",g:["project"],type:"project",
-  elig:"Three layers of guidance usually apply: the opportunity text, UKRI's general guidance and your council's guidance. Pick a specific call from this list for dated decisions, or use this card for general UKRI applications.",
-  route:"UKRI Funding Service",
-  links:[UKFIND,["AHRC guidance for applicants","https://www.ukri.org/councils/ahrc/guidance-for-applicants/"],["BBSRC guidance for applicants","https://www.ukri.org/councils/bbsrc/guidance-for-applicants/"],["EPSRC guidance for applicants","https://www.ukri.org/councils/epsrc/guidance-for-applicants/"],["ESRC guidance for applicants","https://www.ukri.org/councils/esrc/guidance-for-applicants/"],["MRC guidance for applicants","https://www.ukri.org/councils/mrc/guidance-for-applicants/"],["NERC guidance for applicants","https://www.ukri.org/councils/nerc/guidance-for-applicants/"],["STFC guidance for applicants","https://www.ukri.org/councils/stfc/guidance-for-applicants/"],["Innovate UK guidance for applicants","https://www.ukri.org/councils/innovate-uk/guidance-for-applicants/"],["Research England","https://www.ukri.org/councils/research-england/"],["UKRI funding modes",UK+"funding-modes/"],["UKRI: find guidance on applying",UK+"how-to-apply/find-guidance-on-applying-for-funding/"],["UKRI: before you apply",UK+"before-you-apply/"],["UKRI: resubmissions policy",UK+"develop-your-application/application-resubmissions/"],["UKRI: demand management",UK+"before-you-apply/demand-management-for-funding-applications/"],["UKRI: if your research spans disciplines",UK+"get-support-for-your-project/if-your-research-spans-different-disciplines"],["UKRI: generative AI in applications and assessment","https://www.ukri.org/publications/generative-artificial-intelligence-in-application-and-assessment-policy/"],["UKRI: principles of assessment and decision-making","https://www.ukri.org/publications/ukri-principles-of-assessment-and-decision-making/uk-research-and-innovation-ukri-funding-assessment-and-decision-making-policy-and-principles/"],["UKRI: disability and accessibility support",UK+"how-to-apply/disability-and-accessibility-support-for-ukri-applicants-and-grant-holders/"]].concat(UKGEN.slice(0,8))});
-{const i=SCH.findIndex((s,k)=>k>0&&s.id==="ukri-resp");if(i>0)SCH.splice(i,1);}
+/* The generic UKRI cards are guidance indexes, not grants: drop them (council guidance is linked from each call) */
+{const i=SCH.findIndex(s=>s.id==="ukri-resp");if(i>=0)SCH.splice(i,1);}
 
 /* Size facts for existing entries, and corrections to the small-grant tagging */
 const FIX={"lev-rpg":{small:false,g:["project"]},"nuf-main":{small:false,g:["project"]},"erc-poc":{g:["eu","partner"]},"nuf-rapid":{g:["project"]},"ba-srg":{max:10000},"ba-mcf":{max:80000},"iuk-ktp":{f:"UKRI",co:["Innovate UK"]},"ukri-flf":{status:"Upcoming: round 12 expected February 2027"}};
