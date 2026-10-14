@@ -191,6 +191,10 @@ label.btn.ghost{color:var(--ink)}
 .tbl tr:hover td{background:var(--accent-soft)}
 details.ms>summary{border:1px solid var(--line-strong)!important;border-radius:var(--r-sm)!important;background:var(--glass-strong)!important}
 
+/* Each glass card is its own stacking layer, so a card with an open menu must sit above the cards after it */
+.card{position:relative}
+.card:has(details[open]),.card:focus-within{z-index:40}
+
 /* ---------- Gantt chart (opaque cells inside a glass frame, so the grid stays readable) ---------- */
 .gwrap{background:var(--glass-strong)!important}
 .hc{font-family:var(--font);font-weight:600;background:var(--surface-2)}

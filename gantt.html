@@ -348,7 +348,7 @@ dialog#impdlg::backdrop{background:rgba(10,20,40,.55)}
 
   <footer>
     <p class="dis"><b>Prototype.</b> Charts are stored only in this browser until you export them. Use the Export menu to keep a copy.</p>
-    <p class="note" id="build">Gantt maker build 3 (14 Oct 2026). If you do not see “build 3”, your browser is showing an old copy: refresh the page (Ctrl or Cmd + Shift + R).</p>
+    <p class="note" id="build">Gantt maker build 4. If you do not see “build 4”, your browser is showing an old copy: refresh the page (Ctrl or Cmd + Shift + R).</p>
   </footer>
 </main>
 
@@ -370,64 +370,44 @@ const person=(inst,name,role,wps)=>({id:uid(),inst,name,role,wps:wps||[]});
 
 /* ---------- Templates ---------- */
 const TEMPLATES=[
- ["Blank chart","Empty 24-month chart with the standard activity types",()=>({title:"My project",showTask:true,months:24,block:6,cw:34,starts:["2026-01"],cats:DEFCATS(),rows:[row("WP1: First work package","Task 1","",[])],team:[]})],
- ["Three-year research project","Four work packages: set-up, fieldwork, analysis and impact",()=>{
-   const r=[row("WP1: Set-up and approvals","Protocol and ethics","Plan",[bar(1,3,"Protocol and materials","design"),bar(4,2,"Ethics and governance","review")]),
-     row("WP1: Set-up and approvals","Recruitment and training","Plan",[bar(3,4,"Recruit and train staff","mgmt")]),
-     row("WP2: Fieldwork","Study 1","Data",[bar(7,10,"Data collection","data")]),
-     row("WP2: Fieldwork","Study 1","Paper",[bar(17,6,"Analysis and paper 1","writing")]),
-     row("WP3: Analysis and synthesis","Integrated analysis","Analysis",[bar(19,8,"Integrated analysis","writing"),bar(27,6,"Final report","writing")]),
-     row("WP4: Impact and dissemination","Engagement","Events",[bar(12,2,"Project workshop","dissem"),bar(24,2,"Conference","event"),bar(34,3,"Final event and outputs","dissem")])];
-   return {title:"Three-year research project",showTask:true,months:36,block:6,cw:34,starts:["2026-01"],cats:DEFCATS(),rows:r,team:[]};}],
- ["12-month small grant","One work package with a monthly plan",()=>({title:"Small grant project",months:12,block:3,cw:46,starts:["2026-01"],cats:DEFCATS(),team:[],rows:[
+ ["Blank chart","An empty 24-month chart. Drag across a row to add your first activity",()=>({title:"Untitled chart",showTask:false,months:24,block:6,cw:34,starts:["2026-01"],cats:DEFCATS(),rows:[row("Work package 1","","",[])],team:[]})],
+ ["12-month small grant","One work package: set-up, fieldwork and write-up",()=>({title:"12-month small grant",showTask:true,months:12,block:3,cw:46,starts:["2026-01"],cats:DEFCATS(),team:[],rows:[
    row("Pilot study","Preparation","",[bar(1,2,"Ethics and set-up","review"),bar(3,2,"Recruit participants","mgmt")]),
    row("Pilot study","Fieldwork","",[bar(4,5,"Data collection","data")]),
    row("Pilot study","Write-up","",[bar(8,4,"Analysis and report","writing"),bar(11,1,"Final report due","mile")])]})],
-
- ["Example: 3-year speech technology project","A simple chart: upskilling plus three work packages, one bar per task (rebuilt from your 'full timeline' sheet)",()=>{
-   const U="Upskilling and professional development",w1="WP1: Preparing the corpus",w2="WP2: Training ASR models",w3="WP3: Developing a scoring tool";
-   const cats=[["Upskilling",1],["Data collection and preparation",2],["Model and tool building",3],["Testing and evaluation",4],["Outputs",5]].map((c,i)=>({id:"x"+i,name:c[0],slot:c[1]}));
-   const [UP,DA,BU,TE,OU]=cats.map(c=>c.id);
-   const rows=[
-    row(U,"","WP1 upskilling",[bar(1,12,"Automatic Speech Recognition (Lin, Gerard, PDRA1)",UP)]),
-    row(U,"","WP2 upskilling",[bar(12,13,"Machine Learning (Lin, Gerard, PDRA1)",UP)]),
-    row(U,"","WP3 upskilling",[bar(19,18,"Data analytics with AI (Lin, Gerard, PDRA1, PDRA2, PDRA3)",UP)]),
-    row(w1,"","NI data",[bar(1,10,"E. NI data collection (Gerard, PDRA1)",DA),bar(12,1,"Output: corpus (F)",OU)]),
-    row(w1,"","",[bar(5,8,"D. Audio transcription (Gerard, PDRA1)",DA)]),
-    row(w1,"","LITMUS data formatting",[bar(1,12,"D. Formatting LITMUS data for corpus (Gerard, PDRA1)",DA)]),
-    row(w2,"","Transcription",[bar(12,5,"G/H. Automatic transcription with Batchalign (Gerard, PDRA1, PDRA2)",BU),bar(24,1,"Output: ASR model (K)",OU)]),
-    row(w2,"","Model training",[bar(16,4,"I. Batchalign benchmarking (PDRA2)",TE),bar(20,5,"J. ASR model training (PDRA2)",BU)]),
-    row(w3,"","Develop the tool",[bar(16,12,"L. Develop scoring tool from model (PDRA1, PDRA2)",BU),bar(36,1,"Output: scoring tool (S)",OU)]),
-    row(w3,"","Test the tool",[bar(24,9,"M. Test tool with sentence repetition (Gerard, PDRA3)",TE),bar(33,4,"SLT focus group (PDRA3)",TE),bar(26,7,"O/P. Transcribe test data (PDRA2, PDRA3)",DA)]),
-    row(w3,"","Refine the tool",[bar(32,5,"Q/R. Benchmarking, re-training tool (Gerard, PDRA1, PDRA2)",TE)])];
-   const ALL=[U,w1,w2,w3];
-   return {title:"Speech technology project (example)",months:36,block:12,cw:30,showTask:false,starts:["2026-10"],cats,rows,
-     team:[person("","Gerard","",ALL),person("","Lin","",[U]),person("","PDRA1","",ALL),person("","PDRA2","",[U,w2,w3]),person("","PDRA3","",[U,w3])]};}],
- ["Advanced example: multi-site experimental project","A larger chart with outputs, papers, conferences and three start dates (rebuilt from your 'for schools' sheet)",()=>{
-   const D="design",R="review",A="data",W="writing",S="dissem",M="mgmt",E="event";
-   const w1="WP1: Developmental trajectory (English)",w2="WP2: Comprehension in adults (English)",w3="WP3: Cross-linguistic comparison",w4="WP4: Language research and pedagogy";
-   const o1="Output 1 - Experiments on development of sentence comprehension",o2="Output 2 - Trajectory of online processing and memory measures",o3="Output 3 - Online processing and memory measures - cross-task",o4="Output 4 - Adult processing in English and Spanish",o5="Output 5 - Developmental trajectory in English and Spanish",o6="Developing materials to support comprehension";
-   const rows=[
-    row(w1,o1,"Experiment",[bar(1,4,"Study design and materials",D),bar(13,14,"Data collection",A),bar(27,3,"Analyse data and write paper",W)]),
-    row(w1,o1,"Paper",[bar(1,4,"Write study design for peer review",W),bar(5,8,"Peer review of study design",R)]),
-    row(w1,o2,"Experiment",[bar(17,10,"Data collection",A)]),
-    row(w1,o2,"Paper (UU + USM)",[bar(5,4,"Stage 1 RR",W),bar(9,4,"Reviewing",R),bar(27,3,"Analysis & Stage 2 RR",W),bar(30,1,"LAGB",E),bar(32,1,"BUCLD",E)]),
-    row(w2,o3,"Experiment",[bar(1,4,"Study design and materials",D),bar(13,2,"Data collection",A)]),
-    row(w2,o3,"Paper (BYU)",[bar(1,4,"Stage 1 RR",W),bar(5,8,"Reviewing",R),bar(15,4,"Analysis & Stage 2 RR",W),bar(24,1,"HSP",E)]),
-    row(w3,o4,"Experiment",[bar(13,4,"Study design and materials",D),bar(17,2,"Data collection",A)]),
-    row(w3,o4,"Paper (BYU + UNED)",[bar(19,8,"Analysis & Paper",W),bar(30,1,"AMLaP",E)]),
-    row(w3,o5,"Experiment",[bar(19,4,"Study design and materials",D),bar(30,3,"Data collection",A)]),
-    row(w3,o5,"Paper (UU + UNED)",[bar(23,4,"Intro & Methods",W),bar(33,3,"Results & Discussion",W),bar(36,1,"HSP",E)]),
-    row(w4,o6,"Assessment",[bar(7,2,"Baseline 1A",A),bar(11,2,"Baseline 1B",A),bar(19,2,"Baseline 2A",A),bar(23,2,"Baseline 2B",A),bar(31,2,"Baseline 3A",A),bar(35,2,"Baseline 3B",A)]),
-    row(w4,o6,"Development",[bar(1,6,"Meetings and development of baseline measure(s)",M),bar(13,6,"Develop comprehension materials",D),bar(19,6,"Pilot materials",A),bar(25,6,"Refine materials, get feedback",D),bar(31,6,"Pilot materials",A)]),
-    row(w4,o6,"Dissemination",[bar(25,6,"Symposium, focus group on materials",S),bar(31,6,"Science festivals, launch materials",S)]),
-    row("Conferences and travel","Conferences","PDRA",[bar(19,2,"BU CLD, WP1",E),bar(23,2,"HSP, WP2",E),bar(26,5,"GALA WP1, AMLaP WP2, LAGB WP3",E),bar(31,2,"BU CLD, WP3",E),bar(35,2,"HSP, WP3",E)])];
-   const ALL=[w1,w2,w3,w4];
-   const team=[person("UU","Juliana Gerard","Co-I",ALL),person("UU","PDRA","Researcher",ALL),person("UU","Project coordinator","Coordinator",ALL),person("UU","Raffaella Folli","Co-I",[w2]),person("UU","Christina Sevdali","Co-I",[w4]),
-     person("BYU","Jeffrey Green","Partner",[w1,w2,w3]),person("UNED","Silvia Sánchez Calderón","Partner",[w3]),person("UNED","Gloria Chamorro Galán","Partner",[w3]),person("USM","Dana McDaniel","Partner",[w1]),
-     person("Advisory board","Vikki Janke","Adviser",[w1,w2]),person("Advisory board","Deborah Armstrong","Adviser",[w4]),person("Advisory board","Lisa Brown","Adviser",[w4]),
-     person("Project partners","Ebrington Primary School","Partner",[w4]),person("Project partners","John Hampden Grammar School","Partner",[w4]),person("Consultants","Parenting Focus","Consultant",[w4])];
-   return {title:"Language comprehension project (example)",months:36,block:6,cw:32,starts:["2026-01","2026-07","2026-04"],cats:DEFCATS(),rows,team};}]
+ ["Single study, 24 months","Set-up, data collection, analysis and dissemination in four phases",()=>({title:"Single study, 24 months",showTask:false,months:24,block:6,cw:34,starts:["2026-01"],cats:DEFCATS(),team:[],rows:[
+   row("Set-up","","Protocol and materials",[bar(1,3,"Protocol and materials","design")]),
+   row("Set-up","","Approvals",[bar(3,3,"Ethics and governance","review")]),
+   row("Data collection","","Recruitment",[bar(5,4,"Recruit participants","mgmt")]),
+   row("Data collection","","Fieldwork",[bar(7,10,"Data collection","data")]),
+   row("Analysis","","Analysis",[bar(14,6,"Analysis","writing")]),
+   row("Dissemination","","Outputs",[bar(18,5,"Write paper","writing"),bar(22,1,"Conference","event"),bar(24,1,"Final report","mile")])]})],
+ ["Three-year research project","Four work packages: set-up, fieldwork, analysis and impact",()=>({title:"Three-year research project",showTask:true,months:36,block:6,cw:34,starts:["2026-01"],cats:DEFCATS(),team:[],rows:[
+   row("WP1: Set-up and approvals","Protocol and ethics","Plan",[bar(1,3,"Protocol and materials","design"),bar(4,2,"Ethics and governance","review")]),
+   row("WP1: Set-up and approvals","Recruitment and training","Plan",[bar(3,4,"Recruit and train staff","mgmt")]),
+   row("WP2: Fieldwork","Study 1","Data",[bar(7,10,"Data collection","data")]),
+   row("WP2: Fieldwork","Study 1","Paper",[bar(17,6,"Analysis and paper 1","writing")]),
+   row("WP3: Analysis and synthesis","Integrated analysis","Analysis",[bar(19,8,"Integrated analysis","writing"),bar(27,6,"Final report","writing")]),
+   row("WP4: Impact and dissemination","Engagement","Events",[bar(12,2,"Project workshop","dissem"),bar(24,2,"Conference","event"),bar(34,3,"Final event and outputs","dissem")])]})],
+ ["Three-year fellowship","Research programme, outputs, and career development in parallel",()=>({title:"Three-year fellowship",showTask:false,months:36,block:6,cw:32,starts:["2026-09"],cats:DEFCATS(),team:[],rows:[
+   row("Research","","Study 1",[bar(1,4,"Design and approvals","design"),bar(5,10,"Data collection","data"),bar(15,6,"Analysis","writing")]),
+   row("Research","","Study 2",[bar(13,4,"Design and approvals","design"),bar(17,10,"Data collection","data"),bar(27,6,"Analysis","writing")]),
+   row("Outputs","","Papers",[bar(18,5,"Paper 1","writing"),bar(30,5,"Paper 2","writing")]),
+   row("Outputs","","Book or major output",[bar(24,12,"Write up","writing")]),
+   row("Development","","Training and mentoring",[bar(1,12,"Training plan","mgmt"),bar(13,12,"Mentoring and leadership","mgmt")]),
+   row("Development","","Engagement",[bar(10,1,"Workshop","dissem"),bar(22,1,"Conference","event"),bar(34,3,"Public event","dissem")])]})],
+ ["Four-year programme with a team","Work packages, a team table and a phase for each stage",()=>{
+   const w1="WP1: Foundations",w2="WP2: Main study",w3="WP3: Translation",w4="WP4: Impact";
+   return {title:"Four-year programme",showTask:true,months:48,block:6,cw:26,starts:["2026-01"],cats:DEFCATS(),rows:[
+     row(w1,"Review and design","Evidence review",[bar(1,6,"Evidence review","design")]),
+     row(w1,"Review and design","Protocol",[bar(4,5,"Protocol and approvals","review")]),
+     row(w2,"Study A","Fieldwork",[bar(9,14,"Data collection","data")]),
+     row(w2,"Study A","Paper",[bar(23,8,"Analysis and paper","writing")]),
+     row(w2,"Study B","Fieldwork",[bar(21,14,"Data collection","data")]),
+     row(w2,"Study B","Paper",[bar(35,8,"Analysis and paper","writing")]),
+     row(w3,"Tools and guidance","Development",[bar(30,12,"Develop tool","design"),bar(42,4,"Pilot","data")]),
+     row(w4,"Engagement","Events",[bar(12,2,"Advisory group","mgmt"),bar(30,2,"Conference","event"),bar(46,3,"Final event","dissem")])],
+     team:[person("Lead institution","Principal investigator","PI",[w1,w2,w3,w4]),person("Lead institution","Co-investigator","Co-I",[w2,w3]),person("Lead institution","Postdoctoral researcher","Researcher",[w1,w2]),person("Partner organisation","Partner lead","Partner",[w3,w4]),person("Advisory group","Advisers","Adviser",[w4])]};}]
 ];
 
 /* ---------- State ---------- */
@@ -446,18 +426,12 @@ function sanitize(o){
     starts:(Array.isArray(o.starts)&&o.starts.length?o.starts:["2026-01"]).slice(0,5).map(x=>/^\d{4}-\d{2}$/.test(x)?x:"2026-01"),cats,rows,
     team:(Array.isArray(o.team)?o.team:[]).slice(0,100).map(p=>({id:s(p.id,12)||uid(),inst:s(p.inst,100),name:s(p.name,100),role:s(p.role,80),wps:(Array.isArray(p.wps)?p.wps:[]).filter(x=>typeof x==="string").slice(0,50)}))};
 }
-const LIBV=3,OLDTITLE="Language comprehension project (example)",SIMPLETITLE="Speech technology project (example)";
-function refreshOldDefault(lib){   // an unedited copy of the old complex example is replaced by the simple one
-  let old=null;try{old=hashOf(sanitize(TEMPLATES[4][2]()));}catch(e){}
-  lib.charts.forEach(c=>{if(old&&c.p.title===OLDTITLE&&hashOf(c.p)===old)c.p=sanitize(TEMPLATES[3][2]());});
-  return lib;
-}
-function migrate(lib,v){   // one-off: make sure the simple example is in the list, and open it if the old complex one was showing
+const LIBV=4,EXAMPLE_HASHES=new Set(["1473725163","2307523945"]);   // fingerprints of the two sample projects shipped earlier
+function migrate(lib,v){   // one-off: remove unedited sample projects saved by earlier versions; anything edited or imported stays
   if(v>=LIBV)return lib;
-  let simple=lib.charts.find(c=>c.p.title===SIMPLETITLE);
-  if(!simple){simple={id:uid(),p:sanitize(TEMPLATES[3][2]())};lib.charts.unshift(simple);}
-  const cur=lib.charts.find(c=>c.id===lib.cur);
-  if(cur&&cur.p.title===OLDTITLE)lib.cur=simple.id;
+  lib.charts=lib.charts.filter(c=>!EXAMPLE_HASHES.has(hashOf(c.p)));
+  if(!lib.charts.length)lib.charts.push({id:uid(),p:sanitize(blankProject())});
+  if(!lib.charts.some(c=>c.id===lib.cur))lib.cur=lib.charts[0].id;
   return lib;
 }
 function loadLib(){
@@ -465,8 +439,8 @@ function loadLib(){
   try{const s=localStorage.getItem(KEY2);if(s){const o=JSON.parse(s),charts=(o.charts||[]).slice(0,80).map(c=>({id:String(c.id||uid()).slice(0,12),p:sanitize(c.p||{})}));
     if(charts.length){lib={cur:charts.some(c=>c.id===o.cur)?o.cur:charts[0].id,charts};v=+o.v||0;}}}catch(e){}
   if(!lib){try{const s=localStorage.getItem(KEY);if(s){const c={id:uid(),p:sanitize(JSON.parse(s))};lib={cur:c.id,charts:[c]};}}catch(e){}}
-  if(!lib){const c={id:uid(),p:sanitize(TEMPLATES[3][2]())};return {v:LIBV,cur:c.id,charts:[c]};}
-  lib=migrate(refreshOldDefault(lib),v);lib.v=LIBV;return lib;
+  if(!lib){const c={id:uid(),p:sanitize(blankProject())};return {v:LIBV,cur:c.id,charts:[c]};}
+  lib=migrate(lib,v);lib.v=LIBV;return lib;
 }
 function persist(){const e=LIB.charts.find(c=>c.id===LIB.cur);if(e)e.p=P;LIB.v=LIBV;try{localStorage.setItem(KEY2,JSON.stringify(LIB));}catch(x){}}
 function addChart(p){const c={id:uid(),p:sanitize(p)};LIB.charts.push(c);return c;}
@@ -529,7 +503,7 @@ function renderShift(){
 function renderTemplates(){
   $("tpls").innerHTML=TEMPLATES.map((t,i)=>`<button class="btn ghost sm" type="button" data-t="${i}"><span><b>${esc(t[0])}</b><br><span class="note">${esc(t[1])}</span></span></button>`).join("");
   $("tpls").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{
-    const c=addChart(TEMPLATES[+b.dataset.t][2]());switchTo(c.id);b.closest("details").open=false;});
+    const d=b.closest("details"),c=addChart(TEMPLATES[+b.dataset.t][2]());switchTo(c.id);if(d)d.open=false;});
 }
 
 
