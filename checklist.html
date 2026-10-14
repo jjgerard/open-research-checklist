@@ -6,9 +6,6 @@
 <meta name="description" content="Unofficial prototype: an interactive, filterable version of Ulster University's From Closed to Open open research guide.">
 <title>From Closed to Open</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 /* Layout: a working tool. Stage track across the top, filters, then a checklist column with a progress rail beside it (stacks on phones). */
 :root{
@@ -177,14 +174,14 @@ footer p{margin:0}
 }
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 </style>
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
 <div class="proto">UNOFFICIAL PROTOTYPE · a format proposal, not a published University resource</div>
 <div class="masthead">
   <div class="mh-top">
     <span class="wordmark">Ulster University<span>Open Research</span></span>
-    <span class="crumbs">Research › Resources › Open research › Practices and guidelines</span>
-    <a class="crumbs" href="./" style="color:var(--band-ink)">Try the guided adventure →</a>
+    <nav class="sitenav" aria-label="Site"><a href="index.html">Open research</a><a href="checklist.html" aria-current="page">Checklist</a><a href="grants.html">Grants</a><a href="gantt.html">Gantt chart</a></nav>
   </div>
   <header>
     <div class="brandline">
