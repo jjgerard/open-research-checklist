@@ -78,6 +78,11 @@ h2{font-size:clamp(24px,4.5vw,32px);font-weight:800}
 .why{margin:0}
 .tip{background:var(--accent-soft);border-left:4px solid var(--accent);border-radius:4px;padding:10px 14px;margin:0;font-size:16px}
 .tip b{display:block;font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:2px}
+input.other{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);margin-top:8px}
+input.other[hidden]{display:none}
+.opts .q{margin-bottom:8px}
+.sel{display:block;font-size:14.5px;color:var(--muted)}
+.dl{display:flex;flex-wrap:wrap;gap:8px}
 .warnbox{margin:0;background:var(--warn-soft);color:var(--warn);border-radius:4px;padding:10px 14px;font-size:15.5px}
 .warnbox b{display:block;font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
 .how h3,.eg b{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
@@ -550,7 +555,65 @@ const ADD={
 "s-lic":[["Open licensing for research",U+"open-research/licensing-and-copyright"]]
 };
 
+/* ---------- Pick-list options per action (an "Other" choice with free text is added automatically) ---------- */
+const OPTS={
+"p-data":["What counts as data in your project?",["Survey or questionnaire responses","Interview or focus group recordings and transcripts","Observations or field notes","Images, audio or video","Archival or historical sources","Experimental or instrument measurements","Clinical, health or administrative records","Code, models or software","Creative works or documentation of practice","Existing datasets I will reuse"]],
+"p-stat":["How will you get statistical or data science input?",["A named colleague or collaborator","My supervisor or PI","School or Faculty methods support","A paid consultant","Not needed for my design","Not decided yet"]],
+"p-dmp":["How will you write your DMP?",["Using my funder's template","Using the Ulster RDM guidance and slide deck","Using a DMP tool","In my own document","I already have one","I will contact the RDM team for help"]],
+"p-reuse":["Where will you look for existing data, code or outputs?",["A discipline repository","Zenodo or Figshare","Pure / Ulster research portal","UK Data Service or national archives","GitHub or GitLab","Funder or project websites","Nothing to reuse"]],
+"p-limits":["What might limit how open you can be?",["Personal or identifiable data","Commercial or IP interests","Security or confidentiality","Cultural or Indigenous data governance","Third-party copyright","Funder or partner terms","Nothing known yet"]],
+"p-prereg":["Where will you preregister?",["OSF Registries","A discipline or clinical trial registry","A journal Registered Report (Stage 1)","A time-stamped repository deposit","Not decided yet","I will not preregister"]],
+"p-rr":["Where are you with a Registered Report?",["I have identified a journal","I am writing the Stage 1 protocol","Not suitable for this study","I will consider it later"]],
+"p-ip":["What needs agreeing in your contracts?",["Ownership of data","Ownership of code or IP","Publication rights and any delay","Data sharing and reuse","Confidentiality","Commercial use"]],
+"p-cost":["What will you cost into your bid?",["Staff time to prepare data","Storage","Repository or archiving fees","Open access fees","Software or tools","Participant or community costs"]],
+"p-coprod":["How could people be involved?",["Advisory group","Co-design workshops","Co-analysis","Co-authorship","Community events","Not suitable for this project"]],
+"e-intro":["Which ethics route applies?",["Category A: lower-risk (filter committee)","Category B: higher-risk (filter committee, then UREC)","Category C: NHS or HSC","Category D: human tissue","Category E: clinical trial","I am not sure, I will ask Research Governance","No human participants"]],
+"e-consent":["What will your consent form cover?",["Taking part","Use of quotes","Archiving anonymised data","Reuse by other researchers","Recording or photography","Sharing identifiable data with explicit consent"]],
+"e-gdpr":["How will you protect personal data?",["Anonymise at collection","Pseudonymise and keep the key separately","Encrypted storage","Restricted access","Retention and deletion date set","Advice from the GDPR team requested"]],
+"e-sens":["How will you handle sensitive data?",["Controlled-access repository","Anonymised subset only","Embargo","Data sharing agreement","Secure environment","Not shared, with the reasons in my DMP"]],
+"e-care":["How will you follow the CARE principles?",["Community consultation","Community-agreed access","Community labels in the metadata","Benefit-sharing plan","Governance agreement"]],
+"e-agree":["What will your agreements cover?",["Data sharing agreement","Collaboration agreement","Non-disclosure agreement","Material transfer agreement","Not yet drafted"]],
+"e-lic":["Which licences are you considering?",["CC BY for text and data","CC0 for data","CC BY-NC","MIT for code","Apache-2.0 for code","GPL for code","Undecided"]],
+"c-dmp":["When will you review your DMP?",["At each project milestone","Every six months","When tools or partners change","At deposit","Not yet scheduled"]],
+"c-note":["What will you use to log decisions?",["Electronic lab notebook","Dated document or journal","GitHub issues and commits","Spreadsheet log","Paper notebook (scanned)"]],
+"c-meta":["What metadata approach will you use?",["A standard schema such as Dublin Core","A discipline standard","README fields","A data dictionary","The repository's form"]],
+"c-name":["How will you name files?",["Date first","Project codes","Version numbers","A discipline convention","A team-agreed document"]],
+"c-readme":["What documentation will you write?",["README","Codebook","Data dictionary","Methods document","Data management log"]],
+"c-repo":["Where will your code live?",["GitHub","GitLab","An institutional repository","Local only (needs changing)"]],
+"c-repro":["How will you make your analysis reproducible?",["Scripts from raw data to results","Notebooks","A workflow tool","Containers","Pinned dependencies and seeds","Tested on another machine"]],
+"c-space":["Which open project space will you use?",["Zenodo Communities","Figshare Projects","Pure","A GitHub organisation","I will not use one"]],
+"c-onb":["Which notebook format will you use?",["Jupyter","R Markdown","Quarto","Electronic lab notebook","Shared through a repository"]],
+"c-colab":["How will you co-deliver research?",["Joint outputs","Community events","Co-authored papers","A shared platform","Acknowledgement of contributors"]],
+"u-orcid":["Where are you with ORCID?",["I have one and it's linked to Pure","I have one but it's not linked","I need to create one","I will import publications into Pure"]],
+"u-pure":["What will you update in Pure?",["Recent outputs","Accepted manuscripts","My profile","Datasets","Activities"]],
+"u-kw":["How will you choose keywords?",["Terms from my field","Terms from my abstract","Controlled vocabulary","Review needed"]],
+"u-pre":["Where will you post a preprint?",["arXiv","bioRxiv or medRxiv","SSRN","OSF Preprints","A discipline server","I will not, because of journal policy"]],
+"u-oa":["Which open access route will you use?",["Publisher agreement","Gold open access with a fee","Green: accepted manuscript in Pure","Diamond open access","UKRI-funded route"]],
+"u-rrs":["How will you handle rights retention?",["Statement in the cover letter","Statement in the acknowledgements","Publisher already notified by the University","Opting in as a PGR","Opting out"]],
+"u-das":["What will your data access statement say?",["Data deposited with a DOI","Restricted access","Available on request","No new data generated","Third-party data used"]],
+"u-lic":["Which licence will you apply?",["CC BY","CC BY-NC","CC0","The publisher's licence"]],
+"u-peer":["How will you take part in open peer review?",["Sign my reviews","Publish review reports","Review for an open journal","Register on a review platform"]],
+"u-badge":["Which badges might you apply for?",["Open data","Open materials","Preregistered","Not applicable"]],
+"u-bukri":["What is your route for UKRI books or chapters?",["Publisher open access","Accepted version deposited in time","Funding secured","Exception applies"]],
+"u-boa":["What are your options for books or chapters?",["Publisher open access","Green deposit","Institutional support","Not possible"]],
+"u-thesis":["What is your plan for your thesis?",["Deposit in Pure","Embargo needed","Third-party permissions to check","Not yet at this stage"]],
+"u-doi":["Where will you get DOIs?",["Zenodo","Figshare","Pure","Another repository"]],
+"u-rec":["Where will you record your open research activity?",["Spreadsheet","ORCID","Pure","My CV"]],
+"u-plain":["Where will you share plain-language summaries?",["A blog","Social media","The press office","Podcast or video","My Pure profile"]],
+"u-alt":["Where will you check metrics?",["Pure","Altmetric","Google Scholar"]],
+"s-dep":["Where will you deposit your data?",["A discipline repository","Zenodo","Figshare","Pure","A funder repository","A controlled-access repository"]],
+"s-pureds":["What will your Pure dataset record include?",["A dataset record","Links to publications","Uploaded files","A link to an external repository"]],
+"s-funder":["What does your funder require?",["I have read the funder's policy","A named repository","A deadline","An embargo is allowed"]],
+"s-lic":["Which licence will you apply?",["CC BY for data","CC0 for data","An Open Data Commons licence","An open-source licence for code","Restricted terms"]],
+"s-code":["How will you share your code?",["GitHub plus a Zenodo DOI","Zenodo archive","Pure","Supplementary files"]],
+"s-cite":["How will you cite your datasets?",["In the reference list","In the data access statement","In the methods","Citing reused data"]],
+"t-oer":["How will you use open educational resources?",["Reuse existing OER","Adapt existing OER","Create and share new OER"]],
+"t-open":["How will you use open materials in teaching?",["Open access readings","Open datasets in practicals","Open software"]],
+"t-meth":["How will you embed open research in teaching?",["A session on DMPs","A session on preregistration","Open practices in assessment","Learning outcomes"]]
+};
+
 S.forEach(x=>{
+  if(OPTS[x.id])x.opts=OPTS[x.id];
   if(HOW[x.id])x.how=HOW[x.id];
   if(NOTE[x.id])x.note=NOTE[x.id];
   if(ADD[x.id]){const seen=new Set((x.links||[]).map(l=>l[1]));x.links=(x.links||[]).concat(ADD[x.id].filter(l=>!seen.has(l[1])));}
@@ -565,7 +628,9 @@ const store={
 let st=store.get("st",null)||{};
 st.prof=st.prof||{d:null,st:null,sc:null,inv:[]};
 st.ans=st.ans||{};      // fork answers: yes/no
-st.mark=st.mark||{};    // action marks: done/later/skip
+st.mark=st.mark||{};
+st.pick=st.pick||{};    // chosen options per action
+st.other=st.other||{};  // free text for "Other" per action    // action marks: done/later/skip
 st.at=st.at||"start";
 Object.keys(st.mark).forEach(k=>{st.mark[k]={done:"yes",later:"no",skip:"na"}[st.mark[k]]||st.mark[k];});   // current screen: start | profile step | scene id | summary
 const save=()=>store.set("st",st);
@@ -695,48 +760,106 @@ function renderScene(s){
     ${s.how?`<div class="how"><h3>How to do it</h3><ol>${s.how.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol><p class="eg"><b>Example</b>${esc(s.how.eg)}</p></div>`:""}
     ${links?`<div class="res"><h3>Ulster guidance and resources</h3><ul>${links}</ul></div>`:""}
     ${s.help?`<p class="help"><b>Who can help:</b> ${s.help}</p>`:""}
+    ${s.opts?`<div class="opts"><p class="q">${esc(s.opts[0])} <span class="mark">Select all that apply</span></p>
+      <div class="chips" role="group" aria-label="${esc(s.opts[0])}">${s.opts[1].map(o=>`<button type="button" class="chip" data-o="${esc(o)}" aria-pressed="${(st.pick[s.id]||[]).includes(o)}">${esc(o)}</button>`).join("")}<button type="button" class="chip" data-o="__other" aria-pressed="${(st.pick[s.id]||[]).includes("__other")}">Other</button></div>
+      <input type="text" class="other" id="oth" maxlength="300" placeholder="Describe your other option" aria-label="Other option" value="${esc(st.other[s.id]||"")}" ${(st.pick[s.id]||[]).includes("__other")?"":"hidden"}></div>`:""}
     <p class="q">Has this been addressed in your research?</p>
     <ul class="choices two">${Object.entries(MARK).map(([k,v])=>`<li><button type="button" class="choice" data-m="${k}" aria-pressed="${m===k}"><b>${v}</b></button></li>`).join("")}</ul>
     <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="nx" ${m?"":"disabled"}>Next</button></div>`;
     $("stage").innerHTML=h;
     choose("[data-m]",v=>{st.mark[s.id]=v;save();},"m");
+    $("stage").querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>{
+      const a=st.pick[s.id]=st.pick[s.id]||[], v=b.dataset.o, i=a.indexOf(v);
+      i<0?a.push(v):a.splice(i,1);
+      b.setAttribute("aria-pressed",String(i<0));
+      if(v==="__other"){const o=$("oth");o.hidden=i>=0;if(i<0)o.focus();}
+      save();
+    });
+    if($("oth"))$("oth").oninput=e=>{st.other[s.id]=e.target.value.slice(0,300);save();};
     $("nx").onclick=()=>go(nextFrom(s.id));
   }
   $("bk").onclick=()=>go(prevFrom(s.id));
 }
 
-function summaryText(){
+function picksFor(x){
+  const out=(st.pick[x.id]||[]).filter(v=>v!=="__other");
+  if((st.pick[x.id]||[]).includes("__other"))out.push("Other: "+(st.other[x.id]||"(not described)"));
+  return out;
+}
+function report(){
   const pa=path().filter(s=>s.t==="a");
-  const lines=["My open research checklist (Ulster University)",
-    [st.prof.d,st.prof.st,st.prof.sc].map((v,i)=>v==='any'?['Any discipline','Any career stage','Any project scope'][i]:name([DISC,STAGE,SCOPE][i],v)).join(' · '),""];
-  [["yes","Addressed","[x]"],["wip","Work in progress","[~]"],["no","Yet to be considered","[ ]"],[null,"Not yet reviewed","[ ]"],["na","Not applicable to my research","[-]"]].forEach(([k,lab,box])=>{
-    const items=pa.filter(s=>(st.mark[s.id]||null)===k);
-    if(!items.length)return;
-    lines.push(lab+":");items.forEach(s=>lines.push(`${box} ${s.title} (${LVL[s.lvl][1]})`));lines.push("");
+  return {
+    profile:[st.prof.d,st.prof.st,st.prof.sc].map((v,i)=>v==="any"?["Any discipline","Any career stage","Any project scope"][i]:name([DISC,STAGE,SCOPE][i],v)).join(" · "),
+    chapters:CH.map(c=>({name:c.n,items:pa.filter(s=>s.ch===c.id).map(s=>({title:s.title,level:LVL[s.lvl][1],status:MARK[st.mark[s.id]]||"Not yet reviewed",q:s.opts?s.opts[0]:"",picks:picksFor(s)}))})).filter(c=>c.items.length)
+  };
+}
+const BOX={"Yes: addressed":"[x]","Work in progress":"[~]","Not applicable to my research":"[-]"};
+function summaryText(md){
+  const r=report(), L=[md?"# My open research checklist (Ulster University)":"My open research checklist (Ulster University)",r.profile,"","Prepared: "+new Date().toLocaleDateString("en-GB"),""];
+  r.chapters.forEach(c=>{
+    L.push(md?"## "+c.name:c.name.toUpperCase(),"");
+    c.items.forEach(i=>{
+      L.push(`${BOX[i.status]||"[ ]"} ${md?"**"+i.title+"**":i.title} (${i.level}) - ${i.status}`);
+      if(i.picks.length)L.push("    "+(i.q?i.q+" ":"")+i.picks.join("; "));
+    });
+    L.push("");
   });
-  return lines.join("\n");
+  return L.join("\n");
+}
+function download(name,type,text){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function wordDoc(){
+  const r=report();
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>My open research checklist</title></head><body style="font-family:Calibri,Arial,sans-serif">
+<h1>My open research checklist (Ulster University)</h1><p>${esc(r.profile)}<br>Prepared: ${new Date().toLocaleDateString("en-GB")}</p>
+${r.chapters.map(c=>`<h2>${esc(c.name)}</h2><table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%"><tr><th align="left">Step</th><th align="left">Status</th><th align="left">My choices</th></tr>${c.items.map(i=>`<tr><td>${esc(i.title)}<br><small>${esc(i.level)}</small></td><td>${esc(i.status)}</td><td>${i.picks.length?esc(i.picks.join("; ")):""}</td></tr>`).join("")}</table>`).join("")}
+<p><small>Unofficial prototype based on From Closed to Open (CC BY 4.0).</small></p></body></html>`;
+}
+function loadSaved(text){
+  let o;try{o=JSON.parse(text)}catch(e){return "That file isn't a saved checklist.";}
+  if(!o||o.app!=="open-research-adventure"||!o.state)return "That file isn't a saved checklist.";
+  const x=o.state, ok=(list,v)=>v===null||list.some(i=>i.id===v), str=v=>typeof v==="string";
+  const n={prof:{d:null,st:null,sc:null,inv:[]},ans:{},mark:{},pick:{},other:{},at:"start"};
+  if(x.prof){
+    if(ok(DISC,x.prof.d))n.prof.d=x.prof.d; if(ok(STAGE,x.prof.st))n.prof.st=x.prof.st; if(ok(SCOPE,x.prof.sc))n.prof.sc=x.prof.sc;
+    if(Array.isArray(x.prof.inv))n.prof.inv=x.prof.inv.filter(v=>INV.some(i=>i.id===v));
+  }
+  Object.entries(x.ans||{}).forEach(([k,v])=>{if(byId[k]&&(v==="yes"||v==="no"))n.ans[k]=v;});
+  Object.entries(x.mark||{}).forEach(([k,v])=>{if(byId[k]&&MARK[v])n.mark[k]=v;});
+  Object.entries(x.pick||{}).forEach(([k,v])=>{if(byId[k]&&Array.isArray(v))n.pick[k]=v.filter(str).slice(0,30);});
+  Object.entries(x.other||{}).forEach(([k,v])=>{if(byId[k]&&str(v))n.other[k]=v.slice(0,300);});
+  st=n;st.at=profileDone()?"summary":"start";save();render();return "";
 }
 function who(){
   const o=[];
   if(st.prof.d!=="any")o.push(`<strong>${esc(name(DISC,st.prof.d))}</strong>`);
-  if(st.prof.st!=="any"){const n=name(STAGE,st.prof.st);o.push(esc(n[0].toLowerCase()+n.slice(1)))};
+  if(st.prof.st!=="any"){const n=name(STAGE,st.prof.st);o.push(esc(n[0].toLowerCase()+n.slice(1)))}
   if(st.prof.sc!=="any")o.push("working on "+esc(name(SCOPE,st.prof.sc).toLowerCase()));
   return o;
 }
 function renderSummary(){
   const pa=path().filter(s=>s.t==="a");
   const g=k=>pa.filter(s=>(st.mark[s.id]||null)===k);
-  const sec=(k,label)=>{const it=g(k);return it.length?`<h3>${label}<span class="count">${it.length}</span></h3><ul>${it.map(s=>`<li><a href="#" data-j="${s.id}">${esc(s.title)}</a> <span class="mark">· ${LVL[s.lvl][1]}</span></li>`).join("")}</ul>`:"";};
+  const sec=(k,label)=>{const it=g(k);return it.length?`<h3>${label}<span class="count">${it.length}</span></h3><ul>${it.map(s=>`<li><a href="#" data-j="${s.id}">${esc(s.title)}</a> <span class="mark">· ${LVL[s.lvl][1]}</span>${picksFor(s).length?`<span class="sel">${esc(picksFor(s).join("; "))}</span>`:""}</li>`).join("")}</ul>`:"";};
   const done=g("yes").length;
   $("stage").innerHTML=`<span class="eyebrow">Journey map</span><h1>Your open research map</h1>
   <p class="story lead">${done} of ${pa.length} steps addressed${who().length?' for '+who().join(', '):''}.</p>
   <div class="sum">${sec("wip","Work in progress")}${sec("no","Yet to be considered")}${sec(null,"Not yet reviewed")}${sec("yes","Addressed")}${sec("na","Not applicable to my research")}</div>
-  <div class="actions"><button class="btn" id="copy">Copy my checklist</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="again">Revisit from the start</button></div>
+  <h3>Save your checklist</h3>
+  <div class="dl"><button class="btn" id="dlmd">Download (Markdown)</button><button class="btn" id="dldoc">Download (Word)</button><button class="btn ghost" id="dljson">Save progress file</button><label class="btn ghost" for="ld" style="cursor:pointer">Load a saved file</label><input type="file" id="ld" accept=".json,application/json" hidden></div>
+  <div class="actions"><button class="btn ghost" id="copy">Copy as text</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="again">Revisit from the start</button></div>
   <span class="status" id="cs" role="status"></span><textarea id="fb" hidden readonly aria-label="Checklist text"></textarea>
-  <p class="story">Paste it into a DMP, PDR or supervision record. For help, start at <a href="${U}open-research" target="_blank" rel="noopener">Open research at Ulster ↗</a> or the <a href="${U}governance-and-ethics" target="_blank" rel="noopener">Governance and ethics ↗</a> pages.</p>`;
+  <p class="story">Your choices are also saved automatically in this browser. Paste the text into a DMP, PDR or supervision record. For help, start at <a href="${U}open-research" target="_blank" rel="noopener">Open research at Ulster ↗</a> or the <a href="${U}governance-and-ethics" target="_blank" rel="noopener">Governance and ethics ↗</a> pages.</p>`;
   $("stage").querySelectorAll("[data-j]").forEach(a=>a.onclick=e=>{e.preventDefault();go(a.dataset.j);});
   $("again").onclick=()=>go(path()[0].id);
   $("print").onclick=()=>window.print();
+  $("dlmd").onclick=()=>download("open-research-checklist.md","text/markdown",summaryText(true));
+  $("dldoc").onclick=()=>download("open-research-checklist.doc","application/msword",wordDoc());
+  $("dljson").onclick=()=>download("open-research-progress.json","application/json",JSON.stringify({app:"open-research-adventure",version:1,state:st},null,2));
+  $("ld").onchange=async e=>{const f=e.target.files[0];if(!f)return;const m=loadSaved(await f.text());if(m)$("cs").textContent=m;};
   $("copy").onclick=async()=>{
     const t=summaryText();
     try{await navigator.clipboard.writeText(t);$("cs").textContent="Copied to clipboard.";}
@@ -758,7 +881,7 @@ function render(){
 
 $("restart").onclick=()=>{
   if(!confirm("Start again? This clears your choices and progress in this browser."))return;
-  st={prof:{d:null,st:null,sc:null,inv:[]},ans:{},mark:{},at:"start"};save();render();
+  st={prof:{d:null,st:null,sc:null,inv:[]},ans:{},mark:{},pick:{},other:{},at:"start"};save();render();
 };
 render();
 </script>
