@@ -37,7 +37,7 @@ The UKRI list is a snapshot and goes stale quickly, so each card links to its li
 - **Activity types** are editable and use the validated categorical palette, so colours work in light and dark mode, and every bar is labelled as well as coloured. A table view lists every row and activity for precise or keyboard-only editing.
 - **Team table** shows who is involved in which work package.
 - **Export:** an Excel file (`.xls`, an HTML table that keeps merged cells and colours), copy-as-table for Word, Excel or Docs, print or save as PDF (fits to landscape), and a `.json` chart file you can reload.
-- **Templates:** blank, a three-year project, a 12-month small grant, and a rebuild of your own "for schools" chart (14 rows, 36 months, three start dates, 15 team members).
+- **Templates:** blank, a three-year project, a 12-month small grant, a simple three-year speech technology example (rebuilt from your 'full timeline' sheet: upskilling plus three work packages, one label column, mostly one bar per task), and an advanced multi-site example (rebuilt from your 'for schools' sheet: outputs, papers, conferences, three start dates, 15 team members). The task column can be switched off for simple charts.
 
 Charts autosave in the browser (`localStorage`) and nothing is uploaded.
 

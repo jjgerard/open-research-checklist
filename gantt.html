@@ -204,6 +204,8 @@ input[type=file]{font:inherit;max-width:100%}
 .gwrap{overflow:auto;max-height:74vh;border:1px solid var(--line);border-radius:6px;background:var(--surface);position:relative}
 .g{display:grid;grid-template-columns:var(--w1) var(--w2) var(--w3) repeat(var(--n),var(--cw));width:max-content;font-size:13.5px}
 .g>*{min-width:0}
+.g.nt{--w2:0px}
+.g.nt .lab.l2{display:none}
 .hc{position:sticky;z-index:4;background:var(--bg);border-bottom:1px solid var(--line);border-right:1px solid var(--line);font:500 11.5px var(--mono);color:var(--muted);display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;padding:0 4px}
 .hc.corner{justify-content:flex-start;z-index:6;left:0;color:var(--ink);font-weight:600;padding-left:8px;border-right:0}
 .hc.num{color:var(--ink);font-weight:600}
@@ -278,6 +280,7 @@ input[type=file]{font:inherit;max-width:100%}
       <label>Project title<input type="text" id="title" maxlength="120" style="width:min(320px,80vw)"></label>
       <label>Months<input type="number" id="months" min="1" max="120"></label>
       <label>Zoom<input type="range" id="zoom" min="16" max="64" step="2" aria-label="Zoom"></label>
+      <label class="fld" style="display:flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="showtask" style="width:18px;height:18px"> Task column</label>
       <label>Header groups<select id="block"><option value="3">Quarters</option><option value="6">Half-years</option><option value="12">Years</option></select></label>
       <div class="row">
         <button class="btn ghost sm" id="undo" type="button">Undo</button>
@@ -347,7 +350,7 @@ const person=(inst,name,role,wps)=>({id:uid(),inst,name,role,wps:wps||[]});
 
 /* ---------- Templates ---------- */
 const TEMPLATES=[
- ["Blank chart","Empty 24-month chart with the standard activity types",()=>({title:"My project",months:24,block:6,cw:34,starts:["2026-01"],cats:DEFCATS(),rows:[row("WP1: First work package","Task 1","",[])],team:[]})],
+ ["Blank chart","Empty 24-month chart with the standard activity types",()=>({title:"My project",showTask:true,months:24,block:6,cw:34,starts:["2026-01"],cats:DEFCATS(),rows:[row("WP1: First work package","Task 1","",[])],team:[]})],
  ["Three-year research project","Four work packages: set-up, fieldwork, analysis and impact",()=>{
    const r=[row("WP1: Set-up and approvals","Protocol and ethics","Plan",[bar(1,3,"Protocol and materials","design"),bar(4,2,"Ethics and governance","review")]),
      row("WP1: Set-up and approvals","Recruitment and training","Plan",[bar(3,4,"Recruit and train staff","mgmt")]),
@@ -355,12 +358,32 @@ const TEMPLATES=[
      row("WP2: Fieldwork","Study 1","Paper",[bar(17,6,"Analysis and paper 1","writing")]),
      row("WP3: Analysis and synthesis","Integrated analysis","Analysis",[bar(19,8,"Integrated analysis","writing"),bar(27,6,"Final report","writing")]),
      row("WP4: Impact and dissemination","Engagement","Events",[bar(12,2,"Project workshop","dissem"),bar(24,2,"Conference","event"),bar(34,3,"Final event and outputs","dissem")])];
-   return {title:"Three-year research project",months:36,block:6,cw:34,starts:["2026-01"],cats:DEFCATS(),rows:r,team:[]};}],
+   return {title:"Three-year research project",showTask:true,months:36,block:6,cw:34,starts:["2026-01"],cats:DEFCATS(),rows:r,team:[]};}],
  ["12-month small grant","One work package with a monthly plan",()=>({title:"Small grant project",months:12,block:3,cw:46,starts:["2026-01"],cats:DEFCATS(),team:[],rows:[
    row("Pilot study","Preparation","",[bar(1,2,"Ethics and set-up","review"),bar(3,2,"Recruit participants","mgmt")]),
    row("Pilot study","Fieldwork","",[bar(4,5,"Data collection","data")]),
    row("Pilot study","Write-up","",[bar(8,4,"Analysis and report","writing"),bar(11,1,"Final report due","mile")])]})],
- ["Example from your chart: experimental language project","Rebuilt from the 'for schools' sheet of your Excel chart (36 months, 3 start-date scenarios)",()=>{
+
+ ["Example: 3-year speech technology project","A simple chart: upskilling plus three work packages, one bar per task (rebuilt from your 'full timeline' sheet)",()=>{
+   const U="Upskilling and professional development",w1="WP1: Preparing the corpus",w2="WP2: Training ASR models",w3="WP3: Developing a scoring tool";
+   const cats=[["Upskilling",1],["Data collection and preparation",2],["Model and tool building",3],["Testing and evaluation",4],["Outputs",5]].map((c,i)=>({id:"x"+i,name:c[0],slot:c[1]}));
+   const [UP,DA,BU,TE,OU]=cats.map(c=>c.id);
+   const rows=[
+    row(U,"","WP1 upskilling",[bar(1,12,"Automatic Speech Recognition (Lin, Gerard, PDRA1)",UP)]),
+    row(U,"","WP2 upskilling",[bar(12,13,"Machine Learning (Lin, Gerard, PDRA1)",UP)]),
+    row(U,"","WP3 upskilling",[bar(19,18,"Data analytics with AI (Lin, Gerard, PDRA1, PDRA2, PDRA3)",UP)]),
+    row(w1,"","NI data",[bar(1,10,"E. NI data collection (Gerard, PDRA1)",DA),bar(12,1,"Output: corpus (F)",OU)]),
+    row(w1,"","",[bar(5,8,"D. Audio transcription (Gerard, PDRA1)",DA)]),
+    row(w1,"","LITMUS data formatting",[bar(1,12,"D. Formatting LITMUS data for corpus (Gerard, PDRA1)",DA)]),
+    row(w2,"","Transcription",[bar(12,5,"G/H. Automatic transcription with Batchalign (Gerard, PDRA1, PDRA2)",BU),bar(24,1,"Output: ASR model (K)",OU)]),
+    row(w2,"","Model training",[bar(16,4,"I. Batchalign benchmarking (PDRA2)",TE),bar(20,5,"J. ASR model training (PDRA2)",BU)]),
+    row(w3,"","Develop the tool",[bar(16,12,"L. Develop scoring tool from model (PDRA1, PDRA2)",BU),bar(36,1,"Output: scoring tool (S)",OU)]),
+    row(w3,"","Test the tool",[bar(24,9,"M. Test tool with sentence repetition (Gerard, PDRA3)",TE),bar(33,4,"SLT focus group (PDRA3)",TE),bar(26,7,"O/P. Transcribe test data (PDRA2, PDRA3)",DA)]),
+    row(w3,"","Refine the tool",[bar(32,5,"Q/R. Benchmarking, re-training tool (Gerard, PDRA1, PDRA2)",TE)])];
+   const ALL=[U,w1,w2,w3];
+   return {title:"Speech technology project (example)",months:36,block:12,cw:30,showTask:false,starts:["2026-10"],cats,rows,
+     team:[person("","Gerard","",ALL),person("","Lin","",[U]),person("","PDRA1","",ALL),person("","PDRA2","",[U,w2,w3]),person("","PDRA3","",[U,w3])]};}],
+ ["Advanced example: multi-site experimental project","A larger chart with outputs, papers, conferences and three start dates (rebuilt from your 'for schools' sheet)",()=>{
    const D="design",R="review",A="data",W="writing",S="dissem",M="mgmt",E="event";
    const w1="WP1: Developmental trajectory (English)",w2="WP2: Comprehension in adults (English)",w3="WP3: Cross-linguistic comparison",w4="WP4: Language research and pedagogy";
    const o1="Output 1 - Experiments on development of sentence comprehension",o2="Output 2 - Trajectory of online processing and memory measures",o3="Output 3 - Online processing and memory measures - cross-task",o4="Output 4 - Adult processing in English and Spanish",o5="Output 5 - Developmental trajectory in English and Spanish",o6="Developing materials to support comprehension";
@@ -399,7 +422,7 @@ function sanitize(o){
   const rows=(Array.isArray(o.rows)?o.rows:[]).slice(0,200).map(r=>({id:s(r.id,12)||uid(),wp:s(r.wp,160),task:s(r.task,200),strand:s(r.strand,100),
     bars:(Array.isArray(r.bars)?r.bars:[]).slice(0,200).map(b=>({id:s(b.id,12)||uid(),s:nn(b.s,1,1,240),l:nn(b.l,1,1,240),t:s(b.t,200),c:cid.has(b.c)?b.c:cats[0].id,after:typeof b.after==="string"?b.after:null,gap:nn(b.gap,0,-240,240)}))}));
   const ids=new Set(rows.flatMap(r=>r.bars.map(b=>b.id)));rows.forEach(r=>r.bars.forEach(b=>{if(b.after&&(!ids.has(b.after)||b.after===b.id))b.after=null;}));
-  return {title:s(o.title,120)||"Untitled project",months:nn(o.months,24,1,120),block:[3,6,12].includes(+o.block)?+o.block:6,cw:nn(o.cw,34,16,64),
+  return {title:s(o.title,120)||"Untitled project",showTask:o.showTask!==false,months:nn(o.months,24,1,120),block:[3,6,12].includes(+o.block)?+o.block:6,cw:nn(o.cw,34,16,64),
     starts:(Array.isArray(o.starts)&&o.starts.length?o.starts:["2026-01"]).slice(0,5).map(x=>/^\d{4}-\d{2}$/.test(x)?x:"2026-01"),cats,rows,
     team:(Array.isArray(o.team)?o.team:[]).slice(0,100).map(p=>({id:s(p.id,12)||uid(),inst:s(p.inst,100),name:s(p.name,100),role:s(p.role,80),wps:(Array.isArray(p.wps)?p.wps:[]).filter(x=>typeof x==="string").slice(0,50)}))};
 }
@@ -438,7 +461,7 @@ function blockLabel(ym,from,to){const a=addM(ym,from-1),b=addM(ym,to-1);
 function render(){
   const S=starts(),N=needMonths(S);if(N>P.months){P.months=N;}
   $("title").value=P.title;$("months").value=P.months;$("zoom").value=P.cw;$("block").value=P.block;
-  $("undo").disabled=!undo.length;$("redo").disabled=!redo.length;$("viewtoggle").setAttribute("aria-pressed",String(view==="table"));$("viewtoggle").textContent=view==="table"?"Chart view":"Table view";
+  $("showtask").checked=P.showTask;$("undo").disabled=!undo.length;$("redo").disabled=!redo.length;$("viewtoggle").setAttribute("aria-pressed",String(view==="table"));$("viewtoggle").textContent=view==="table"?"Chart view":"Table view";
   renderStarts();renderLegend();renderShift();renderTemplates();
   if(view==="table")renderTables(S);else renderChart(S,N);
   renderTeam();renderPanel(S);
@@ -471,7 +494,7 @@ function renderChart(S,N){
   const hdr=P.starts.length+1,blk=P.block,nameRows=P.rows;
   const lanes=P.rows.map(r=>lanesFor(r,S));
   const heights=lanes.map(l=>Math.max(36,l.n*30+8));
-  let h=`<div class="gwrap" id="gwrap"><div class="g" id="g" style="--n:${N};--cw:${P.cw}px;--blk:${blk};grid-template-rows:repeat(${hdr},var(--hh)) ${heights.map(x=>x+"px").join(" ")}">`;
+  let h=`<div class="gwrap" id="gwrap"><div class="g ${P.showTask?"":"nt"}" id="g" style="--n:${N};--cw:${P.cw}px;--blk:${blk};grid-template-rows:repeat(${hdr},var(--hh)) ${heights.map(x=>x+"px").join(" ")}">`;
   // header
   P.starts.forEach((s,i)=>{
     h+=`<div class="hc corner" style="grid-row:${i+1};grid-column:1 / 4;top:calc(var(--hh)*${i})">${i===0?"Calendar (start "+MN[addM(s,0).m]+" "+addM(s,0).y+")":"If it starts "+MN[addM(s,0).m]+" "+addM(s,0).y}</div>`;
@@ -676,6 +699,7 @@ function renderTeam(){
 $("title").onchange=e=>commit(()=>{P.title=e.target.value.slice(0,120)||"Untitled project";});
 $("months").onchange=e=>commit(()=>{P.months=clamp(parseInt(e.target.value,10)||P.months,1,120);});
 $("zoom").oninput=e=>{P.cw=+e.target.value;persist();const g=$("g");if(g){g.style.setProperty("--cw",P.cw+"px");document.querySelectorAll(".bar").forEach(el=>{const f=allBars().find(x=>x.b.id===el.dataset.bar);if(f){const S=starts();el.style.left=(S[f.b.id]-1)*P.cw+"px";el.style.width=f.b.l*P.cw-2+"px";}});}};
+$("showtask").onchange=e=>commit(()=>{P.showTask=e.target.checked;});
 $("block").onchange=e=>commit(()=>{P.block=+e.target.value;});
 $("fit").onclick=()=>commit(()=>{const S=starts();let m=1;allBars().forEach(({b})=>{m=Math.max(m,S[b.id]+b.l-1);});P.months=m;});
 $("undo").onclick=doUndo;$("redo").onclick=doRedo;
@@ -706,10 +730,10 @@ document.addEventListener("keydown",e=>{
 function mixHex(hex,t){const n=parseInt(hex.slice(1),16),r=n>>16,g=(n>>8)&255,b=n&255,m=v=>Math.round(v*t+255*(1-t));return "#"+[m(r),m(g),m(b)].map(v=>v.toString(16).padStart(2,"0")).join("");}
 function tableHtml(){
   const S=starts(),N=needMonths(S),blk=P.block,lanes=P.rows.map(r=>lanesFor(r,S));
-  const bd="border:1px solid #bbb;",th=bd+"background:#f1f3f7;font:11px Calibri,Arial;text-align:center;";
+  const nt=!P.showTask,LC=nt?2:3,bd="border:1px solid #bbb;",th=bd+"background:#f1f3f7;font:11px Calibri,Arial;text-align:center;";
   let h=`<table border="1" cellspacing="0" cellpadding="3" style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:11px"><tbody>`;
-  P.starts.forEach(s=>{h+=`<tr><td colspan="3" style="${th}text-align:left">${s===P.starts[0]?"Calendar":"If it starts "+MN[addM(s,0).m]+" "+addM(s,0).y}</td>`;for(let m=1;m<=N;m+=blk){const e=Math.min(N,m+blk-1);h+=`<td colspan="${e-m+1}" style="${th}background:#e2eefb">${blockLabel(s,m,e)}</td>`;}h+=`</tr>`;});
-  h+=`<tr><td colspan="3" style="${th}text-align:left"><b>Project month</b></td>`+Array.from({length:N},(_,i)=>`<td style="${th}">${i+1}</td>`).join("")+`</tr>`;
+  P.starts.forEach(s=>{h+=`<tr><td colspan="${LC}" style="${th}text-align:left">${s===P.starts[0]?"Calendar":"If it starts "+MN[addM(s,0).m]+" "+addM(s,0).y}</td>`;for(let m=1;m<=N;m+=blk){const e=Math.min(N,m+blk-1);h+=`<td colspan="${e-m+1}" style="${th}background:#e2eefb">${blockLabel(s,m,e)}</td>`;}h+=`</tr>`;});
+  h+=`<tr><td colspan="${LC}" style="${th}text-align:left"><b>Project month</b></td>`+Array.from({length:N},(_,i)=>`<td style="${th}">${i+1}</td>`).join("")+`</tr>`;
   const wpG=groups(P.rows,r=>r.wp,()=>true),tG=groups(P.rows,r=>r.task,(a,b)=>a.wp===b.wp);
   const span=(a,b)=>{let n=0;for(let i=a;i<=b;i++)n+=lanes[i].n;return n;};
   P.rows.forEach((r,ri)=>{
@@ -718,7 +742,7 @@ function tableHtml(){
       h+=`<tr>`;
       if(ln===0){const wg=wpG.find(x=>x.a===ri),tg=tG.find(x=>x.a===ri);
         if(wg)h+=`<td rowspan="${span(wg.a,wg.b)}" style="${bd}vertical-align:middle;font-weight:bold">${esc(wg.v)}</td>`;
-        if(tg)h+=`<td rowspan="${span(tg.a,tg.b)}" style="${bd}vertical-align:middle">${esc(tg.v)}</td>`;
+        if(tg&&!nt)h+=`<td rowspan="${span(tg.a,tg.b)}" style="${bd}vertical-align:middle">${esc(tg.v)}</td>`;
         h+=`<td rowspan="${L.n}" style="${bd}vertical-align:middle;color:#555">${esc(r.strand)}</td>`;}
       let m=1;const here=r.bars.filter(b=>L.lane[b.id]===ln).sort((a,b)=>S[a.id]-S[b.id]);
       here.forEach(b=>{const s=S[b.id];while(m<s){h+=`<td style="${bd}"></td>`;m++;}
