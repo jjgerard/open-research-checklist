@@ -873,7 +873,7 @@ const $=id=>document.getElementById(id);
 const allSch=()=>st.custom.concat(SCH);
 const getSch=id=>allSch().find(s=>s.id===id);
 const ready=()=>!!getSch(st.sch);
-const q={text:"",ty:"all",fun:"all",co:"all",stat:"all",n:PAGE};
+const q={text:"",ty:"all",fun:"all",co:"all",stat:"all",sort:"default",n:PAGE};
 let draft=null;
 
 /* ---------- Dates ---------- */
@@ -956,7 +956,10 @@ function schemeCard(s){
     <div class="actions"><button type="button" class="btn" data-pick="${s.id}">Plan this application</button>${s.custom?`<button type="button" class="btn ghost" data-rm="${s.id}">Remove</button>`:""}</div></li>`;
 }
 function refreshResults(){
-  const list=allSch().filter(matches), shown=list.slice(0,q.n);
+  let list=allSch().filter(matches);
+  if(q.sort==="soon"){const t=toIso(today()),k=s=>s.dl&&s.dl>=t?s.dl:"9999";list=list.map((s,i)=>[s,i]).sort((a,b)=>k(a[0]).localeCompare(k(b[0]))||a[1]-b[1]).map(x=>x[0]);}
+  else if(q.sort==="az")list=list.slice().sort((a,b)=>a.n.localeCompare(b.n));
+  const shown=list.slice(0,q.n);
   $("count").textContent=`${list.length} grant${list.length===1?"":"s"}`+(list.length>shown.length?`, showing ${shown.length}`:"");
   $("res").innerHTML=shown.length?shown.map(schemeCard).join(""):`<li class="empty">No grants match. Clear a filter, or add the guidance for your grant below.</li>`;
   $("more").hidden=list.length<=shown.length;
@@ -988,7 +991,9 @@ function renderStart(){
     <div id="cowrap" ${q.fun==="UKRI"?"":"hidden"}><label class="lbl" for="qc">UKRI council</label>
     <select id="qc"><option value="all">All councils</option>${councils.map(c=>`<option ${q.co===c?"selected":""}>${esc(c)}</option>`).join("")}</select></div>
     <div><label class="lbl" for="qs">Status</label>
-    <select id="qs">${[["all","Any status"],["open","Open now"],["upcoming","Upcoming"],["closed","Closed"]].map(o=>`<option value="${o[0]}" ${q.stat===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></div></div>
+    <select id="qs">${[["all","Any status"],["open","Open now"],["upcoming","Upcoming"],["closed","Closed"]].map(o=>`<option value="${o[0]}" ${q.stat===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></div>
+    <div><label class="lbl" for="qo">Sort by</label>
+    <select id="qo">${[["default","Default order"],["soon","Deadline: soonest first"],["az","Name: A to Z"]].map(o=>`<option value="${o[0]}" ${q.sort===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></div></div>
     <span class="count" id="count" role="status"></span>
   </div>
   <ul class="schemes" id="res"></ul>
@@ -997,6 +1002,7 @@ function renderStart(){
   $("qt").oninput=e=>{q.text=e.target.value;q.n=PAGE;refreshResults();};
   $("qf").onchange=e=>{q.fun=e.target.value;q.n=PAGE;if(q.fun!=="UKRI"){q.co="all";$("qc").value="all";}$("cowrap").hidden=q.fun!=="UKRI";refreshResults();};
   $("qc").onchange=e=>{q.co=e.target.value;q.n=PAGE;refreshResults();};
+  $("qo").onchange=e=>{q.sort=e.target.value;q.n=PAGE;refreshResults();};
   $("qs").onchange=e=>{q.stat=e.target.value;q.n=PAGE;refreshResults();};
   $("more").onclick=()=>{q.n+=PAGE;refreshResults();};
   $("stage").querySelectorAll("[data-ty]").forEach(b=>b.onclick=()=>{q.ty=b.dataset.ty;q.n=PAGE;$("stage").querySelectorAll("[data-ty]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));refreshResults();});
