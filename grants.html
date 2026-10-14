@@ -140,6 +140,8 @@ summary{cursor:pointer;color:var(--accent-ink);padding:6px 2px;font-weight:600}
 .tl li{display:grid;gap:1px;padding:6px 0;border-bottom:1px solid var(--line)}
 .dis{margin:0}
 .search{display:grid;gap:6px}
+.selrow{display:flex;flex-wrap:wrap;gap:0 16px}
+.selrow [hidden]{display:none}
 select{font:inherit;font-size:16px;padding:10px 12px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);max-width:340px}
 .count{font:500 13px var(--mono);color:var(--muted);margin-top:4px}
 .scard{display:grid;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
@@ -239,7 +241,7 @@ const SCH=[
   commit:"The Academy covers 100% of the fellow's time during the award. A public engagement plan is expected.",
   elig:"Applicants should usually be within 15 years of their doctorate.",
   route:"British Academy applications portal",
-  links:[["Mid-Career Fellowships","https://www.thebritishacademy.ac.uk/funding/schemes/mid-career-fellowships/"],["Scheme guidance notes","https://www.thebritishacademy.ac.uk/funding/schemes/mid-career-fellowships/guidance-notes/"],["Guidance notes 2026-27 (PDF)","https://www.thebritishacademy.ac.uk/documents/6231/Mid-Career_Fellowship_2026-27_-_Scheme_Guidance_Notes.pdf"]]},
+  links:[["Mid-Career Fellowships","https://www.thebritishacademy.ac.uk/funding/schemes/mid-career-fellowships/"],["Scheme guidance notes","https://www.thebritishacademy.ac.uk/funding/schemes/mid-career-fellowships/guidance-notes/"]]},
  {id:"ba-pdf",f:"British Academy",n:"Postdoctoral Fellowships",sub:"Humanities and social sciences, two-stage",g:["fellowship"],st:["early"],d:["ah","ss"],type:"fellowship",interview:true,
   size:"Three years. Outline stage first, then a second stage by invitation.",
   resub:"The scheme does not accept resubmissions.",
@@ -465,8 +467,383 @@ const S=[
   links:[["UKRI: what happens next",UK+"develop-your-application/what-happens-next/"]]}
 ];
 const byId=Object.fromEntries(S.map(s=>[s.id,s]));
-const TYPES=[["fellowship","Fellowships"],["project","Research projects"],["small","Small grants"],["partner","Partnerships & innovation"],["eu","European"]];
-const TYPE_LABEL={fellowship:"Fellowship",project:"Research project",small:"Small grant",partner:"Partnership"};
+/* ---------- More schemes (gathered October 2026) ---------- */
+const fmtShort=iso=>{const [y,m,d]=iso.split("-");return new Date(+y,+m-1,+d).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});};
+const UKO="https://www.ukri.org/opportunity/";
+const UKFIND=["Find a UKRI funding opportunity","https://www.ukri.org/opportunity/"];
+const COUNCIL={IUK:"Innovate UK",RE:"Research England"};
+
+/* UKRI funding finder: slug|title|councils|O=open U=upcoming|closing date (blank = no closing date) */
+const UKRI_ROWS=`
+advancing-solutions-for-critical-mineral-production-and-recycling|Advancing solutions for critical mineral production and recycling|NERC, IUK, AHRC, BBSRC, EPSRC, ESRC|O|2027-01-07
+early-independence-clinician-scientist-fellowship|Early independence: clinician scientist fellowship|MRC|U|2027-01-13
+bridgeai-deployment-catalyst-ai-for-decision-critical-systems|BridgeAI Deployment Catalyst: AI for decision critical systems|IUK|U|2026-12-08
+bridgeai-deployment-catalyst-ai-for-operational-systems|BridgeAI Deployment Catalyst: AI for operational systems|IUK|U|2026-12-08
+bridgeai-deployment-catalyst-ai-for-assurance-and-compliance|BridgeAI Deployment Catalyst: AI for assurance and compliance|IUK|U|2026-12-08
+full-adopt-grant-round-10|Full ADOPT grant: round 10|IUK|O|2026-12-02
+adopt-facilitator-support-grant-round-12|ADOPT Facilitator support grant: round 12|IUK|O|2026-11-11
+mrc-partnership-grant-applicant-led|MRC partnership grant: applicant-led|MRC|O|
+mrc-new-investigator-research-grant-applicant-led|MRC new investigator research grant: applicant-led|MRC|O|
+mrc-research-grant-applicant-led|MRC research grant: applicant-led|MRC|O|
+mid-range-equipment-for-biosciences-research-alert-2026|Mid-range equipment for biosciences research: ALERT 2026|BBSRC|U|2027-01-14
+eureka-collaborative-rd-globalstars-japan-2027|Eureka collaborative R&D: Globalstars Japan 2027|IUK|O|2027-01-20
+capacity-building-clinical-research-training-fellowship|Capacity building: clinical research training fellowship|MRC|U|2027-01-13
+manufacturing-scale-up-research-and-innovation-automotive-and-aerospace|Manufacturing scale-up research and innovation: automotive and aerospace|UKRI|O|2026-12-09
+manufacturing-scale-up-network-plus|Manufacturing scale-up Network Plus|UKRI|O|2026-12-09
+first-of-a-kind-foak-builder-programme-entry|Expression of interest: First-of-a-Kind (FOAK) builder: programme entry|IUK|O|2026-11-05
+battery-innovation-programme-investor-partnerships|Battery Innovation Programme: investor partnerships|IUK|O|2026-11-25
+battery-innovation-concept-development-round-three|Battery innovation: concept development round three|IUK|O|2026-12-02
+battery-innovation-feasibility-studies-round-three|Battery innovation: feasibility studies round three|IUK|O|2026-12-02
+experimental-medicine-invited-stage-two-application|Experimental medicine: invited stage two application|MRC|O|2027-02-24
+experimental-medicine|Experimental medicine: stage one|MRC|O|2027-04-14
+public-engagement-spark-awards-2026b|Public Engagement Spark Awards 2026B|STFC|O|2026-12-10
+mdi-programme-innovation-and-scale-up-hub|MDI programme innovation and scale-up hub|IUK|O|2026-11-18
+experimental-medicine-to-define-mechanisms-of-gambling-disorder|Experimental medicine to define mechanisms of gambling disorder: stage one|MRC, AHRC, ESRC, UKRI|O|2027-04-14
+engineering-biology-investor-partnerships-round-1|Engineering Biology Investor Partnerships round 1|IUK|O|2026-12-02
+frontier-ai-sme-champions-phase-1|Frontier AI: SME Champions, phase 1|IUK|O|2026-11-11
+cfi-counter-uas-demonstrations-in-prison-environments|CfI: counter UAS demonstrations in prison environments|UKRI|O|2026-10-28
+future-data-services-joining-up-the-data-service-workforce|Future Data Services: joining up the data service workforce (pre-announcement)|ESRC|U|2027-04-13
+physical-sciences-nrf-portfolio-refresh-invite-only|Physical sciences NRF portfolio refresh (invite only)|EPSRC|O|2026-12-16
+nerc-innovate-uk-icure-discover-programme|NERC-Innovate UK ICURe Discover programme|IUK, NERC|U|2026-11-12
+what-works-centre-for-a-climate-resilient-uk|What Works Centre for a climate resilient UK|ESRC, UKRI|O|2026-12-15
+collaboration-for-a-sustainable-future-coordinating-groups|Collaboration for a Sustainable Future: coordinating groups|RE|O|2027-01-07
+collaboration-for-a-sustainable-future-pilots-uk-seed-funding|Collaboration for a Sustainable Future: pilots and UK seed funding|RE, UKRI|O|2027-02-04
+cfi-innovation-in-play-to-improve-child-outcomes|CfI: innovation in play to improve child outcomes|IUK|O|2026-10-28
+germany-bilateral-collaborative-rd-round-5|Germany bilateral collaborative R&D: round 5|IUK|O|2026-12-01
+doctoral-focal-award-chip-design-and-verification|Doctoral focal award: chip design and verification|EPSRC|O|2026-12-02
+nerc-urgency-funding-open|NERC urgency funding|NERC|O|
+ofgem-strategic-innovation-fund-discovery-c7|Ofgem Strategic Innovation Fund Discovery C7|IUK|O|2026-10-21
+ofgem-strategic-innovation-fund-round-five-discovery-c7|Ofgem Strategic Innovation Fund round five discovery C7|IUK|O|2026-10-21
+ahrc-responsive-mode-ukri-nsf-sbe-lead-agency|AHRC UKRI-NSF SBE lead agency: applicant-led mode|AHRC|O|
+ahrc-responsive-mode-curiosity-award|AHRC Curiosity Award: applicant-led mode|AHRC|O|
+ahrc-responsive-mode-working-with-brazilian-researchers|AHRC working with Brazilian researchers: applicant-led mode|AHRC|O|
+ahrc-responsive-mode-collaborate-with-researchers-in-luxembourg|AHRC collaborate with researchers in Luxembourg: applicant-led mode|AHRC|O|
+ahrc-catalyst-awards-applicant-led-mode|AHRC Catalyst Awards: applicant-led mode|AHRC|O|
+ahrc-responsive-mode-standard-research-grant|AHRC standard research grant: applicant-led mode|AHRC|O|
+pushing-the-frontiers-of-environmental-research|Pushing the frontiers of environmental research|NERC|O|
+exploring-the-frontiers-of-environmental-research-2026|Exploring the frontiers of environmental research 2026|NERC|O|2026-11-12
+centres-of-excellence-for-regulatory-science-and-innovation|Centres of Excellence for Regulatory Science and Innovation|MRC|O|2027-01-12
+long-term-cultural-and-sporting-events-legacy|Long-term cultural and sporting events legacy|AHRC|O|2026-12-01
+attendance-and-engagement-at-uk-sporting-cultural-and-heritage-sites|Attendance and engagement at UK sporting, cultural and heritage sites|AHRC|O|2026-12-01
+commercialising-knowledge-assets-fund-ckaf-winter-2|Commercialising Knowledge Assets Fund (CKAF) winter|IUK|O|2026-12-01
+gambling-harms-research-grants|Gambling harms research grants|AHRC, MRC, ESRC, UKRI|O|2026-12-08
+economic-statistics-centre-of-excellence-2027-2030-invite-only|Economic Statistics Centre of Excellence 2027-2030 (invite only)|ESRC|O|2026-11-05
+longitudinal-population-studies-strategic-prioritisation-exercise|Longitudinal population studies strategic prioritisation exercise|MRC|O|2026-11-17
+nqs-mission-2-components-systems-and-architectures|National Quantum Strategy Mission 2: components, systems and architectures|EPSRC, STFC|O|2026-11-24
+nqs-mission-2-coordination-network|National Quantum Strategy Mission 2: coordination network|EPSRC, STFC|O|2026-11-24
+ukri-enabling-ai-adoption-across-science-and-engineering|Enabling AI adoption across science and engineering|UKRI|O|2026-12-01
+bioinformatics-and-biological-resources-fund-26bbr|Bioinformatics and Biological Resources Fund (26BBR)|BBSRC|O|2026-11-19
+engineering-biology-collaborative-rd-round-3|Engineering Biology collaborative R&D: round 3|IUK|O|2026-11-03
+invite-only-precision-prevention-biological-mechanisms-of-response-variation|Precision prevention: biological mechanisms of response variation (invite only)|MRC|O|2026-11-05
+small-molecule-high-throughput-screen-using-astrazeneca-facilities|Small molecule high throughput screen using AstraZeneca facilities|MRC|O|2027-01-28
+expression-of-interest-chemical-biological-radiological-and-nuclear-cbrn-medical-countermeasures-rd|Expression of interest: CBRN medical countermeasures R&D|MRC|O|2026-10-20
+biodiversa-2026-to-2027-novel-ecosystems-biodivfuture|Biodiversa+ 2026 to 2027: novel ecosystems (BiodivFuture)|NERC|O|2027-04-16
+pre-announcement-nmip-sandpit-digital-materials-for-accelerated-innovation|NMIP sandpit: digital materials for accelerated innovation (pre-announcement)|EPSRC|U|
+engineering-biology-access-to-infrastructure-pilot|Engineering Biology access to infrastructure pilot|IUK|O|2026-10-21
+focal-award-epsrc-and-mhclg-fire-engineering-skills-hub|Focal award: EPSRC and MHCLG Fire Engineering Skills Hub|EPSRC|O|2026-11-03
+esrc-applicant-led-grow-awards|ESRC applicant-led: grow awards (pre-announcement)|ESRC|U|
+esrc-applicant-led-explore-awards|ESRC applicant-led: explore awards (pre-announcement)|ESRC|U|
+esrc-applicant-led-challenge-awards|ESRC applicant-led: challenge awards (pre-announcement)|ESRC|U|
+water4all-2026-call-sustainable-water-management|Water4All 2026 call: sustainable water management|NERC, EPSRC|O|2027-04-06
+epsrc-defra-reimagining-circularity-full-stage|EPSRC-Defra Reimagining Circularity: full stage|EPSRC|O|2026-11-03
+national-materials-innovation-programme-crd-rd1|National Materials Innovation Programme: collaborative R&D round 1|IUK|O|2026-10-28
+trust-and-confidence-in-policing-research-innovation-consortium|Trust and confidence in policing: research and innovation consortium|AHRC, BBSRC, ESRC, EPSRC, MRC, NERC, STFC, UKRI|O|2026-10-27
+economic-research-on-the-returns-to-rd-investment|Economic research on the returns to R&D investment|ESRC|O|2026-11-19
+mrc-centre-of-research-excellence-round-five|MRC Centre of Research Excellence round five: outline application|MRC|O|2027-02-03
+ukri-integration-of-ai-hpc-with-quantum|Integration of AI/HPC with quantum computing|EPSRC, STFC|O|2026-11-03
+high-performance-compute-resources-for-epsrc-communities|High performance compute resources for EPSRC communities|EPSRC|O|2026-10-27
+epsrc-strategic-infrastructure-outlines-september-2026|EPSRC strategic infrastructure outlines: September 2026|EPSRC|O|
+costar-satellite-labs-accessible-creative-rd-infrastructure|CoSTAR Satellite Labs: accessible creative R&D infrastructure|AHRC|O|2026-10-29
+costar-showcase-labs-createch-infrastructure-and-commercialisation|CoSTAR Showcase Labs: createch infrastructure and commercialisation|AHRC|O|2026-10-29
+transformative-sustainable-ai-technologies|Transformative sustainable AI technologies|UKRI|O|2026-11-10
+open-source-semiconductor-security-platform-development|Open-source semiconductor security platform development (pre-announcement)|EPSRC|U|
+advancing-innovation-in-accelerated-cancer-diagnosis|Advancing innovation in accelerated cancer diagnosis|IUK|O|2026-10-28
+unlocking-advanced-capabilities-in-conservation-and-heritage-science|Unlocking advanced capabilities in conservation and heritage science|AHRC|O|2026-11-25
+drive35-scale-up-fund-drawdown-five|DRIVE35 Scale-up Fund drawdown five|IUK|O|2026-11-04
+2445-drive35-scale-up-fund|DRIVE35 Scale-up Fund|IUK|O|
+uk-singapore-crd-2026|UK-Singapore collaborative R&D 2026|IUK|O|2026-12-16
+research-infrastructure-renewal|Research Infrastructure Renewal|NERC|O|2026-10-21
+next-generation-artificial-intelligence-ai-explainable-ai|Next generation AI: explainable AI|UKRI, EPSRC|O|2026-10-20
+resilient-economy-and-security-through-ecosystem-transitions-grants|Resilient economy and security through ecosystem transitions grants|NERC|O|2026-10-22
+epsrc-new-investigator-award-applicant-led-mode|EPSRC new investigator award: applicant-led mode|EPSRC|O|
+doctoral-focal-award-ukri-venture-doctorates-outline-stage|Doctoral focal award: UKRI venture doctorates, outline stage|EPSRC, BBSRC, AHRC, ESRC, MRC, NERC, STFC|O|2026-10-22
+advancing-atmospheric-and-aerial-autonomy|Advancing atmospheric and aerial autonomy|NERC|O|2026-10-21
+projects-peer-review-panel-pprp-2027|Projects Peer Review Panel (PPRP) 2027|STFC|O|2027-08-31
+ukri-eurohpc-joint-undertaking|Access EuroHPC supercomputers for AI development (AI Factories)|UKRI|O|
+access-eurohpc-quantum-computers-through-the-pilot-call|Access EuroHPC quantum computers through the pilot call|UKRI|O|
+access-eurohpc-supercomputers-for-research-computing|Access EuroHPC supercomputers for research computing|UKRI|O|
+focal-awards-multilingual-futures-for-uk-growth-and-connectivity|Focal awards: multilingual futures for UK growth and connectivity|AHRC|O|2027-01-21
+uk-obesity-research-institute|UK Obesity Research Institute: full application|MRC|O|2026-11-19
+bbsrc-brazil-pump-priming-award-fappa|BBSRC Brazil pump-priming award (FAPPA)|BBSRC|O|
+purchase-mid-range-equipment-for-biomedical-research-mrc-equip|Purchase mid-range equipment for biomedical research: MRC Equip|MRC|O|2026-11-05
+connecting-culture-fund|Connecting Culture Fund|BBSRC|O|2027-09-30
+large-grant-full-applications-november-2026-invite-only|NERC large grant full applications: November 2026 (invite only)|NERC|O|2026-11-05
+a-guide-for-the-commercialisation-of-creative-industries-research|A guide for the commercialisation of creative industries research|AHRC|O|2026-10-15
+patt-travel-grants-for-competitively-awarded-observation-time-2026|PATT travel grants for competitively awarded observation time 2026|STFC|O|2026-10-15
+patt-travel-claim-for-competitively-awarded-observation-time|PATT travel claim for competitively awarded observation time|STFC|O|
+collaborate-with-the-uk-human-functional-genomics-initiative|Collaborate with the UK Human Functional Genomics Initiative|MRC|O|2026-11-01
+ukri-translation-mrc-impact-acceleration-awards|UKRI Translation: MRC Impact Acceleration Awards|MRC|O|2026-11-11
+mrc-proof-of-concept-stage-two|UKRI Translation: MRC proof of concept, stage two|MRC|O|2026-11-04
+mrc-proof-of-concept-stage-one|UKRI Translation: MRC proof of concept, stage one|MRC|O|2026-11-18
+ukri-translation-ahrc-proof-of-concept|UKRI Translation: AHRC proof of concept|AHRC|O|
+daphne-jackson-fellowship|Daphne Jackson Trust fellowship (return to research)|AHRC, BBSRC, ESRC, EPSRC, MRC, NERC, STFC|O|
+innovation-loans-expression-of-interest|Innovation Loans expression of interest|IUK|O|
+mathematical-sciences-early-independence-fellowship|Mathematical sciences early independence fellowship|EPSRC|O|
+mathematical-sciences-postdoctoral-fellowship|Mathematical sciences postdoctoral fellowship|EPSRC|O|
+mathematical-sciences-small-grants|Mathematical sciences small grants|EPSRC|O|
+bbsrc-standard-research-grant-applicant-led-mode|BBSRC standard research grant: applicant-led mode|BBSRC|O|
+bbsrc-new-investigator-award-applicant-led-mode|BBSRC new investigator award: applicant-led mode|BBSRC|O|
+using-the-our-future-health-data-resource-for-research|Using the Our Future Health data resource for research|MRC|O|
+advanced-materials-highlight-notice|Advanced materials: highlight notice|EPSRC|O|
+access-to-isambard-ai-and-dawn-airr-supercomputers-gateway-route|Isambard-AI and Dawn AIRR supercomputers: gateway route|UKRI|O|
+isambard-ai-and-dawn-airr-supercomputers-rapid-access-route|Isambard-AI and Dawn AIRR supercomputers: rapid access route|UKRI|O|
+uk-international-ocean-drilling-programme-moratorium-awards|UK International Ocean Drilling Programme moratorium awards|NERC|O|
+collaborate-with-researchers-in-norway|Collaborate with researchers in Norway|UKRI, AHRC, EPSRC, ESRC, MRC, NERC|O|
+epsrc-programme-grant-outline-stage|EPSRC programme grant: outline stage|EPSRC|O|
+epsrc-programme-grant-full-proposal|EPSRC programme grant: full proposal|EPSRC|O|
+bbsrc-international-travel-award-scheme|BBSRC international travel award scheme for the biological sciences|BBSRC|O|2026-10-20
+work-with-us-based-researchers-on-environmental-science-research|NERC-NSF lead agency: work with US-based researchers on environmental science|NERC|O|
+collaborate-with-the-functional-genomics-screening-laboratory|Collaborate with the functional genomics screening laboratory|MRC|O|
+open-access-fund-for-longform-publications-stage-two|Open access fund for longform publications: stage two|UKRI|O|
+epsrc-network-grant-nov-2023-responsive-mode|EPSRC network grant: responsive mode|EPSRC|O|
+epsrc-working-with-overseas-scientists-nov-2023-responsive-mode|EPSRC working with overseas scientists: responsive mode|EPSRC|O|
+epsrc-discipline-hopping-in-ict-nov-2023-responsive-mode|EPSRC discipline hopping in ICT: responsive mode|EPSRC|O|
+epsrc-overseas-travel-grant-nov-2023-responsive-mode|EPSRC overseas travel grant: responsive mode|EPSRC|O|
+epsrc-standard-research-grant-nov-2023-responsive-mode|EPSRC standard research grant: responsive mode|EPSRC|O|
+esrc-responsive-mode-research-grants-round-two|ESRC responsive mode: research grants, round two|ESRC|O|2026-11-04
+esrc-responsive-mode-new-investigator-grants-round-two|ESRC responsive mode: new investigator grants, round two|ESRC|O|2026-11-04
+esrc-responsive-mode-secondary-data-analysis-round-two|ESRC responsive mode: secondary data analysis, round two|ESRC|O|2026-11-04
+esrc-responsive-mode-working-with-luxembourg-researchers-round-two|ESRC responsive mode: working with Luxembourg researchers, round two|ESRC|O|
+esrc-responsive-mode-working-with-brazilian-researchers-round-two|ESRC responsive mode: working with Brazilian researchers, round two|ESRC|O|
+esrc-responsive-mode-ukri-sbe-lead-agency-opportunity-round-two|ESRC responsive mode: UKRI-SBE lead agency, round two|ESRC|O|
+collaborate-with-researchers-in-luxembourg|Collaborate with researchers in Luxembourg|UKRI, AHRC, BBSRC, ESRC, EPSRC, MRC, NERC, STFC|O|
+collaborate-with-researchers-in-brazil|Collaborate with researchers in Brazil|UKRI, AHRC, BBSRC, ESRC, EPSRC, MRC, NERC, STFC|O|
+work-with-brazilian-researchers-nerc-fapesp-lead-agency|NERC-FAPESP lead agency: work with Brazilian researchers|NERC|O|
+ukri-sbe-lead-agency-opportunity|UKRI-NSF SBE lead agency opportunity|UKRI, AHRC, BBSRC, ESRC|O|
+return-to-research-support-bursary|Return to research support bursary|STFC|O|
+knowledge-transfer-partnership|Knowledge Transfer Partnership (rolling)|IUK, AHRC, BBSRC, ESRC, EPSRC, NERC, STFC|O|
+researching-me-cfs-priority-area|Researching ME/CFS: priority area|MRC|O|
+`.trim().split("\n");
+const UKRI_ROW_LINKS=[UKFIND,["UKRI: how applicants use the Funding Service",UK+"develop-your-application/how-applicants-use-the-ukri-funding-service/"],["UKRI: eligible and non-eligible costs",UK+"develop-your-application/what-costs-are-eligible-for-ukri-funding"],["UKRI: individual eligibility",UK+"before-you-apply/individual-eligibility/"]];
+UKRI_ROWS.forEach(r=>{
+  const [slug,n,cos,s,dl]=r.split("|"), co=cos.split(", ").map(c=>COUNCIL[c]||c);
+  const hay=n+" "+co.join(" ");
+  const fellow=/fellowship|bursary|Daphne/i.test(n);
+  const partner=/Innovate|Eureka|investor|bilateral|collaborative R&D|Knowledge Transfer|ADOPT|DRIVE35|Ofgem|Commercialising|Loan|BridgeAI|Battery|SME|CfI|scale-up|Scale-up|CKAF|ICURe/.test(hay);
+  const infra=/equipment|infrastructure|supercomput|HPC|EuroHPC|Isambard|NRF|CoSTAR|Labs|data resource|Equip\b|screening laborator/i.test(n);
+  const g=[fellow?"fellowship":partner?"partner":"project"];
+  if(/Biodiversa|Water4All|EuroHPC|Eureka/.test(n))g.push("eu");
+  const o={id:"uk-"+slug.slice(0,48),f:"UKRI",co,n,sub:co.join(", "),g,
+    intl:/bilateral|ollaborate with|orking with|ork with|lead agency|Brazil|Luxembourg|Norway|Germany|Singapore|Japan|Eureka|Biodiversa|Water4All|EuroHPC|NSF|overseas|International|Global/.test(n),
+    infra,small:/travel|bursary|pump-priming|Spark|small grants|PATT/i.test(n),
+    status:(s==="O"?"Open":"Upcoming")+": "+(dl?`closes ${fmtShort(dl)}`:(s==="O"?"no closing date":"opening date to be confirmed")),
+    elig:"Eligibility, remit and limits are set per call. Read the call page, then UKRI's general guidance and your council's guidance.",
+    route:"See the call page (UKRI Funding Service or Innovation Funding Service)",
+    dl:dl||"",type:g[0],links:[["Call page",UKO+slug+"/"]].concat(UKRI_ROW_LINKS)};
+  SCH.push(o);
+});
+
+/* Calls UKRI has announced for later; no live page yet */
+const UKFUT=["UKRI future opportunities","https://www.ukri.org/apply-for-funding/future-research-and-innovation-funding-opportunities/"];
+[["Early independence: MRC career development fellowship","MRC","Expected January 2027","fellowship"],
+ ["ESRC postdoctoral fellowship scheme","ESRC","Expected November 2026","fellowship"],
+ ["Policy Fellowships","UKRI","Expected November 2026","fellowship","UKRI Policy fellowships",UK+"our-fellowship-opportunities/policy-fellows/"],
+ ["Professional doctorate: clinical research training fellowship","MRC","Expected October 2026 and January 2027","fellowship"],
+ ["Ernest Rutherford Fellowships","STFC","Early-career fellowship, five years","fellowship","Ernest Rutherford Fellowships",UK+"our-fellowship-opportunities/ernest-rutherford-fellowships/"],
+ ["International Placement Scheme 2027","AHRC","Expected October 2026","project"],
+ ["Resilient Cultural Heritage Partnership","AHRC","Expected October 2026","partner"],
+ ["AHRC Large Grants: full stage (invite only)","AHRC","Expected January 2027","project"],
+ ["Astronomy observation and theory small awards 2027","STFC","Expected December 2026","project"],
+ ["Astronomy solar and planetary small awards 2027","STFC","Expected December 2026","project"],
+ ["Nucleus Public Engagement Awards 2027","STFC","Expected January 2027","project"],
+ ["BBSRC flexible talent mobility accounts","BBSRC","Expected December 2026","project"],
+ ["Knowledge Transfer Partnership: 2026 to 2027 round 4","Innovate UK","Expected October 2026","partner","Knowledge Transfer Partnership guidance","https://www.ukri.org/councils/innovate-uk/guidance-for-applicants/guidance-for-specific-funds/knowledge-transfer-partnership-guidance/"],
+ ["UKRI Translation: MRC Impact Acceleration Awards and Proof of Concept (next round)","MRC","Expected March 2027","partner"],
+ ["Sustainable efficiencies in urban environments","NERC","Expected September 2026","project"]
+].forEach(([n,co,st,ty,ln,lu],i)=>SCH.push({id:"ukf-"+i,f:"UKRI",co:[co],n,sub:co+" · "+st,g:[ty],type:ty,status:/^Expected/.test(st)?"Upcoming: "+st.toLowerCase().replace("expected ","expected "):"",
+  small:/small awards|Public Engagement/i.test(n),
+  elig:"Not yet open for applications, or listed only as an upcoming launch. Dates may change, and full details appear in the funding finder when the call launches.",route:"See the call page when it opens",
+  links:(lu?[[ln,lu]]:[]).concat([UKFUT,UKFIND])}));
+
+/* UKRI umbrella: council guidance */
+SCH.unshift({id:"ukri-resp",f:"UKRI",co:["AHRC","BBSRC","EPSRC","ESRC","MRC","NERC","STFC","Innovate UK","Research England"],n:"UKRI: where to start (council guidance for applicants)",sub:"Guidance for every council, funding modes and how UKRI assesses",g:["project"],type:"project",
+  elig:"Three layers of guidance usually apply: the opportunity text, UKRI's general guidance and your council's guidance. Pick a specific call from this list for dated decisions, or use this card for general UKRI applications.",
+  route:"UKRI Funding Service",
+  links:[UKFIND,["AHRC guidance for applicants","https://www.ukri.org/councils/ahrc/guidance-for-applicants/"],["BBSRC guidance for applicants","https://www.ukri.org/councils/bbsrc/guidance-for-applicants/"],["EPSRC guidance for applicants","https://www.ukri.org/councils/epsrc/guidance-for-applicants/"],["ESRC guidance for applicants","https://www.ukri.org/councils/esrc/guidance-for-applicants/"],["MRC guidance for applicants","https://www.ukri.org/councils/mrc/guidance-for-applicants/"],["NERC guidance for applicants","https://www.ukri.org/councils/nerc/guidance-for-applicants/"],["STFC guidance for applicants","https://www.ukri.org/councils/stfc/guidance-for-applicants/"],["Innovate UK guidance for applicants","https://www.ukri.org/councils/innovate-uk/guidance-for-applicants/"],["Research England","https://www.ukri.org/councils/research-england/"],["UKRI funding modes",UK+"funding-modes/"],["UKRI: find guidance on applying",UK+"how-to-apply/find-guidance-on-applying-for-funding/"],["UKRI: before you apply",UK+"before-you-apply/"],["UKRI: resubmissions policy",UK+"develop-your-application/application-resubmissions/"],["UKRI: demand management",UK+"before-you-apply/demand-management-for-funding-applications/"],["UKRI: if your research spans disciplines",UK+"get-support-for-your-project/if-your-research-spans-different-disciplines"],["UKRI: generative AI in applications and assessment","https://www.ukri.org/publications/generative-artificial-intelligence-in-application-and-assessment-policy/"],["UKRI: principles of assessment and decision-making","https://www.ukri.org/publications/ukri-principles-of-assessment-and-decision-making/uk-research-and-innovation-ukri-funding-assessment-and-decision-making-policy-and-principles/"],["UKRI: disability and accessibility support",UK+"how-to-apply/disability-and-accessibility-support-for-ukri-applicants-and-grant-holders/"]].concat(UKGEN.slice(0,8))});
+{const i=SCH.findIndex((s,k)=>k>0&&s.id==="ukri-resp");if(i>0)SCH.splice(i,1);}
+
+/* Size facts for existing entries, and corrections to the small-grant tagging */
+const FIX={"lev-rpg":{small:false,g:["project"]},"nuf-main":{small:true,g:["project"]},"erc-poc":{g:["eu","partner"]},"nuf-rapid":{g:["project"]},"ba-srg":{max:10000},"ba-mcf":{max:80000},"iuk-ktp":{f:"UKRI",co:["Innovate UK"]},"ukri-flf":{status:"Upcoming: round 12 expected February 2027"}};
+SCH.forEach(s=>{const f=FIX[s.id];if(f)Object.assign(s,f);});
+{const i=SCH.findIndex(s=>s.id==="wel-disc");if(i>=0)SCH.splice(i,1);}
+const WEL=["Wellcome: prepare to apply","https://wellcome.org/research-funding/guidance/prepare-to-apply"],WELD=["Wellcome: scheme application deadlines","https://wellcome.org/research-funding/guidance/prepare-to-apply/scheme-application-deadlines"],WELR=["Wellcome: what we do and don't fund in discovery research","https://wellcome.org/research-funding/guidance/prepare-to-apply/discovery-research-schemes-remit"],WELA=["Wellcome: how Wellcome assesses applications","https://wellcome.org/research-funding/guidance/how-wellcome-makes-funding-decisions/how-wellcome-assesses-funding-applications"],WELP=["Wellcome: funding policies and grant conditions","https://wellcome.org/research-funding/guidance/policies-grant-conditions"];
+
+/* Other funders */
+const RS="https://royalsociety.org/grants/", BAC="https://www.thebritishacademy.ac.uk/funding/", LEV="https://www.leverhulme.ac.uk/", AMS="https://acmedsci.ac.uk/grants-and-schemes/grant-schemes/", NIHRF="https://www.nihr.ac.uk/funding";
+const RSLINKS=[["Royal Society: how to apply",RS+"applications/"],["Royal Society: application dates",RS+"application-dates/"]];
+const mk=(id,f,n,sub,g,o)=>SCH.push(Object.assign({id,f,n,sub,g,type:g[0],links:[]},o));
+mk("wel-cda","Wellcome","Career Development Awards","Mid-career researchers, any discipline",["fellowship"],{st:["mid"],
+  size:"Usually eight years of funding, or less in some disciplines such as the humanities and social sciences.",elig:"For mid-career researchers from any discipline with the potential to become international research leaders. Research must fit Wellcome's remit of improving human life, health and wellbeing.",route:"Wellcome Funding portal",
+  links:[["Wellcome Career Development Awards","https://wellcome.org/research-funding/schemes/wellcome-career-development-awards"],WEL,WELD,WELR,WELA,WELP]});
+mk("wel-da","Wellcome","Discovery Awards","Established researchers and teams, bold and creative ideas",["project"],{
+  size:"The average Discovery Award is about £3.5 million.",elig:"For established researchers and teams from any discipline pursuing bold and creative research ideas within Wellcome's remit.",route:"Wellcome Funding portal",
+  links:[["Wellcome Discovery Awards","https://wellcome.org/research-funding/schemes/wellcome-discovery-awards"],WEL,WELD,WELR,WELA,WELP,["Find a Wellcome scheme","https://wellcome.org/research-funding/schemes"]]});
+
+mk("rs-dhf","Royal Society","Dorothy Hodgkin Fellowship","Early-career researchers needing flexible working",["fellowship"],{status:"Open: 2026 round closes 29 Oct 2026",dl:"2026-10-29",
+  size:"Eight years, up to £1,907,400.",elig:"For early-career researchers who need a flexible working pattern for personal reasons.",route:"Royal Society Flexi-Grant",
+  links:[["Dorothy Hodgkin Fellowship",RS+"dorothy-hodgkin-fellowship/"]].concat(RSLINKS)});
+mk("rs-nif","Royal Society","Newton International Fellowships","Early-career researchers from outside the UK",["fellowship"],{status:"Closed: 2026 round has closed",
+  size:"Up to £280,000 over two years, run jointly by the British Academy and the Royal Society.",elig:"For non-UK early-career researchers who want to work in the UK. The host institution is in the UK.",route:"Royal Society Flexi-Grant",
+  links:[["Newton International Fellowships",RS+"newton-international/"]].concat(RSLINKS)});
+mk("rs-rg","Royal Society","Research Grants","Natural sciences, engineering and medicine",["project"],{status:"Closed: 2026 round closed 26 Mar 2026",
+  elig:"Check the Royal Society's grants listing for current scope, eligibility and award size.",route:"Royal Society Flexi-Grant",
+  links:[["All Royal Society grants",RS+"search/grant-listings/"]].concat(RSLINKS)});
+mk("rs-if","Royal Society","Industry Fellowship","Academic and industry collaboration",["fellowship","partner"],{status:"Closed: 2026 round closed 16 Sep 2026",
+  elig:"The Royal Society runs two rounds a year. Check the application dates page for the next round.",route:"Royal Society Flexi-Grant",
+  links:[["All Royal Society grants",RS+"search/grant-listings/"]].concat(RSLINKS)});
+mk("rs-wf","Royal Society","Wolfson Fellowship","Established researchers",["fellowship"],{status:"Closed: 2026 round closed 1 Jul 2026",
+  elig:"A senior fellowship for established researchers. The Royal Society also runs a related Wolfson Visiting Fellowship.",route:"Royal Society Flexi-Grant",
+  links:[["All Royal Society grants",RS+"search/grant-listings/"]].concat(RSLINKS)});
+mk("rs-apex","Royal Society","APEX Awards","Royal Society, British Academy and Academy of Medical Sciences award",["project"],{status:"Closed: 2026 round closed 8 Sep 2026; decisions April 2027",
+  elig:"Check the Royal Society's grants listing for eligibility and award size.",route:"Royal Society Flexi-Grant",
+  links:[["All Royal Society grants",RS+"search/grant-listings/"]].concat(RSLINKS)});
+
+mk("lev-schemes","Leverhulme Trust","Schemes at a glance","Overview of every Leverhulme scheme",["project","fellowship"],{
+  elig:"Use this overview to find the scheme and the current call for any Leverhulme award, including Visiting Professorships, which can be applied for at any time.",route:"Leverhulme Grant System",links:[["Schemes at a glance",LEV+"schemes-at-a-glance"],["Leverhulme Grant System",LEV+"leverhulme-grant-system"]]});
+mk("lev-rf","Leverhulme Trust","Research Fellowships","Established researchers, all disciplines",["fellowship"],{
+  elig:"Most Leverhulme fellowships are designed for permanent members of staff to buy out teaching and administrative duties. They are not intended to fund research staff or PhD students.",route:"Leverhulme Grant System",
+  links:[["Research Fellowships",LEV+"research-fellowships-2024"],["Schemes at a glance",LEV+"schemes-at-a-glance"]]});
+mk("lev-mrf","Leverhulme Trust","Major Research Fellowships","Well-established, distinguished researchers in the humanities and social sciences",["fellowship"],{st:["est"],
+  elig:"Aimed at well-established, distinguished researchers. Check the current call.",route:"Leverhulme Grant System",
+  links:[["Major Research Fellowships",LEV+"major-research-fellowships-2024"],["Schemes at a glance",LEV+"schemes-at-a-glance"]]});
+mk("lev-intl","Leverhulme Trust","International Fellowships","UK-based researchers visiting overseas research centres",["fellowship"],{max:45000,intl:true,
+  size:"Up to £45,000 for three to twelve months.",elig:"For UK-based researchers who want to spend time at overseas research centres.",route:"Leverhulme Grant System",
+  links:[["International Fellowships",LEV+"international-fellowships-2025"],["Schemes at a glance",LEV+"schemes-at-a-glance"]]});
+mk("lev-emer","Leverhulme Trust","Emeritus Fellowships","Senior researchers who have retired or partly retired",["fellowship"],{max:24000,
+  size:"£3,000 to £24,000 over 3 to 24 months.",elig:"For senior researchers who have retired or partly retired.",route:"Leverhulme Grant System",
+  links:[["Schemes at a glance",LEV+"schemes-at-a-glance"],["Leverhulme Grant System",LEV+"leverhulme-grant-system"]]});
+mk("lev-rla","Leverhulme Trust","Research Leadership Awards","Talented scholars starting a university career who need a larger team",["project","fellowship"],{st:["early"],
+  size:"Up to £1 million over four to five years.",elig:"For talented scholars embarking on a university career who need a larger research team. The next round is the Centenary Research Leadership Awards.",route:"Leverhulme Grant System",
+  links:[["Schemes at a glance",LEV+"schemes-at-a-glance"],["Leverhulme Grant System",LEV+"leverhulme-grant-system"]]});
+mk("lev-plp","Leverhulme Trust","Philip Leverhulme Prizes","Early-career researchers with internationally recognised work",["fellowship","project"],{st:["early"],
+  size:"£100,000 each, paid over two to three years. Up to thirty prizes across six subject areas (2026 guidance).",elig:"For early-career researchers with a permanent post or long-term fellowship in a UK university. Prizes are by nomination.",route:"Nomination through the Trust",
+  links:[["Philip Leverhulme Prizes",LEV+"philip-leverhulme-prizes"],["Schemes at a glance",LEV+"schemes-at-a-glance"]]});
+mk("lev-rc","Leverhulme Trust","Research Centres","UK university-based research centres",["project"],{
+  elig:"UK universities can set up a Leverhulme Research Centre. The next round is the Centenary Research Centres.",route:"Leverhulme Grant System",
+  links:[["Leverhulme Research Centres",LEV+"leverhulme-research-centres"]]});
+mk("lev-vp","Leverhulme Trust","Visiting Professorships","UK institutions hosting an eminent overseas professor",["project"],{
+  status:"Open: applications accepted at any time",elig:"A UK institution invites an eminent senior professor from overseas.",route:"Leverhulme Grant System",
+  links:[["Schemes at a glance",LEV+"schemes-at-a-glance"],["Leverhulme Grant System",LEV+"leverhulme-grant-system"]]});
+
+mk("ba-wolf","British Academy","British Academy / Wolfson Fellowships","Early-career researchers, humanities and social sciences",["fellowship"],{st:["early"],status:"Closed: not accepting applications while the scheme is evaluated",
+  size:"Up to £130,000 over three years (2022 round).",elig:"Early-career awards that buy out teaching and admin time, with funding for public engagement and travel.",route:"British Academy applications portal",
+  links:[["British Academy/Wolfson Fellowships",BAC+"schemes/british-academy-wolfson-fellowships/"],["Early-career researchers",BAC+"early-career-researchers/"]]});
+mk("ba-vf","British Academy","Visiting Fellowships","Overseas academics visiting the UK",["fellowship"],{max:40000,intl:true,
+  size:"Up to £40,000 for three to six months.",elig:"Open to academics based overseas in the humanities and social sciences, hosted by a UK institution.",route:"British Academy applications portal",
+  links:[["Visiting Fellowships",BAC+"visiting-fellowships/"],["Scheme guidance notes",BAC+"schemes/visiting-fellowships/guidance-notes/"]]});
+mk("ba-gp","British Academy","Global Professorships","Established scholars joining a UK institution",["fellowship","project"],{st:["est"],
+  size:"Up to £900,000 per award (2024 round).",elig:"Large investigator-led awards to attract internationally recognised established scholars to work in the UK. Check the current call.",route:"British Academy applications portal",
+  links:[["Global Professorships",BAC+"global-professorships/"]]});
+
+mk("ams-spring","Academy of Medical Sciences","Springboard","Newly independent biomedical scientists",["fellowship"],{st:["early"],
+  size:"Up to £125,000 over two years, plus mentoring and career development.",elig:"For newly independent biomedical researchers.",route:"Academy of Medical Sciences grants portal",
+  links:[["Springboard",AMS+"springboard"],["All Academy grants","https://acmedsci.ac.uk/grants-and-programmes/grants"]]});
+mk("ams-start","Academy of Medical Sciences","Starter Grants for Clinical Lecturers","Research-active clinical lecturers",["small"],{max:40000,status:"Windows: January to March and July to September",
+  size:"Up to £40,000 over one to two years (the Academy's pages differ, so check the current figure).",elig:"For research-active clinical lecturers in human, dental or veterinary medicine who hold a clinical contract at a UK institution.",route:"Academy of Medical Sciences grants portal",
+  links:[["Starter Grants",AMS+"starter-grants"],["All Academy grants","https://acmedsci.ac.uk/grants-and-programmes/grants"]]});
+mk("ams-prof","Academy of Medical Sciences","Professorships","Newly appointed professors, biomedical and healthcare",["fellowship","project"],{st:["est"],
+  size:"Up to £500,000 over up to five years. Windows: April to June and October to January.",elig:"For biomedical or healthcare researchers who recently started a full professorship in the UK and recently moved to the UK.",route:"Academy of Medical Sciences grants portal",
+  links:[["All Academy grants","https://acmedsci.ac.uk/grants-and-programmes/grants"]]});
+mk("ams-net","Academy of Medical Sciences","Networking grants","UK and non-UK collaborations on AI and health, climate and health, antimicrobial resistance",["small"],{max:30000,intl:true,status:"Open: closes 13 Nov 2026",dl:"2026-11-13",
+  size:"Up to £30,000 over one year, with up to £6,000 for pilot data.",elig:"Joint applications between an eligible non-UK researcher and a UK-based researcher.",route:"Academy of Medical Sciences grants portal",
+  links:[["Networking grants","https://acmedsci.ac.uk/grants-and-programmes/grants/networking-grants"]]});
+
+const NI=[["NIHR funding opportunities",NIHRF],["NIHR: access for Scotland, Wales and Northern Ireland","https://www.nihr.ac.uk/news/researchers-in-scotland-wales-and-northern-ireland-to-access-further-nihr-research-funding/33914"]];
+const NIE="NIHR programmes have long been open only to English research hosts, though some, such as i4i, have been opened to Scotland, Wales and Northern Ireland. Check eligibility for a Northern Ireland host in the call.";
+mk("nihr-hta","NIHR","Health Technology Assessment (HTA) Programme","Clinical and cost effectiveness of health technologies",["project"],{elig:"Assesses drugs, devices, procedures, settings and screening. "+NIE,route:"NIHR awards management system",
+  links:[["NIHR NICE rolling funding opportunity (HTA)","https://www.nihr.ac.uk/funding/nihr-nice-rolling-funding-opportunity-hta-programme/2025391"]].concat(NI)});
+mk("nihr-hsdr","NIHR","Health and Social Care Delivery Research (HS&DR)","How health and social care services are organised and delivered",["project"],{size:"Awards average about £260,000 and typically run up to five years.",elig:NIE,route:"NIHR awards management system",links:NI});
+mk("nihr-phr","NIHR","Public Health Research (PHR) Programme","Non-NHS interventions that improve public health",["project"],{size:"Awards average about £700,000 over up to three years.",elig:NIE,route:"NIHR awards management system",
+  links:[["NIHR NICE rolling funding opportunity (PHR)","https://www.nihr.ac.uk/funding/nihr-nice-rolling-funding-opportunity-phr-programme/2024226"]].concat(NI)});
+mk("nihr-eme","NIHR","Efficacy and Mechanism Evaluation (EME) Programme","Whether interventions work and how",["project"],{elig:NIE,route:"NIHR awards management system",
+  links:[["EME programme researcher-led","https://www.nihr.ac.uk/funding/2439-eme-programme-researcher-led/35885"]].concat(NI)});
+mk("nihr-i4i","NIHR","Invention for Innovation (i4i)","Development of medical technologies",["partner","project"],{
+  size:"Includes Product Development Awards and i4i Connect (£50,000 to £150,000).",elig:"i4i was opened to researchers in Scotland, Wales and Northern Ireland from autumn 2023. Check the current call.",route:"NIHR awards management system",links:NI});
+
+mk("cruk-dpfa","Cancer Research UK","Discovery Programme Foundation Award","Mid-career cancer researchers",["fellowship","project"],{st:["mid"],
+  size:"Up to £1.5 million over six years.",elig:"For mid-career researchers building an independent programme. Rounds are closed, so contact the charity first.",route:"Cancer Research UK funding portal",
+  links:[["Discovery Programme Foundation Award","https://www.cancerresearchuk.org/for-researchers/apply-for-and-manage-your-funding/our-funding-schemes/discovery-programme-foundation-award"]]});
+mk("cruk-dpa","Cancer Research UK","Discovery Programme Award","Established cancer researchers",["project"],{st:["est"],
+  size:"Up to £2.5 million over five years.",elig:"Long-term support for established researchers pursuing an ambitious programme of work.",route:"Cancer Research UK funding portal",
+  links:[["Discovery Programme Award","https://www.cancerresearchuk.org/for-researchers/apply-for-and-manage-your-funding/our-funding-schemes/discovery-programme-award"]]});
+mk("cruk-scrf","Cancer Research UK","Senior Cancer Research Fellowship","Senior cancer researchers",["fellowship"],{st:["est"],
+  elig:"Check the scheme page for eligibility, award size and deadlines.",route:"Cancer Research UK funding portal",
+  links:[["Senior Cancer Research Fellowship","https://www.cancerresearchuk.org/funding-for-researchers/our-funding-schemes/senior-cancer-research-fellowship"],["Opportunities for fellows","https://www.cancerresearchuk.org/for-researchers/develop-your-research-career/opportunities-for-fellows"]]});
+const BHF="https://www.bhf.org.uk/for-professionals/information-for-researchers/";
+mk("bhf-pg","British Heart Foundation","Project Grants","Short-term cardiovascular research projects",["project"],{status:"Open: no closing dates",
+  size:"Up to four years and under £500,000.",elig:"The principal investigator is usually a postdoctoral researcher.",route:"BHF Grants Management System",
+  links:[["Project Grants",BHF+"what-we-fund/project-grants"],["How to apply",BHF+"how-to-apply"],["What we fund",BHF+"what-we-fund"]]});
+mk("bhf-crtf","British Heart Foundation","Clinical Research Training Fellowships","Clinicians starting a research career",["fellowship"],{st:["early"],status:"Open: closes 13 Jan 2027",dl:"2027-01-13",
+  route:"BHF Grants Management System",elig:"For clinicians undertaking research training.",
+  links:[["Clinical Research Training Fellowships",BHF+"what-we-fund/clinical-research-training-fellowships"],["How to apply",BHF+"how-to-apply"]]});
+mk("bhf-cdrf","British Heart Foundation","Career Development Research Fellowships for nurses and healthcare professionals","Nurses and healthcare professionals",["fellowship"],{status:"Closed: 2026 deadline passed",
+  route:"BHF Grants Management System",elig:"For nurses and healthcare professionals developing a research career.",
+  links:[["Career Development Research Fellowships",BHF+"what-we-fund/career-development-research-fellowships-for-healthcare-professionals"],["How to apply",BHF+"how-to-apply"]]});
+mk("bhf-sbsrf","British Heart Foundation","Senior Basic Science Research Fellowships","Established basic scientists",["fellowship"],{st:["est"],route:"BHF Grants Management System",elig:"Check the scheme page for current eligibility.",
+  links:[["Senior Basic Science Research Fellowships",BHF+"what-we-fund/senior-basic-science-research-fellowships"],["How to apply",BHF+"how-to-apply"]]});
+mk("bhf-tf","British Heart Foundation","Travel Fellowships","Visits to other laboratories or centres",["fellowship"],{small:true,route:"BHF Grants Management System",elig:"Check the scheme page for award size and eligibility.",
+  links:[["Travel Fellowships",BHF+"what-we-fund/travel-fellowships"],["How to apply",BHF+"how-to-apply"]]});
+
+mk("raeng-ciet","Royal Academy of Engineering","Chair in Emerging Technologies","Technology innovation chairs",["fellowship","project"],{st:["est","mid"],status:"Closed: expected to reopen in early 2027",
+  size:"Up to ten years of employment and research costs.",elig:"The chair is hosted at a UK university, with a letter of support from a Dean or Pro-Vice-Chancellor for Research. Proposals must be about technological innovation. Resubmissions are permitted with changes explained.",route:"Royal Academy of Engineering application portal",
+  links:[["Chair in Emerging Technologies","https://raeng.org.uk/programmes-and-prizes/programmes/uk-grants-and-prizes/support-for-research/chair-in-emerging-technologies"],["How to apply","https://raeng.org.uk/programmes-and-prizes/programmes/uk-grants-and-prizes/support-for-research/chair-in-emerging-technologies/how-to-apply"],["Eligibility","https://raeng.org.uk/programmes-and-prizes/programmes/uk-grants-and-prizes/support-for-research/chair-in-emerging-technologies/eligibility"]]});
+mk("raeng-if","Royal Academy of Engineering","Industrial Fellowships (academia to industry)","Mid-career academics on projects in industry",["fellowship","partner"],{st:["mid"],
+  size:"Up to £50,000 a year for up to two years.",elig:"The scheme opens once a year, early December to late February (2024/25 guidance).",route:"Royal Academy of Engineering application portal",
+  links:[["Academia to industry guidance 2024/25 (PDF)","https://raeng.org.uk/media/davf4ddd/industrial-fellowship-academia-to-industry-applicant-guidance-2024-25.pdf"],["Industry to academia guidance 2024/25 (PDF)","https://raeng.org.uk/media/buunxaps/industrial-fellowship-industry-to-academia-applicant-guidance-2024-25.pdf"]]});
+
+mk("eic","European Commission","European Innovation Council (EIC): Pathfinder, Transition and Accelerator","Deep-tech research and innovation",["partner","eu"],{
+  elig:"UK applicants can apply to 2026 EIC calls. UK entities remain excluded from the EIC Fund's equity investment strand, but UK companies can seek EIC Accelerator grant funding and take part in Pathfinder and Transition.",route:"EU Funding & Tenders Portal",
+  links:[["UKRI: Horizon Europe help for UK applicants",UK+"horizon-europe/"],["UKRO 2025 UK association factsheet (PDF)","https://www.ukro.ac.uk/wp-content/uploads/2025/07/2025_UK_association_factsheet_final-1.pdf"],["Horizon Europe work programmes (European Commission)","https://research-and-innovation.ec.europa.eu/funding/funding-opportunities/funding-programmes-and-open-calls/horizon-europe/horizon-europe-work-programmes_en"]]});
+mk("msca-dn","European Commission","Marie Skłodowska-Curie Doctoral Networks","Joint doctoral training networks",["project","eu"],{
+  elig:"Details not confirmed here. UK organisations have been eligible for Horizon Europe since January 2024. Read the call text for the rules.",route:"EU Funding & Tenders Portal",
+  links:[["UKRI: Horizon Europe help for UK applicants",UK+"horizon-europe/"],["Horizon Europe work programmes (European Commission)","https://research-and-innovation.ec.europa.eu/funding/funding-opportunities/funding-programmes-and-open-calls/horizon-europe/horizon-europe-work-programmes_en"]]});
+mk("msca-se","European Commission","Marie Skłodowska-Curie Staff Exchanges","Staff exchanges between organisations",["partner","eu"],{
+  elig:"Details not confirmed here. Read the call text for the rules.",route:"EU Funding & Tenders Portal",
+  links:[["UKRI: Horizon Europe help for UK applicants",UK+"horizon-europe/"],["Horizon Europe work programmes (European Commission)","https://research-and-innovation.ec.europa.eu/funding/funding-opportunities/funding-programmes-and-open-calls/horizon-europe/horizon-europe-work-programmes_en"]]});
+
+mk("hsc-rd","HSC R&D Division (Northern Ireland)","HSC R&D Division funding","Health and social care research in Northern Ireland",["project","fellowship"],{
+  size:"Schemes include research fellowships and training, enabling research awards, knowledge exchange, workshops and conferences, and commissioned research. Opportunity-led commissioned research funds up to 50% of the award, so co-funding is needed.",
+  elig:"Enabling Research Awards help experienced Northern Ireland investigators win external funding from bodies such as NIHR, UKRI and Wellcome. The Chief Investigator on commissioned research must hold a substantive post in Northern Ireland.",route:"HSC R&D Division",
+  links:[["HSC R&D Division","https://research.hscni.net/"],["HSC R&D about us","https://publichealth.hscni.net/directorate-public-health/hsc-research-and-development/about-us"]]});
+mk("us-ire","Department for the Economy (Northern Ireland)","US-Ireland R&D Partnership","Collaboration between US, Republic of Ireland and Northern Ireland universities",["project"],{intl:true,
+  elig:"The Department for the Economy funds Northern Ireland universities to take part. Check the Department's page for the current call.",route:"See the Department's page",
+  links:[["Higher education international research (DfE)","https://www.economy-ni.gov.uk/articles/higher-education-international-research"]]});
+mk("ri-fff","Research Ireland","Frontiers for the Future","Research projects and awards",["project"],{intl:true,status:"Open: rolling",
+  size:"€600,000 to €1.5 million in direct costs over four or five years.",elig:"Run by Research Ireland, formed from Science Foundation Ireland and the Irish Research Council. Check whether Northern Ireland institutions are eligible in the call.",route:"Research Ireland portal",
+  links:[["Frontiers for the Future","https://www.researchireland.ie/funding/frontiers/"]]});
+mk("ri-path","Research Ireland","Pathway Programme","Postdoctoral researchers",["fellowship"],{intl:true,
+  size:"Up to about €535,000 in direct costs over four years.",elig:"Check whether Northern Ireland institutions are eligible in the call.",route:"Research Ireland portal",
+  links:[["Research Ireland","https://www.researchireland.ie/"]]});
+mk("rse","Royal Society of Edinburgh","Research awards and Saltire schemes","Research awards, workshops and early-career fellowships",["small"],{max:5000,
+  size:"Research awards of £500 to £5,000 for up to a year.",elig:"Open to academics at Scottish institutions, so check eligibility for other UK institutions. Saltire early-career fellowships fund 3 to 12 month visits.",route:"RSE",
+  links:[["Royal Society of Edinburgh","https://rse.org.uk/"]]});
+mk("bc-rcg","British Council","Researcher Challenges Grants 2026","Collaborative research with Egypt, Brazil, Morocco and Palestine",["small"],{max:40000,intl:true,status:"Closed: 17 Sep 2026",
+  size:"Up to £40,000 for 12 months starting January 2027.",elig:"Only the lead UK institution can start and submit the application. Topics include climate change, sustainable energy, public health, food security and AI for development.",route:"British Council online application",
+  links:[["Researcher Challenges Grants 2026","https://www.britishcouncil.org.eg/en/funding-calls-and-opportunities/researcher-challenges-grants-2026"],["Going Global Partnerships","https://www.britishcouncil.org/education/he-science/going-global-partnerships"]]});
+mk("esmee","Esmée Fairbairn Foundation","Esmée Fairbairn grants","Natural world, a fairer future, creative and confident communities",["project"],{status:"Open: applications at any time",
+  size:"Most grants are for core costs over three to five years. The minimum grant is £30,000.",elig:"Mostly registered charities. Check the Foundation's current guidance on eligibility and process.",route:"Esmée Fairbairn Foundation",
+  links:[["Esmée Fairbairn Foundation","https://esmeefairbairn.org.uk/"]]});
+mk("wolf","Wolfson Foundation","Wolfson Foundation grants","Science, medicine, health, education, arts and humanities",["project"],{
+  elig:"Details not confirmed here. See the Foundation's website for what it funds and how to apply.",route:"Wolfson Foundation",links:[["Wolfson Foundation","https://www.wolfson.org.uk/"]]});
+
+/* Tags: type labels plus size-based small grants (under £100,000) */
+const tagsOf=s=>{const t=new Set((s.g||[]).filter(x=>x!=="small"));
+  if((s.max&&s.max<100000)||s.small)t.add("small");if(s.intl)t.add("intl");if(s.infra)t.add("infra");return [...t];};
+const statusOf=s=>/^open/i.test(s.status||"")?"open":/^upcoming/i.test(s.status||"")?"upcoming":/^closed/i.test(s.status||"")?"closed":"";
+
+const TYPES=[["fellowship","Fellowships"],["project","Research projects"],["small","Small grants (under £100k)"],["partner","Partnerships & innovation"],["infra","Equipment & infrastructure"],["intl","International collaboration"],["eu","European"]];
+const TYPE_LABEL={fellowship:"Fellowship",project:"Research project",small:"Small grant (under £100k)",partner:"Partnership",infra:"Equipment & infrastructure",intl:"International",eu:"European"};
+const PAGE=30;
 const REQ={
  cv:["Narrative CV or track record",/narrative cv|curriculum vitae|\bCV\b|r[eé]sum[eé]|R4RI|track record/i],
  budget:["Budget and costs",/budget|full economic cost|\bFEC\b|justification of resources|eligible costs/i],
@@ -499,7 +876,7 @@ const $=id=>document.getElementById(id);
 const allSch=()=>st.custom.concat(SCH);
 const getSch=id=>allSch().find(s=>s.id===id);
 const ready=()=>!!getSch(st.sch);
-const q={text:"",ty:"all",fun:"all"};
+const q={text:"",ty:"all",fun:"all",co:"all",stat:"all",n:PAGE};
 let draft=null;
 
 /* ---------- Dates ---------- */
@@ -560,16 +937,18 @@ const linkHtml=l=>`<a href="${esc(l[1])}" ${/^https?:/.test(l[1])?'target="_blan
 /* ---------- Start: search ---------- */
 function haystack(s){return [s.f,s.n,s.sub,s.size,s.elig,s.status,s.commit,(s.links||[]).map(l=>l[0]).join(" ")].join(" ").toLowerCase();}
 function matches(s){
-  if(q.ty!=="all"&&!(s.g||[]).includes(q.ty))return false;
+  if(q.ty!=="all"&&!tagsOf(s).includes(q.ty))return false;
   if(q.fun!=="all"&&s.f!==q.fun)return false;
+  if(q.co!=="all"&&!(s.co||[]).includes(q.co))return false;
+  if(q.stat!=="all"&&statusOf(s)!==q.stat)return false;
   const h=haystack(s);
   return q.text.toLowerCase().split(/\s+/).filter(Boolean).every(t=>h.includes(t));
 }
 function schemeCard(s){
-  const facts=[["How big",s.size],["Your time",s.commit],["Who can apply",s.elig],["Resubmission",s.resub],["Dates",s.dates],["Limits",s.limits],["Route",s.route]].filter(f=>f[1]);
+  const facts=[["How big",s.size||(s.max?"Up to £"+s.max.toLocaleString("en-GB"):"")],["Your time",s.commit],["Who can apply",s.elig],["Resubmission",s.resub],["Dates",s.dates],["Limits",s.limits],["Route",s.route]].filter(f=>f[1]);
   const found=s.reqs?Object.entries(s.reqs).map(([k,v])=>`<li><b>${esc(REQ[k][0])}:</b> “${esc(v)}”</li>`).join(""):"";
-  const tags=(s.g||[]).filter(g=>TYPE_LABEL[g]||g==="eu").map(g=>g==="eu"?"European":TYPE_LABEL[g]);
-  return `<li class="scard"><div class="schead"><span class="sf">${esc(s.f||"Your upload")}${s.custom?'<em class="fitbadge">Added by you</em>':""}${s.status?`<em class="stbadge ${/^closed/i.test(s.status)?"closed":""}">${esc(s.status)}</em>`:""}</span>
+  const tags=tagsOf(s).map(g=>TYPE_LABEL[g]).filter(Boolean);
+  return `<li class="scard"><div class="schead"><span class="sf">${esc(s.f||"Your upload")}${s.custom?'<em class="fitbadge">Added by you</em>':""}${s.status?`<em class="stbadge ${statusOf(s)==="closed"?"closed":""}">${esc(s.status)}</em>`:""}</span>
     <b>${esc(s.n)}</b><span class="sub">${esc(s.sub||"")}</span>
     ${tags.length?`<span class="tags">${tags.map(t=>`<i>${esc(t)}</i>`).join("")}</span>`:""}</div>
     <details><summary>Key facts and guidance${s.links&&s.links.length?` (${s.links.length} links)`:""}</summary>
@@ -580,10 +959,15 @@ function schemeCard(s){
     <div class="actions"><button type="button" class="btn" data-pick="${s.id}">Plan this application</button>${s.custom?`<button type="button" class="btn ghost" data-rm="${s.id}">Remove</button>`:""}</div></li>`;
 }
 function refreshResults(){
-  const list=allSch().filter(matches);
-  $("count").textContent=`${list.length} grant${list.length===1?"":"s"}`;
-  $("res").innerHTML=list.length?list.map(schemeCard).join(""):`<li class="empty">No grants match. Clear a filter, or add the guidance for your grant below.</li>`;
-  $("res").querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{st.sch=b.dataset.pick;go("deadline");});
+  const list=allSch().filter(matches), shown=list.slice(0,q.n);
+  $("count").textContent=`${list.length} grant${list.length===1?"":"s"}`+(list.length>shown.length?`, showing ${shown.length}`:"");
+  $("res").innerHTML=shown.length?shown.map(schemeCard).join(""):`<li class="empty">No grants match. Clear a filter, or add the guidance for your grant below.</li>`;
+  $("more").hidden=list.length<=shown.length;
+  $("res").querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{
+    const s=getSch(b.dataset.pick);
+    if(st.sch!==s.id)st.dl=s.dl&&parseD(s.dl)&&parseD(s.dl)>=today()?s.dl:"";
+    st.sch=s.id;go("deadline");
+  });
   $("res").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{
     if(!confirm("Remove this grant you added? Your answers for it stay saved."))return;
     st.custom=st.custom.filter(c=>c.id!==b.dataset.rm);if(st.sch===b.dataset.rm)st.sch=null;save();render();
@@ -591,25 +975,34 @@ function refreshResults(){
 }
 function renderStart(){
   const funders=[...new Set(allSch().map(s=>s.f).filter(Boolean))].sort();
+  const councils=[...new Set(allSch().flatMap(s=>s.co||[]))].sort();
   const resume=ready()&&st.dl;
   $("stage").innerHTML=`<span class="eyebrow">A choose-your-own-adventure</span>
   <h1>Plan your grant application</h1>
-  <p class="story lead"><strong>Grants are won in the decisions you make months before you start writing.</strong> Find your grant below. Then we work back from the deadline and show which decisions to make, in what order, and by when.</p>
+  <p class="story lead">Find your grant below. Then we work back from the deadline and show which decisions to make, in what order, and by when.</p>
   ${resume?`<div class="actions"><button class="btn" id="resume">Continue my plan for ${esc(getSch(st.sch).n)}</button></div>`:""}
   <div class="search">
     <label class="lbl" for="qt">Search grants</label>
     <input type="search" id="qt" class="other" placeholder="Try fellowship, ERC, Nuffield, small grant…" value="${esc(q.text)}" autocomplete="off">
     <p class="q">Type</p>
     <div class="chips" role="group" aria-label="Grant type"><button type="button" class="chip" data-ty="all" aria-pressed="${q.ty==="all"}">All</button>${TYPES.map(t=>`<button type="button" class="chip" data-ty="${t[0]}" aria-pressed="${q.ty===t[0]}">${t[1]}</button>`).join("")}</div>
-    <label class="lbl" for="qf">Funder</label>
-    <select id="qf"><option value="all">All funders</option>${funders.map(f=>`<option ${q.fun===f?"selected":""}>${esc(f)}</option>`).join("")}</select>
+    <div class="selrow"><div><label class="lbl" for="qf">Funder</label>
+    <select id="qf"><option value="all">All funders</option>${funders.map(f=>`<option ${q.fun===f?"selected":""}>${esc(f)}</option>`).join("")}</select></div>
+    <div id="cowrap" ${q.fun==="UKRI"?"":"hidden"}><label class="lbl" for="qc">UKRI council</label>
+    <select id="qc"><option value="all">All councils</option>${councils.map(c=>`<option ${q.co===c?"selected":""}>${esc(c)}</option>`).join("")}</select></div>
+    <div><label class="lbl" for="qs">Status</label>
+    <select id="qs">${[["all","Any status"],["open","Open now"],["upcoming","Upcoming"],["closed","Closed"]].map(o=>`<option value="${o[0]}" ${q.stat===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></div></div>
     <span class="count" id="count" role="status"></span>
   </div>
   <ul class="schemes" id="res"></ul>
+  <div class="actions"><button class="btn ghost" id="more" hidden>Show more grants</button></div>
   <div class="addbox"><h3>Can't find your grant?</h3><p class="story">Upload the funder's guidance (PDF, Word, text or HTML) or paste it in. We read it in your browser, pull out the key facts and requirements, and let you check them before building your plan. Nothing is sent anywhere.</p><div class="actions"><button class="btn ghost" id="add">Add guidance for another grant</button></div></div>`;
-  $("qt").oninput=e=>{q.text=e.target.value;refreshResults();};
-  $("qf").onchange=e=>{q.fun=e.target.value;refreshResults();};
-  $("stage").querySelectorAll("[data-ty]").forEach(b=>b.onclick=()=>{q.ty=b.dataset.ty;$("stage").querySelectorAll("[data-ty]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));refreshResults();});
+  $("qt").oninput=e=>{q.text=e.target.value;q.n=PAGE;refreshResults();};
+  $("qf").onchange=e=>{q.fun=e.target.value;q.n=PAGE;if(q.fun!=="UKRI"){q.co="all";$("qc").value="all";}$("cowrap").hidden=q.fun!=="UKRI";refreshResults();};
+  $("qc").onchange=e=>{q.co=e.target.value;q.n=PAGE;refreshResults();};
+  $("qs").onchange=e=>{q.stat=e.target.value;q.n=PAGE;refreshResults();};
+  $("more").onclick=()=>{q.n+=PAGE;refreshResults();};
+  $("stage").querySelectorAll("[data-ty]").forEach(b=>b.onclick=()=>{q.ty=b.dataset.ty;q.n=PAGE;$("stage").querySelectorAll("[data-ty]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));refreshResults();});
   $("add").onclick=()=>go("add");
   if($("resume"))$("resume").onclick=()=>go(path().find(s=>!(s.id in st.mark)&&!(s.id in st.ans))?.id||"summary");
   refreshResults();
@@ -691,6 +1084,7 @@ function parseGuidance(raw,fname){
   const sample=flat.slice(0,8000).toLowerCase(), cnt=re=>(sample.match(re)||[]).length;
   const scores={fellowship:cnt(/fellow/g)*2,small:cnt(/small grant|pilot|seed fund|travel grant|up to £\d{1,2},\d{3}\b/g)*3,partner:cnt(/consortium|knowledge transfer|partnership|business partner|industry/g)*2,project:cnt(/research project|project grant|co-?investigator/g)*2+1};
   const ty=Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0];
+  const amts=(flat.match(/[£€$]\s?\d[\d,.]*\s?(?:k|m|million|thousand)?/gi)||[]).map(a=>{const m=/(\d[\d,.]*)\s?(k|m|million|thousand)?/i.exec(a);let v=parseFloat(m[1].replace(/,/g,""));const u=(m[2]||"").toLowerCase();return u==="k"||u==="thousand"?v*1e3:u?v*1e6:v;}).filter(v=>isFinite(v)&&v>=500);
   const size=pick(/[£€$]\s?\d|\bFEC\b|full economic cost|(up to|maximum|at most).{0,40}(million|\bk\b)/i,2).join(" ");
   const dur=sents.filter(x=>!/PhD|doctorate|awarded|since/i.test(x)&&/(duration|tenure|lasts?|over|for up to|up to|maximum of|for a)\b.{0,40}\b(\d+|one|two|three|four|five|six|twelve|eighteen)[ -]?(months?|years?)\b/i.test(x)).slice(0,1).map(x=>clip(x));
   const commit=pick(/\b\d{2,3}\s?%\s*(of\s+)?(your\s+|their\s+|the\s+)?(working\s+|research\s+)?time|\bFTE\b|full[- ]time|time commitment|at least \d+\s?%/i,1).join(" ");
@@ -707,7 +1101,7 @@ function parseGuidance(raw,fname){
   const reqs={};
   Object.entries(REQ).forEach(([k,[,re]])=>{const s=sents.find(x=>re.test(x));if(s)reqs[k]=clip(s,240);});
   const links=[...new Set((flat.match(/https?:\/\/[^\s)>\]"']+/g)||[]).map(u=>u.replace(/[.,;]+$/,"")))].slice(0,8).map(u=>[u.replace(/^https?:\/\/(www\.)?/,"").slice(0,70),u]);
-  return {n:clip(ttl,110),f,ty,size:[size,...dur.filter(x=>!size.includes(x))].filter(Boolean).join(" "),commit,elig,resub,limits,dates,dl:futureClose?toIso(futureClose.d):"",reqs,links,chars:text.length};
+  return {n:clip(ttl,110),f,ty,max:amts.length?Math.max(...amts):0,size:[size,...dur.filter(x=>!size.includes(x))].filter(Boolean).join(" "),commit,elig,resub,limits,dates,dl:futureClose?toIso(futureClose.d):"",reqs,links,chars:text.length};
 }
 
 /* ---------- Add and review ---------- */
@@ -736,13 +1130,13 @@ function renderAdd(){
 }
 function renderReview(){
   if(!draft)return go("add");
-  const d=draft, tyOpts=[["fellowship","Fellowship"],["project","Research project"],["small","Small grant"],["partner","Partnership"]];
+  const d=draft, tyOpts=[["fellowship","Fellowship"],["project","Research project"],["partner","Partnership"]];
   const fld=(id,lab,val,multi)=>`<label class="lbl" for="${id}">${lab}</label>${multi?`<textarea id="${id}" class="rv">${esc(val)}</textarea>`:`<input type="text" id="${id}" class="other" value="${esc(val)}" maxlength="140">`}`;
   $("stage").innerHTML=`<span class="eyebrow">Check what we found</span><h2>Review the details</h2>
   <p class="story">We read ${d.chars.toLocaleString("en-GB")} characters from <em>${esc(d.src)}</em>. This is automatic and can be wrong, so correct anything before you continue. Blank fields are fine.</p>
   ${fld("r-n","Grant name",d.n)}${fld("r-f","Funder",d.f)}
   <label class="lbl" for="r-ty">Type</label><select id="r-ty">${tyOpts.map(o=>`<option value="${o[0]}" ${d.ty===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select>
-  ${fld("r-size","Size and length of award",d.size,1)}${fld("r-commit","Time commitment",d.commit,1)}${fld("r-elig","Who can apply",d.elig,1)}${fld("r-resub","Resubmission rules",d.resub,1)}${fld("r-limits","Length and format limits",d.limits,1)}${fld("r-dates","Dates mentioned",d.dates,1)}
+  ${fld("r-size","Size and length of award",d.size,1)}<label class="lbl" for="r-max">Largest single award in £ <span class="mark">under £100,000 counts as a small grant</span></label><input type="number" id="r-max" class="other" min="0" step="1000" value="${d.max||""}">${fld("r-commit","Time commitment",d.commit,1)}${fld("r-elig","Who can apply",d.elig,1)}${fld("r-resub","Resubmission rules",d.resub,1)}${fld("r-limits","Length and format limits",d.limits,1)}${fld("r-dates","Dates mentioned",d.dates,1)}
   <label class="lbl" for="r-dl">Closing date</label><input type="date" id="r-dl" value="${esc(d.dl)}">
   <p class="q">Requirements to plan for <span class="mark">tick what applies</span></p>
   <ul class="reqs">${Object.entries(REQ).map(([k,v])=>`<li><label><input type="checkbox" data-k="${k}" ${d.reqs[k]?"checked":""}> <b>${esc(v[0])}</b></label>${d.reqs[k]?`<span class="ev">“${esc(d.reqs[k])}”</span>`:""}</li>`).join("")}</ul>
@@ -751,16 +1145,16 @@ function renderReview(){
   $("ok").onclick=()=>{
     const v=id=>$(id).value.trim(), reqs={};
     $("stage").querySelectorAll("[data-k]").forEach(c=>{if(c.checked)reqs[c.dataset.k]=d.reqs[c.dataset.k]||"(added by you)";});
-    const c=cleanCustom({id:"c-"+Date.now().toString(36),custom:true,f:v("r-f"),n:v("r-n")||"My grant",type:$("r-ty").value,size:v("r-size"),commit:v("r-commit"),elig:v("r-elig"),resub:v("r-resub"),limits:v("r-limits"),dates:v("r-dates"),reqs,links:d.links,src:d.src});
+    const c=cleanCustom({id:"c-"+Date.now().toString(36),custom:true,f:v("r-f"),n:v("r-n")||"My grant",type:$("r-ty").value,max:Math.max(0,parseInt($("r-max").value,10)||0),size:v("r-size"),commit:v("r-commit"),elig:v("r-elig"),resub:v("r-resub"),limits:v("r-limits"),dates:v("r-dates"),reqs,links:d.links,src:d.src});
     st.custom.unshift(c);st.sch=c.id;st.dl=$("r-dl").value||"";draft=null;go("deadline");
   };
 }
 function cleanCustom(c){
   const s=(v,n=600)=>typeof v==="string"?v.slice(0,n):"";
-  const type=["fellowship","project","small","partner"].includes(c.type)?c.type:"project";
+  const type=["fellowship","project","partner"].includes(c.type)?c.type:"project";
   const reqs={};Object.entries(c.reqs||{}).forEach(([k,v])=>{if(REQ[k]&&typeof v==="string")reqs[k]=v.slice(0,300);});
   const links=(Array.isArray(c.links)?c.links:[]).filter(l=>Array.isArray(l)&&/^https?:\/\//.test(l[1]||"")).slice(0,8).map(l=>[s(l[0],80),s(l[1],300)]);
-  return {id:s(c.id,40)||("c-"+Date.now().toString(36)),custom:true,f:s(c.f,140),n:s(c.n,140)||"My grant",sub:"Added from "+(s(c.src,120)||"your guidance"),g:[type],type,size:s(c.size),commit:s(c.commit),elig:s(c.elig),resub:s(c.resub),limits:s(c.limits),dates:s(c.dates),route:"",reqs,interview:!!reqs.interview,links,src:s(c.src,120)};
+  return {id:s(c.id,40)||("c-"+Date.now().toString(36)),custom:true,max:Math.max(0,Math.min(1e9,+c.max||0)),f:s(c.f,140),n:s(c.n,140)||"My grant",sub:"Added from "+(s(c.src,120)||"your guidance"),g:[type],type,size:s(c.size),commit:s(c.commit),elig:s(c.elig),resub:s(c.resub),limits:s(c.limits),dates:s(c.dates),route:"",reqs,interview:!!reqs.interview,links,src:s(c.src,120)};
 }
 
 /* ---------- Deadline ---------- */

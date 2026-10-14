@@ -91,3 +91,7 @@ These came from the original prototype or the brief. Open each by hand.
 ## Grant adventure (`grants.html`), checked 14 October 2026
 
 76 distinct URLs requested. 51 returned HTTP 200. 23 returned 403 to automated requests (Leverhulme, British Academy, NIHR, Royal Society, ERC work programme PDF, Academy of Medical Sciences, Wolfson, Ulster). These URLs came from search results or the funders' own pages, but please open them by hand. `infraportal.org.uk` timed out. One URL (the British Academy Mid-Career Fellowship 2026-27 guidance PDF) returned 404 and was removed; the scheme's guidance-notes page is linked instead.
+
+## Grant adventure, second pass (14 October 2026)
+
+294 distinct URLs requested after adding about 240 grants. 251 returned HTTP 200, including every UKRI call page. 40 returned 403 to automated requests (Leverhulme, British Academy, NIHR, Royal Society, Academy of Medical Sciences, ERC work programme PDF, HSC R&D, Wolfson). They came from search results or the funders' own pages, but please open them by hand. Two British Council pages did not respond from the build environment. The one 404 (a British Academy Mid-Career Fellowship PDF) was removed.
