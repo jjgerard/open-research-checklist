@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Unofficial prototype: a choose-your-own-adventure route through Ulster University's open research checklist, tailored to your discipline, career stage and project.">
 <title>Open Research Adventure</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
 :root{
   /* Approximate Ulster palette (same as checklist.html): swap in official brand values */
@@ -42,6 +43,7 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.15}
 .map button:disabled{opacity:.5;cursor:not-allowed}
 .map .nm{font-weight:600;font-size:13.5px;line-height:1.2}
 .map .ct{font:500 11px var(--mono);opacity:.8}
+.map[hidden]{display:none}
 .bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
 @media (max-width:640px){.map{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -76,6 +78,18 @@ h2{font-size:clamp(24px,4.5vw,32px);font-weight:800}
 .why{margin:0}
 .tip{background:var(--accent-soft);border-left:4px solid var(--accent);border-radius:4px;padding:10px 14px;margin:0;font-size:16px}
 .tip b{display:block;font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:2px}
+input.other{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);margin-top:8px}
+input.other[hidden]{display:none}
+.opts .q{margin-bottom:8px}
+.sel{display:block;font-size:14.5px;color:var(--muted)}
+.dl{display:flex;flex-wrap:wrap;gap:8px}
+.warnbox{margin:0;background:var(--warn-soft);color:var(--warn);border-radius:4px;padding:10px 14px;font-size:15.5px}
+.warnbox b{display:block;font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
+.how h3,.eg b{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.how h3{margin-bottom:6px}
+.how ol{margin:0;padding-left:22px;display:grid;gap:4px}
+.eg{margin:10px 0 0;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 14px;font-size:15.5px}
+.eg b{display:block;margin-bottom:2px}
 .res h3{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 .res ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
 .res a{font-weight:600}
@@ -87,7 +101,7 @@ h2{font-size:clamp(24px,4.5vw,32px);font-weight:800}
 .btn:hover{border-color:var(--accent)}
 .btn.ghost{background:transparent;color:var(--ink)}
 .btn.ok{background:var(--rec);border-color:var(--rec);color:#fff}
-.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:disabled{background:var(--line);border-color:var(--line);color:var(--muted);cursor:not-allowed}
 .status{font-size:14px;color:var(--rec);min-height:1.3em}
 .back{all:unset;cursor:pointer;color:var(--accent-ink);font-size:15px;text-decoration:underline;text-underline-offset:3px;margin-right:auto}
 .back:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
@@ -301,13 +315,13 @@ const S=[
  story:"Time to share. First, make sure your work will be found, credited and counted.",
  why:"Your outputs follow you, and funders increasingly ask for an ORCID.",
  tips:{pgr:"Get one now. It will follow you through your career.",ecr:"An ORCID makes every future application and CV easier."},
- links:[["Pure and ORCID",U+"outputs/puresupport/pure-and-orcid"]]},
+ links:[["Pure and ORCID",U+"puresupport/pure-and-orcid"]]},
 {id:"u-pure",ch:"publish",t:"a",title:"Keep your Pure profile up to date",lvl:"exp",eff:"quick",
  why:"Pure feeds REF, reporting and your public profile.",
  tips:{est:"Encourage your team to do the same so group outputs are captured."},
- links:[["Pure support",U+"outputs/puresupport/resources"]]},
+ links:[["Pure support",U+"outputs/puresupport"]]},
 {id:"u-kw",ch:"publish",t:"a",title:"Add keywords to your Pure outputs",lvl:"rec",eff:"quick",
- why:"Helps search engines and colleagues find your work.",links:[["Pure support",U+"outputs/puresupport/resources"]]},
+ why:"Helps search engines and colleagues find your work.",links:[["Pure support",U+"outputs/puresupport"]]},
 {id:"u-fart",ch:"publish",t:"f",flag:"articles",title:"Will you publish journal articles or conference papers?",
  story:"Another fork. Articles have the clearest open access rules.",
  hint:{sci:"Usually yes.",health:"Usually yes.",comp:"Usually yes.",soc:"Usually yes.",hum:"Often, alongside books.",art:"Sometimes; practice outputs may be the main route."}},
@@ -395,6 +409,215 @@ const S=[
  tips:{est:"Supervisors set the norms: model open practice with your students."},
  links:[["Open research resources",U+"open-research/resources"]]}
 ];
+/* ---------- How-to guidance: steps + a worked example per action ---------- */
+const HOW={
+"p-data":{steps:["List every kind of material your project will collect, create or reuse: raw, processed and published.","Note the format, rough size and who owns it for each.","Put the list at the top of your DMP and revisit it when the design changes."],
+ eg:"Interview study: 24 audio recordings (WAV, ~12 GB), transcripts (DOCX), consent forms (PDF, confidential), a coding frame (XLSX), and analysis scripts (R)."},
+"p-stat":{steps:["Write your research question and design in a paragraph or two.","Ask a statistician or data scientist for a short meeting before you finalise sample size or methods.","Record what was agreed in your DMP or protocol."],
+ eg:"Before recruiting, you ask a methods colleague to check your power calculation. They suggest a mixed-effects model, which changes how many participants you need."},
+"p-dmp":{steps:["Open your funder's DMP template or the Ulster RDM guidance and slide deck.","Work through the themes: data description, standards, consent, storage, metadata, access, and responsibilities.","Keep it short (1 to 4 pages is usual) and name who is responsible for each task.","Share it with your supervisor, PI or collaborators and store it with the project."],
+ eg:"Storage: \"Working data are held on the University's secured network drive with daily backup. Anonymised data will be deposited in Pure with a CC BY licence by the end of the project.\""},
+"p-reuse":{steps:["Search discipline repositories, a general repository (e.g. Zenodo), and Pure for existing data and code.","Check the licence and any access conditions before you rely on a dataset.","Record sources and versions, then cite them."],
+ eg:"You find a public dataset with a CC BY licence, record its DOI and version in your DMP, and cite it in your methods section."},
+"p-limits":{steps:["List any commercial, security, privacy or cultural constraints.","For each one, say what can still be shared (e.g. metadata, a de-identified subset, or code only).","Record the reasoning in your DMP; you can reuse it in a data access statement."],
+ eg:"\"Raw audio cannot be shared because participants could be identified. Anonymised transcripts will be available under access conditions.\""},
+"p-prereg":{steps:["Write your hypotheses, sample, measures and analysis plan before collecting data.","Register it on a registry such as the Open Science Framework (registrations continue), with a timestamp.","Label any later analyses that were not in the plan as exploratory."],
+ eg:"Your registration states: \"We predict H1: group A will score higher than group B. We will use a two-sided t-test, alpha = .05, N = 120.\" You add later subgroup analyses under \"exploratory\"."},
+"p-rr":{steps:["Pick a journal that offers Registered Reports.","Submit your introduction, methods and analysis plan (Stage 1) for peer review before collecting data.","If you get in-principle acceptance, run the study as agreed and submit the results (Stage 2)."],
+ eg:"Stage 1 is accepted in principle in March. You collect data over the summer, and the paper is published whatever the results show."},
+"p-ip":{steps:["Ask Research Development to review the draft agreement before you sign.","Check who owns the background and new IP, and what can be published and when.","Agree in writing which data and code may be shared openly, and record it in your DMP."],
+ eg:"Clause added: \"Partners may share anonymised results and software under an open licence after a 6-month delay for patent filing.\""},
+"p-cost":{steps:["Estimate time for data cleaning, documentation and deposit.","Add storage, repository, and staff costs to the budget justification.","Check your funder's rules on what counts as an allowable cost; centrally supported services usually cannot be claimed."],
+ eg:"Budget line: \"0.1 FTE research assistant for 3 months to prepare, document and deposit datasets (£x).\""},
+"p-coprod":{steps:["Identify who is affected by your research and ask how they'd like to be involved.","Agree roles, credit and decision-making at the start, and write them down.","Budget for participants' time and expenses."],
+ eg:"A community advisory group meets quarterly to shape interview questions and review draft findings, and is credited in outputs."},
+
+"e-intro":{steps:["Work out your category: A (lower-risk, filter committee only), B (higher-risk, filter committee then UREC), C (NHS/HSC), D (human tissue), E (clinical trials, contact Research Governance first).","Complete the University's online Research Integrity course; everyone named on the application needs it before approval.","Prepare the forms (e.g. RG1a application, protocol, participant information, consent forms) and arrange peer review (RG2).","Submit to your filter committee. You can only go on to UREC when the committee advises you to."],
+ eg:"A survey of staff attitudes with no sensitive topics is likely Category A: peer review, filter committee, then you can start."},
+"e-consent":{steps:["Write the information sheet and consent form so they say what will be shared, in what form, and who can access it.","Use separate tick-boxes for different permissions (taking part, quoting you, archiving anonymised data).","Make sure the consent wording matches your DMP."],
+ eg:"\"I agree that my anonymised interview transcript may be stored in a research data repository and used by other researchers. [ ] Yes [ ] No\""},
+"e-gdpr":{steps:["Decide whether you need personal data at all, and collect the minimum.","Plan de-identification, secure storage and retention before you collect.","Ask the GDPR team and Research Governance to check your plan, and record the advice in your DMP."],
+ eg:"Replace names with codes (P01, P02), keep the key in a separate encrypted file, and delete it at the end of the retention period."},
+"e-sens":{steps:["Separate the data that can be public from the data that needs controls.","Choose a repository that supports restricted access and agree the access conditions.","Describe the conditions in your DMP and your data access statement."],
+ eg:"\"An anonymised dataset is available on request; access is granted for research purposes after a data sharing agreement is signed.\""},
+"e-care":{steps:["Read the CARE principles: Collective benefit, Authority to control, Responsibility, Ethics.","Talk with the community about ownership, permissions and how data will be stored and shared.","Record agreements in your ethics application and DMP."],
+ eg:"The community keeps authority over what is shared. Metadata is public, while the data itself is held under community-agreed access."},
+"e-agree":{steps:["Send the draft agreement to Research Development early, before signing.","Ask them to check restrictions on publishing, sharing and reuse.","Update your DMP to reflect what was agreed."],
+ eg:"The draft says all data stays confidential. You negotiate a clause that allows publication of anonymised results."},
+"e-lic":{steps:["List your planned outputs: articles, data, code, images, teaching materials.","Pick a licence for each: CC BY is usually preferred for text, images and data; use an OSI-approved licence for software, because Creative Commons licences are not designed for code.","Check who owns the rights and any partner or funder conditions.","Record the choices in your DMP."],
+ eg:"Article and data: CC BY 4.0. Analysis code: MIT or Apache-2.0. Teaching slides: CC BY-NC."},
+
+"c-dmp":{steps:["Set a regular review point (e.g. each project milestone).","Update it when your data, partners, tools or storage change.","Record the date and what changed."],
+ eg:"v2, March: added a new survey wave, and moved storage from a laptop to the network drive."},
+"c-note":{steps:["Choose a notebook tool (an electronic lab notebook, a dated document, or a Git repository).","Write down decisions as you make them, with the date and reasons.","Note any deviation from your plan."],
+ eg:"\"14 Mar: dropped item 7 from the questionnaire after pilot feedback (confusing wording).\""},
+"c-meta":{steps:["Decide what information someone would need to understand the data: who, what, when, where, how.","Record it as you collect, not at the end.","Use a standard, such as Dublin Core or a standard in your field, where one exists."],
+ eg:"Title, creator, date collected, method, instrument, units, variable names, licence, related publication."},
+"c-name":{steps:["Agree a file naming scheme with your team and write it down.","Include date, content and version, and avoid spaces and special characters.","Use your field's standards and vocabularies where they exist."],
+ eg:"2026-03-14_interview03_transcript_v2.docx"},
+"c-readme":{steps:["Create a README.txt in the project or dataset folder.","Describe the files, how they were created, and the meaning of each variable and unit.","Add contact details, licence and how to cite."],
+ eg:"README: \"Folder /data holds 24 anonymised transcripts (txt). /code holds the R scripts that produce Table 2. Run 00_run_all.R first.\""},
+"c-repo":{steps:["Create a repository on a platform such as GitHub or GitLab.","Commit early and often with short, clear messages.","Add a README and a licence file, and tag a release for each paper."],
+ eg:"git tag v1.0-paper-submission, then archive the tagged release on Zenodo to get a DOI."},
+"c-repro":{steps:["Keep raw data read-only and script every step from raw data to figures.","Record software versions and random seeds.","Test: run it from scratch on another machine or a clean folder."],
+ eg:"A single script (or Makefile) runs the cleaning, analysis and figures, and the README says how to run it."},
+"c-space":{steps:["Create a project in a service such as Zenodo Communities or Figshare Projects (OSF Projects is being retired, see the note above).","Add collaborators and organise outputs by type.","Link the project from your Pure record and publications."],
+ eg:"One OSF project holds the preregistration, materials, data and preprint, all linked."},
+"c-onb":{steps:["Pick a notebook format such as Jupyter or R Markdown.","Write your reasoning in the notebook alongside the code.","Share it via a repository or a service that can run it."],
+ eg:"A Jupyter notebook shows each cleaning step with comments, and runs from raw data to the final plots."},
+"c-colab":{steps:["Agree how you will share findings with partners and participants.","Plan joint outputs, events or resources.","Credit contributors in outputs."],
+ eg:"A short film and a plain-language report, made with community partners and credited to them."},
+
+"u-orcid":{steps:["Register for a free ORCID iD if you don't have one.","Link it to your Pure profile and authorise the connection.","Use your ORCID iD when you submit papers and funding applications."],
+ eg:"Once linked, Pure can push your outputs to ORCID weekly, or you can import publications from ORCID into Pure."},
+"u-pure":{steps:["Log in to Pure and check your profile details.","Add new outputs and activities after acceptance or publication.","Upload the accepted manuscript where copyright permits."],
+ eg:"Add your latest paper and upload the accepted version at the time of acceptance."},
+"u-kw":{steps:["Open the output record in Pure.","Add keywords that people in your field would search for.","Use the same terms across your outputs."],
+ eg:"\"open research; research data management; reproducibility\""},
+"u-pre":{steps:["Check your target journal's preprint policy.","Choose a preprint server for your field.","Post the version you submit and add the preprint link and DOI to Pure."],
+ eg:"Post to a preprint server on the day you submit, then update the record on acceptance."},
+"u-oa":{steps:["Check whether your journal is covered by an Ulster publisher agreement.","If funded by UKRI, check the funding route and requirements.","Check the journal with Think. Check. Submit. before you submit.","Upload the accepted manuscript to Pure; the Open Research team can advise."],
+ eg:"Your journal is on a publisher agreement list, so you select the open access option at acceptance and use your Ulster email."},
+"u-rrs":{steps:["Add the statement to your submission (cover letter and acknowledgments).","Check the Library guide for current wording and who is covered; the policy covers academic and research staff automatically, and PGRs can opt in.","Keep a copy of the submitted statement."],
+ eg:"\"For the purpose of open access, the author has applied a CC BY public copyright licence to any Author Accepted Manuscript version arising from this submission.\""},
+"u-das":{steps:["Say where the data are, or why they can't be shared.","Add a DOI or link if there is one.","Include a statement even if there are no data."],
+ eg:"\"The anonymised dataset is available at doi:10.xxxx/xxxxx. Raw audio cannot be shared for ethical reasons.\" Or: \"This paper is theoretical; no new data were generated.\""},
+"u-lic":{steps:["Check who holds the copyright.","Choose a licence, such as CC BY, and check any publisher licence.","Add the licence statement to the outputs."],
+ eg:"\"This work is licensed under CC BY 4.0.\""},
+"u-peer":{steps:["Look for journals or platforms with open or transparent peer review.","When you review, consider signing your review.","Add your review activity to your ORCID or Pure profile."],
+ eg:"You accept to review for a journal that publishes the review reports alongside the article."},
+"u-badge":{steps:["Check whether your journal offers Open Science Badges.","Prepare your data, materials or preregistration so they are available.","Apply during submission."],
+ eg:"Open Data badge: data are deposited in a repository with a DOI."},
+"u-bukri":{steps:["Check the funder's requirements for books and chapters.","Plan your route early: OA publisher, or an accepted version deposited within the time limit.","Include a data and funding statement."],
+ eg:"A UKRI-funded monograph: open access within 12 months, with CC BY unless an exception applies."},
+"u-boa":{steps:["Ask your publisher about open access routes and fees.","Check for institutional or funder support.","Negotiate a licence that permits sharing."],
+ eg:"You agree an OA chapter with a publisher and add the chapter to Pure."},
+"u-thesis":{steps:["Learn the thesis deposit process and timings.","Check third-party copyright, and request an embargo only if you need one.","Submit your final version; the Library uploads it to the institutional repository in Pure."],
+ eg:"You remove an image you don't have permission to reuse and note this in the thesis, then deposit with a 12-month embargo."},
+"u-doi":{steps:["Choose a repository that issues DOIs (e.g. Zenodo, Figshare or Pure).","Upload the item with a good description and licence.","Cite the DOI wherever you refer to it."],
+ eg:"Poster: doi:10.xxxx/xxxxx. Cite it in your CV and in publications."},
+"u-rec":{steps:["Create a simple log (spreadsheet or notes file).","Record each open practice as you do it, with date and link.","Use it for PDR, promotion and narrative CV."],
+ eg:"\"Jun 2026: preregistered Study 2 on OSF; Oct 2026: deposited dataset, DOI link.\""},
+"u-plain":{steps:["Write a 150-word summary without jargon.","Say who it helps and why it matters.","Share it on your Pure profile, a blog or social media."],
+ eg:"\"We interviewed 24 nurses about night shifts. They said short, regular breaks mattered more than longer ones.\""},
+"u-alt":{steps:["Open your Pure profile or portal.","Check the citation and altmetric data for each output.","Note which outputs reach different audiences."],
+ eg:"A dataset record shows downloads and a policy mention."},
+
+"s-dep":{steps:["Identify your repository: use the one your funder requires, then a discipline-specific one if there is one (it may reach your community better), otherwise a general trusted repository or Pure. Look for DOIs, clear licences, access controls and long-term preservation.","Whichever you choose, create a linked dataset record in Pure; the University's RDM policy asks for one even when data sits in an external repository.","For restricted or sensitive data, choose a repository that supports controlled access.","Prepare the files, README and metadata.","Upload, choose an access level and licence, and get a DOI.","Cite the DOI in your paper."],
+ eg:"Deposit anonymised survey data, codebook and README as a dataset; set CC BY; add the DOI to your data access statement."},
+"s-pureds":{steps:["Log in to Pure and add a new dataset record.","Describe the data, add contributors, and upload the files or link to the repository.","Link the dataset to related publications."],
+ eg:"A Pure dataset record links to the Zenodo DOI and your related paper."},
+"s-funder":{steps:["Read your funder's data policy and any conditions in your award.","Note what, where and when to share.","Add the requirements to your DMP."],
+ eg:"\"Funder X expects data to be made available within 12 months of project end.\""},
+"s-lic":{steps:["Choose a licence for the data (CC BY or CC0 are common) and another for code.","Add a LICENSE file, and put the licence in the metadata.","Check third-party material."],
+ eg:"Dataset: CC BY 4.0. Code: MIT."},
+"s-code":{steps:["Put the code in a repository with a README and licence.","Archive a release to get a DOI.","Link the code and data to each other and to the paper."],
+ eg:"The README says: \"Run 01_clean.py then 02_model.py to reproduce Table 3.\""},
+"s-cite":{steps:["Cite the dataset with author, year, title, repository and DOI.","Add it to your reference list.","Ask others to cite it too."],
+ eg:"Smith, J. (2026). Night shift diaries [Data set]. Zenodo. https://doi.org/10.xxxx/xxxxx"},
+
+"t-oer":{steps:["Search open educational resource collections before creating your own.","Check the licence and credit the creators.","Share your own materials with an open licence."],
+ eg:"Reuse a CC BY lecture slide with attribution, and publish your adapted version under CC BY."},
+"t-open":{steps:["Pick open access articles and open datasets for reading lists.","Check links work for students.","Add a short activity that uses an open dataset."],
+ eg:"Students re-analyse a public dataset in a practical session."},
+"t-meth":{steps:["Add open research to module learning outcomes.","Include a session on DMPs, preregistration and sharing.","Make an open practice part of the assessment."],
+ eg:"Assessment: students write a one-page DMP for their project."}
+};
+
+/* Heads-up notes shown above the how-to */
+const NOTE={
+"c-space":"OSF is retiring its Projects workflow (collaboration, file management and storage), as announced by the Center for Open Science on 11 August 2026. New projects and components can't be created after 16 November 2026, and existing projects become read-only on 19 February 2027. Preprints and registrations are not affected. Consider Zenodo, Figshare or Pure for new work, and check the COS page for current dates.",
+"p-prereg":"OSF registrations and preprints are not affected by the OSF Projects changes announced by the Center for Open Science (11 August 2026), so OSF remains an option for preregistration. Check the COS page for current details.",
+"s-dep":"Using OSF Projects to store data? The Center for Open Science has announced that OSF Projects will become read-only on 19 February 2027, and new projects can't be created after 16 November 2026. Copy your data to a repository with a DOI (such as Zenodo, a discipline repository, or Pure) in good time, and check the COS page for current dates."
+};
+/* Extra Ulster guidance links, added to each step's own links */
+const ADD={
+"p-dmp":[["Looking after your data during your project",U+"rdm/looking-after-your-data-during-your-project"],["RDM support",U+"rdm/rdm-support"]],
+"p-limits":[["Research policies and procedures","https://www.ulster.ac.uk/research/policies"]],
+"p-prereg":[["Preprints and preregistration (Library guide)",L+"publishingOA/preprints"],["OSF is changing (Center for Open Science)","https://www.cos.io/osf-changes"]],
+"p-ip":[["Open licensing for research",U+"open-research/licensing-and-copyright"]],
+"e-intro":[["How to submit to UREC",U+"governance-and-ethics/ethics/how-to-submit"],["Category B: higher-risk research",U+"governance-and-ethics/ethics/high"],["Category C: NHS and HSC",U+"governance-and-ethics/ethics/nhs"],["Professional and research integrity","https://www.ulster.ac.uk/student/success/academic/professional-and-research-integrity"]],
+"e-consent":[["Ethics for applicants",U+"governance-and-ethics/ethics"]],
+"e-lic":[["Open licensing for research",U+"open-research/licensing-and-copyright"],["Copyright and licences (Library guide)",L+"copyright_and_licences"]],
+"c-space":[["OSF is changing (Center for Open Science)","https://www.cos.io/osf-changes"]],
+"c-dmp":[["Looking after your data during your project",U+"rdm/looking-after-your-data-during-your-project"]],
+"c-meta":[["RDM support",U+"rdm/rdm-support"]],
+"u-orcid":[["ORCID overview and Pure integration",U+"home/orcid-overview-and-pure-integration"]],
+"u-pure":[["Pure at Ulster (Library guide)",L+"PureUlster"]],
+"u-pre":[["Preprints and preregistration (Library guide)",L+"publishingOA/preprints"]],
+"u-oa":[["What is open access?",L+"WhatIsOpenAccess"],["Ensuring your article complies with the UKRI policy",U+"outputs/openaccess/new-ukri-open-access-policy/ways-to-ensure-your-article-complies"],["REF 2029 open access policy",L+"REF"],["Open Access and Pure policy (PDF)","https://www.ulster.ac.uk/__data/assets/pdf_file/0012/1829289/Open-Access-and-PURE-Policy.pdf"]],
+"u-rrs":[["Ensuring your article complies with the UKRI policy",U+"outputs/openaccess/new-ukri-open-access-policy/ways-to-ensure-your-article-complies"]],
+"u-das":[["Ensuring your article complies (model statements)",U+"outputs/openaccess/new-ukri-open-access-policy/ways-to-ensure-your-article-complies"]],
+"u-bukri":[["UKRI long-form publications",U+"outputs/openaccess/new-ukri-open-access-policy/ensuring-your-long-form-publications-comply-with-the-new-ukri-policy"]],
+"u-thesis":[["Theses (Library guide)",L+"theses"]],
+"s-dep":[["OSF is changing (Center for Open Science)","https://www.cos.io/osf-changes"],["OSF changes: information for Manchester researchers","https://www.manchester.ac.uk/about/news/osf-changes-info-for-manchester-researchers/"],["Open Access and Pure policy (PDF)","https://www.ulster.ac.uk/__data/assets/pdf_file/0012/1829289/Open-Access-and-PURE-Policy.pdf"]],
+"s-pureds":[["Using Pure for datasets (2020 PDF; check it is current)","https://www.ulster.ac.uk/__data/assets/pdf_file/0004/668722/Using-PURE-for-datasets-1-Oct-2020.pdf"],["Pure at Ulster (Library guide)",L+"PureUlster"]],
+"s-lic":[["Open licensing for research",U+"open-research/licensing-and-copyright"]]
+};
+
+/* ---------- Pick-list options per action (an "Other" choice with free text is added automatically) ---------- */
+const OPTS={
+"p-data":["What counts as data in your project?",["Survey or questionnaire responses","Interview or focus group recordings and transcripts","Observations or field notes","Images, audio or video","Archival or historical sources","Experimental or instrument measurements","Clinical, health or administrative records","Code, models or software","Creative works or documentation of practice","Existing datasets I will reuse"]],
+"p-stat":["How will you get statistical or data science input?",["A named colleague or collaborator","My supervisor or PI","School or Faculty methods support","A paid consultant","Not needed for my design","Not decided yet"]],
+"p-dmp":["How will you write your DMP?",["Using my funder's template","Using the Ulster RDM guidance and slide deck","Using a DMP tool","In my own document","I already have one","I will contact the RDM team for help"]],
+"p-reuse":["Where will you look for existing data, code or outputs?",["A discipline repository","Zenodo or Figshare","Pure / Ulster research portal","UK Data Service or national archives","GitHub or GitLab","Funder or project websites","Nothing to reuse"]],
+"p-limits":["What might limit how open you can be?",["Personal or identifiable data","Commercial or IP interests","Security or confidentiality","Cultural or Indigenous data governance","Third-party copyright","Funder or partner terms","Nothing known yet"]],
+"p-prereg":["Where will you preregister?",["OSF Registries","A discipline or clinical trial registry","A journal Registered Report (Stage 1)","A time-stamped repository deposit","Not decided yet","I will not preregister"]],
+"p-rr":["Where are you with a Registered Report?",["I have identified a journal","I am writing the Stage 1 protocol","Not suitable for this study","I will consider it later"]],
+"p-ip":["What needs agreeing in your contracts?",["Ownership of data","Ownership of code or IP","Publication rights and any delay","Data sharing and reuse","Confidentiality","Commercial use"]],
+"p-cost":["What will you cost into your bid?",["Staff time to prepare data","Storage","Repository or archiving fees","Open access fees","Software or tools","Participant or community costs"]],
+"p-coprod":["How could people be involved?",["Advisory group","Co-design workshops","Co-analysis","Co-authorship","Community events","Not suitable for this project"]],
+"e-intro":["Which ethics route applies?",["Category A: lower-risk (filter committee)","Category B: higher-risk (filter committee, then UREC)","Category C: NHS or HSC","Category D: human tissue","Category E: clinical trial","I am not sure, I will ask Research Governance","No human participants"]],
+"e-consent":["What will your consent form cover?",["Taking part","Use of quotes","Archiving anonymised data","Reuse by other researchers","Recording or photography","Sharing identifiable data with explicit consent"]],
+"e-gdpr":["How will you protect personal data?",["Anonymise at collection","Pseudonymise and keep the key separately","Encrypted storage","Restricted access","Retention and deletion date set","Advice from the GDPR team requested"]],
+"e-sens":["How will you handle sensitive data?",["Controlled-access repository","Anonymised subset only","Embargo","Data sharing agreement","Secure environment","Not shared, with the reasons in my DMP"]],
+"e-care":["How will you follow the CARE principles?",["Community consultation","Community-agreed access","Community labels in the metadata","Benefit-sharing plan","Governance agreement"]],
+"e-agree":["What will your agreements cover?",["Data sharing agreement","Collaboration agreement","Non-disclosure agreement","Material transfer agreement","Not yet drafted"]],
+"e-lic":["Which licences are you considering?",["CC BY for text and data","CC0 for data","CC BY-NC","MIT for code","Apache-2.0 for code","GPL for code","Undecided"]],
+"c-dmp":["When will you review your DMP?",["At each project milestone","Every six months","When tools or partners change","At deposit","Not yet scheduled"]],
+"c-note":["What will you use to log decisions?",["Electronic lab notebook","Dated document or journal","GitHub issues and commits","Spreadsheet log","Paper notebook (scanned)"]],
+"c-meta":["What metadata approach will you use?",["A standard schema such as Dublin Core","A discipline standard","README fields","A data dictionary","The repository's form"]],
+"c-name":["How will you name files?",["Date first","Project codes","Version numbers","A discipline convention","A team-agreed document"]],
+"c-readme":["What documentation will you write?",["README","Codebook","Data dictionary","Methods document","Data management log"]],
+"c-repo":["Where will your code live?",["GitHub","GitLab","An institutional repository","Local only (needs changing)"]],
+"c-repro":["How will you make your analysis reproducible?",["Scripts from raw data to results","Notebooks","A workflow tool","Containers","Pinned dependencies and seeds","Tested on another machine"]],
+"c-space":["Which open project space will you use?",["Zenodo Communities","Figshare Projects","Pure","A GitHub organisation","I will not use one"]],
+"c-onb":["Which notebook format will you use?",["Jupyter","R Markdown","Quarto","Electronic lab notebook","Shared through a repository"]],
+"c-colab":["How will you co-deliver research?",["Joint outputs","Community events","Co-authored papers","A shared platform","Acknowledgement of contributors"]],
+"u-orcid":["Where are you with ORCID?",["I have one and it's linked to Pure","I have one but it's not linked","I need to create one","I will import publications into Pure"]],
+"u-pure":["What will you update in Pure?",["Recent outputs","Accepted manuscripts","My profile","Datasets","Activities"]],
+"u-kw":["How will you choose keywords?",["Terms from my field","Terms from my abstract","Controlled vocabulary","Review needed"]],
+"u-pre":["Where will you post a preprint?",["arXiv","bioRxiv or medRxiv","SSRN","OSF Preprints","A discipline server","I will not, because of journal policy"]],
+"u-oa":["Which open access route will you use?",["Publisher agreement","Gold open access with a fee","Green: accepted manuscript in Pure","Diamond open access","UKRI-funded route"]],
+"u-rrs":["How will you handle rights retention?",["Statement in the cover letter","Statement in the acknowledgements","Publisher already notified by the University","Opting in as a PGR","Opting out"]],
+"u-das":["What will your data access statement say?",["Data deposited with a DOI","Restricted access","Available on request","No new data generated","Third-party data used"]],
+"u-lic":["Which licence will you apply?",["CC BY","CC BY-NC","CC0","The publisher's licence"]],
+"u-peer":["How will you take part in open peer review?",["Sign my reviews","Publish review reports","Review for an open journal","Register on a review platform"]],
+"u-badge":["Which badges might you apply for?",["Open data","Open materials","Preregistered","Not applicable"]],
+"u-bukri":["What is your route for UKRI books or chapters?",["Publisher open access","Accepted version deposited in time","Funding secured","Exception applies"]],
+"u-boa":["What are your options for books or chapters?",["Publisher open access","Green deposit","Institutional support","Not possible"]],
+"u-thesis":["What is your plan for your thesis?",["Deposit in Pure","Embargo needed","Third-party permissions to check","Not yet at this stage"]],
+"u-doi":["Where will you get DOIs?",["Zenodo","Figshare","Pure","Another repository"]],
+"u-rec":["Where will you record your open research activity?",["Spreadsheet","ORCID","Pure","My CV"]],
+"u-plain":["Where will you share plain-language summaries?",["A blog","Social media","The press office","Podcast or video","My Pure profile"]],
+"u-alt":["Where will you check metrics?",["Pure","Altmetric","Google Scholar"]],
+"s-dep":["Where will you deposit your data?",["A discipline repository","Zenodo","Figshare","Pure","A funder repository","A controlled-access repository"]],
+"s-pureds":["What will your Pure dataset record include?",["A dataset record","Links to publications","Uploaded files","A link to an external repository"]],
+"s-funder":["What does your funder require?",["I have read the funder's policy","A named repository","A deadline","An embargo is allowed"]],
+"s-lic":["Which licence will you apply?",["CC BY for data","CC0 for data","An Open Data Commons licence","An open-source licence for code","Restricted terms"]],
+"s-code":["How will you share your code?",["GitHub plus a Zenodo DOI","Zenodo archive","Pure","Supplementary files"]],
+"s-cite":["How will you cite your datasets?",["In the reference list","In the data access statement","In the methods","Citing reused data"]],
+"t-oer":["How will you use open educational resources?",["Reuse existing OER","Adapt existing OER","Create and share new OER"]],
+"t-open":["How will you use open materials in teaching?",["Open access readings","Open datasets in practicals","Open software"]],
+"t-meth":["How will you embed open research in teaching?",["A session on DMPs","A session on preregistration","Open practices in assessment","Learning outcomes"]]
+};
+
+S.forEach(x=>{
+  if(OPTS[x.id])x.opts=OPTS[x.id];
+  if(HOW[x.id])x.how=HOW[x.id];
+  if(NOTE[x.id])x.note=NOTE[x.id];
+  if(ADD[x.id]){const seen=new Set((x.links||[]).map(l=>l[1]));x.links=(x.links||[]).concat(ADD[x.id].filter(l=>!seen.has(l[1])));}
+});
 const byId=Object.fromEntries(S.map(s=>[s.id,s]));
 
 /* ---------- State ---------- */
@@ -405,7 +628,9 @@ const store={
 let st=store.get("st",null)||{};
 st.prof=st.prof||{d:null,st:null,sc:null,inv:[]};
 st.ans=st.ans||{};      // fork answers: yes/no
-st.mark=st.mark||{};    // action marks: done/later/skip
+st.mark=st.mark||{};
+st.pick=st.pick||{};    // chosen options per action
+st.other=st.other||{};  // free text for "Other" per action    // action marks: done/later/skip
 st.at=st.at||"start";
 Object.keys(st.mark).forEach(k=>{st.mark[k]={done:"yes",later:"no",skip:"na"}[st.mark[k]]||st.mark[k];});   // current screen: start | profile step | scene id | summary
 const save=()=>store.set("st",st);
@@ -433,7 +658,7 @@ function profileDone(){return st.prof.d&&st.prof.st&&st.prof.sc;}
 
 function renderMap(){
   const m=$("map");
-  if(!profileDone()||st.at==="start"||["d","s","sc","inv"].includes(st.at)){m.hidden=true;return;}
+  if(!profileDone()||st.at==="start"||["d","s","sc","inv"].includes(st.at)){m.hidden=true;m.innerHTML="";return;}
   m.hidden=false;
   const pa=path(), cur=byId[st.at];
   m.innerHTML=CH.map(c=>{
@@ -462,6 +687,15 @@ function renderStart(){
   if($("resume"))$("resume").onclick=()=>go(path().find(s=>!(s.id in st.mark)&&!(s.id in st.ans))?.id||"summary");
 }
 
+/* Clicking an option only highlights it and unlocks Next; it never advances by itself */
+function choose(sel,set,attr){
+  const bs=$("stage").querySelectorAll(sel);
+  bs.forEach(b=>b.onclick=()=>{
+    set(b.dataset[attr]);
+    bs.forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+    $("nx").disabled=false;renderMap();
+  });
+}
 function renderProfile(step){
   const cfg={
     d:{eye:"Step 1 of 4",h:"Choose your discipline",list:DISC,key:"d",q:"Which is closest to your field?",next:"s"},
@@ -484,8 +718,9 @@ function renderProfile(step){
   }
   const c=cfg[step];
   $("stage").innerHTML=`<span class="eyebrow">${c.eye}</span><h2>${c.h}</h2>${picker(c.list,c.key,null,c.q)}
-  <div class="actions"><button class="back" id="bk">Back</button></div>`;
-  $("stage").querySelectorAll(".choice").forEach(b=>b.onclick=()=>{st.prof[c.key]=b.dataset.v;go(c.next);});
+  <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="nx" ${st.prof[c.key]?"":"disabled"}>Next</button></div>`;
+  choose(".choice",v=>{st.prof[c.key]=v;save();},"v");
+  $("nx").onclick=()=>go(c.next);
   $("bk").onclick=()=>go(step==="d"?"start":step==="s"?"d":"s");
 }
 
@@ -509,9 +744,10 @@ function renderScene(s){
     h+=`<h2>${esc(s.title)}</h2>${hint?`<p class="story"><em>For ${esc(discLabel)}: ${esc(hint)}</em></p>`:""}
     <ul class="choices two"><li><button type="button" class="choice" data-a="yes" aria-pressed="${a==="yes"}"><b>Yes, or probably</b><span>Show me the related steps</span></button></li>
     <li><button type="button" class="choice" data-a="no" aria-pressed="${a==="no"}"><b>No, or not sure yet</b><span>Skip these; I can come back</span></button></li></ul>
-    <div class="actions"><button class="back" id="bk">Back</button></div>`;
+    <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="nx" ${a?"":"disabled"}>Next</button></div>`;
     $("stage").innerHTML=h;
-    $("stage").querySelectorAll(".choice").forEach(b=>b.onclick=()=>{st.ans[s.id]=b.dataset.a;save();go(nextFrom(s.id));});
+    choose(".choice",v=>{st.ans[s.id]=v;save();},"a");
+    $("nx").onclick=()=>go(nextFrom(s.id));
   }else{
     const [cls,lab]=LVL[s.lvl], m=st.mark[s.id];
     const tip=[s.tips&&s.tips[st.prof.d]&&["For "+discLabel,s.tips[st.prof.d]],s.tips&&s.tips[st.prof.st]&&["For "+stageLabel,s.tips[st.prof.st]]].filter(Boolean);
@@ -520,50 +756,110 @@ function renderScene(s){
     <div class="badges"><span class="b ${cls}">${lab}</span><span class="b eff">${EFF[s.eff]}</span></div>
     <p class="why"><strong>Why it matters:</strong> ${esc(s.why)}</p>
     ${tip.map(t=>`<p class="tip"><b>${esc(t[0])}</b>${esc(t[1])}</p>`).join("")}
-    ${links?`<div class="res"><h3>Resources</h3><ul>${links}</ul></div>`:""}
+    ${s.note?`<p class="warnbox"><b>Heads up</b>${esc(s.note)}</p>`:""}
+    ${s.how?`<div class="how"><h3>How to do it</h3><ol>${s.how.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol><p class="eg"><b>Example</b>${esc(s.how.eg)}</p></div>`:""}
+    ${links?`<div class="res"><h3>Ulster guidance and resources</h3><ul>${links}</ul></div>`:""}
     ${s.help?`<p class="help"><b>Who can help:</b> ${s.help}</p>`:""}
+    ${s.opts?`<div class="opts"><p class="q">${esc(s.opts[0])} <span class="mark">Select all that apply</span></p>
+      <div class="chips" role="group" aria-label="${esc(s.opts[0])}">${s.opts[1].map(o=>`<button type="button" class="chip" data-o="${esc(o)}" aria-pressed="${(st.pick[s.id]||[]).includes(o)}">${esc(o)}</button>`).join("")}<button type="button" class="chip" data-o="__other" aria-pressed="${(st.pick[s.id]||[]).includes("__other")}">Other</button></div>
+      <input type="text" class="other" id="oth" maxlength="300" placeholder="Describe your other option" aria-label="Other option" value="${esc(st.other[s.id]||"")}" ${(st.pick[s.id]||[]).includes("__other")?"":"hidden"}></div>`:""}
     <p class="q">Has this been addressed in your research?</p>
     <ul class="choices two">${Object.entries(MARK).map(([k,v])=>`<li><button type="button" class="choice" data-m="${k}" aria-pressed="${m===k}"><b>${v}</b></button></li>`).join("")}</ul>
-    <div class="actions"><button class="back" id="bk">Back</button>${m?`<button class="btn ghost" id="nx">Next</button>`:""}</div>`;
+    <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="nx" ${m?"":"disabled"}>Next</button></div>`;
     $("stage").innerHTML=h;
-    if($("nx"))$("nx").onclick=()=>go(nextFrom(s.id));
-    $("stage").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{st.mark[s.id]=b.dataset.m;save();go(nextFrom(s.id));});
+    choose("[data-m]",v=>{st.mark[s.id]=v;save();},"m");
+    $("stage").querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>{
+      const a=st.pick[s.id]=st.pick[s.id]||[], v=b.dataset.o, i=a.indexOf(v);
+      i<0?a.push(v):a.splice(i,1);
+      b.setAttribute("aria-pressed",String(i<0));
+      if(v==="__other"){const o=$("oth");o.hidden=i>=0;if(i<0)o.focus();}
+      save();
+    });
+    if($("oth"))$("oth").oninput=e=>{st.other[s.id]=e.target.value.slice(0,300);save();};
+    $("nx").onclick=()=>go(nextFrom(s.id));
   }
   $("bk").onclick=()=>go(prevFrom(s.id));
 }
 
-function summaryText(){
+function picksFor(x){
+  const out=(st.pick[x.id]||[]).filter(v=>v!=="__other");
+  if((st.pick[x.id]||[]).includes("__other"))out.push("Other: "+(st.other[x.id]||"(not described)"));
+  return out;
+}
+function report(){
   const pa=path().filter(s=>s.t==="a");
-  const lines=["My open research checklist (Ulster University)",
-    [st.prof.d,st.prof.st,st.prof.sc].map((v,i)=>v==='any'?['Any discipline','Any career stage','Any project scope'][i]:name([DISC,STAGE,SCOPE][i],v)).join(' · '),""];
-  [["yes","Addressed","[x]"],["wip","Work in progress","[~]"],["no","Yet to be considered","[ ]"],[null,"Not yet reviewed","[ ]"],["na","Not applicable to my research","[-]"]].forEach(([k,lab,box])=>{
-    const items=pa.filter(s=>(st.mark[s.id]||null)===k);
-    if(!items.length)return;
-    lines.push(lab+":");items.forEach(s=>lines.push(`${box} ${s.title} (${LVL[s.lvl][1]})`));lines.push("");
+  return {
+    profile:[st.prof.d,st.prof.st,st.prof.sc].map((v,i)=>v==="any"?["Any discipline","Any career stage","Any project scope"][i]:name([DISC,STAGE,SCOPE][i],v)).join(" · "),
+    chapters:CH.map(c=>({name:c.n,items:pa.filter(s=>s.ch===c.id).map(s=>({title:s.title,level:LVL[s.lvl][1],status:MARK[st.mark[s.id]]||"Not yet reviewed",q:s.opts?s.opts[0]:"",picks:picksFor(s)}))})).filter(c=>c.items.length)
+  };
+}
+const BOX={"Yes: addressed":"[x]","Work in progress":"[~]","Not applicable to my research":"[-]"};
+function summaryText(md){
+  const r=report(), L=[md?"# My open research checklist (Ulster University)":"My open research checklist (Ulster University)",r.profile,"","Prepared: "+new Date().toLocaleDateString("en-GB"),""];
+  r.chapters.forEach(c=>{
+    L.push(md?"## "+c.name:c.name.toUpperCase(),"");
+    c.items.forEach(i=>{
+      L.push(`${BOX[i.status]||"[ ]"} ${md?"**"+i.title+"**":i.title} (${i.level}) - ${i.status}`);
+      if(i.picks.length)L.push("    "+(i.q?i.q+" ":"")+i.picks.join("; "));
+    });
+    L.push("");
   });
-  return lines.join("\n");
+  return L.join("\n");
+}
+function download(name,type,text){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function wordDoc(){
+  const r=report();
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>My open research checklist</title></head><body style="font-family:Calibri,Arial,sans-serif">
+<h1>My open research checklist (Ulster University)</h1><p>${esc(r.profile)}<br>Prepared: ${new Date().toLocaleDateString("en-GB")}</p>
+${r.chapters.map(c=>`<h2>${esc(c.name)}</h2><table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%"><tr><th align="left">Step</th><th align="left">Status</th><th align="left">My choices</th></tr>${c.items.map(i=>`<tr><td>${esc(i.title)}<br><small>${esc(i.level)}</small></td><td>${esc(i.status)}</td><td>${i.picks.length?esc(i.picks.join("; ")):""}</td></tr>`).join("")}</table>`).join("")}
+<p><small>Unofficial prototype based on From Closed to Open (CC BY 4.0).</small></p></body></html>`;
+}
+function loadSaved(text){
+  let o;try{o=JSON.parse(text)}catch(e){return "That file isn't a saved checklist.";}
+  if(!o||o.app!=="open-research-adventure"||!o.state)return "That file isn't a saved checklist.";
+  const x=o.state, ok=(list,v)=>v===null||list.some(i=>i.id===v), str=v=>typeof v==="string";
+  const n={prof:{d:null,st:null,sc:null,inv:[]},ans:{},mark:{},pick:{},other:{},at:"start"};
+  if(x.prof){
+    if(ok(DISC,x.prof.d))n.prof.d=x.prof.d; if(ok(STAGE,x.prof.st))n.prof.st=x.prof.st; if(ok(SCOPE,x.prof.sc))n.prof.sc=x.prof.sc;
+    if(Array.isArray(x.prof.inv))n.prof.inv=x.prof.inv.filter(v=>INV.some(i=>i.id===v));
+  }
+  Object.entries(x.ans||{}).forEach(([k,v])=>{if(byId[k]&&(v==="yes"||v==="no"))n.ans[k]=v;});
+  Object.entries(x.mark||{}).forEach(([k,v])=>{if(byId[k]&&MARK[v])n.mark[k]=v;});
+  Object.entries(x.pick||{}).forEach(([k,v])=>{if(byId[k]&&Array.isArray(v))n.pick[k]=v.filter(str).slice(0,30);});
+  Object.entries(x.other||{}).forEach(([k,v])=>{if(byId[k]&&str(v))n.other[k]=v.slice(0,300);});
+  st=n;st.at=profileDone()?"summary":"start";save();render();return "";
 }
 function who(){
   const o=[];
   if(st.prof.d!=="any")o.push(`<strong>${esc(name(DISC,st.prof.d))}</strong>`);
-  if(st.prof.st!=="any"){const n=name(STAGE,st.prof.st);o.push(esc(n[0].toLowerCase()+n.slice(1)))};
+  if(st.prof.st!=="any"){const n=name(STAGE,st.prof.st);o.push(esc(n[0].toLowerCase()+n.slice(1)))}
   if(st.prof.sc!=="any")o.push("working on "+esc(name(SCOPE,st.prof.sc).toLowerCase()));
   return o;
 }
 function renderSummary(){
   const pa=path().filter(s=>s.t==="a");
   const g=k=>pa.filter(s=>(st.mark[s.id]||null)===k);
-  const sec=(k,label)=>{const it=g(k);return it.length?`<h3>${label}<span class="count">${it.length}</span></h3><ul>${it.map(s=>`<li><a href="#" data-j="${s.id}">${esc(s.title)}</a> <span class="mark">· ${LVL[s.lvl][1]}</span></li>`).join("")}</ul>`:"";};
+  const sec=(k,label)=>{const it=g(k);return it.length?`<h3>${label}<span class="count">${it.length}</span></h3><ul>${it.map(s=>`<li><a href="#" data-j="${s.id}">${esc(s.title)}</a> <span class="mark">· ${LVL[s.lvl][1]}</span>${picksFor(s).length?`<span class="sel">${esc(picksFor(s).join("; "))}</span>`:""}</li>`).join("")}</ul>`:"";};
   const done=g("yes").length;
   $("stage").innerHTML=`<span class="eyebrow">Journey map</span><h1>Your open research map</h1>
   <p class="story lead">${done} of ${pa.length} steps addressed${who().length?' for '+who().join(', '):''}.</p>
   <div class="sum">${sec("wip","Work in progress")}${sec("no","Yet to be considered")}${sec(null,"Not yet reviewed")}${sec("yes","Addressed")}${sec("na","Not applicable to my research")}</div>
-  <div class="actions"><button class="btn" id="copy">Copy my checklist</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="again">Revisit from the start</button></div>
+  <h3>Save your checklist</h3>
+  <div class="dl"><button class="btn" id="dlmd">Download (Markdown)</button><button class="btn" id="dldoc">Download (Word)</button><button class="btn ghost" id="dljson">Save progress file</button><label class="btn ghost" for="ld" style="cursor:pointer">Load a saved file</label><input type="file" id="ld" accept=".json,application/json" hidden></div>
+  <div class="actions"><button class="btn ghost" id="copy">Copy as text</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="again">Revisit from the start</button></div>
   <span class="status" id="cs" role="status"></span><textarea id="fb" hidden readonly aria-label="Checklist text"></textarea>
-  <p class="story">Paste it into a DMP, PDR or supervision record. For help, start at <a href="${U}open-research" target="_blank" rel="noopener">Open research at Ulster ↗</a> or the <a href="${U}governance-and-ethics" target="_blank" rel="noopener">Governance and ethics ↗</a> pages.</p>`;
+  <p class="story">Your choices are also saved automatically in this browser. Paste the text into a DMP, PDR or supervision record. For help, start at <a href="${U}open-research" target="_blank" rel="noopener">Open research at Ulster ↗</a> or the <a href="${U}governance-and-ethics" target="_blank" rel="noopener">Governance and ethics ↗</a> pages.</p>`;
   $("stage").querySelectorAll("[data-j]").forEach(a=>a.onclick=e=>{e.preventDefault();go(a.dataset.j);});
   $("again").onclick=()=>go(path()[0].id);
   $("print").onclick=()=>window.print();
+  $("dlmd").onclick=()=>download("open-research-checklist.md","text/markdown",summaryText(true));
+  $("dldoc").onclick=()=>download("open-research-checklist.doc","application/msword",wordDoc());
+  $("dljson").onclick=()=>download("open-research-progress.json","application/json",JSON.stringify({app:"open-research-adventure",version:1,state:st},null,2));
+  $("ld").onchange=async e=>{const f=e.target.files[0];if(!f)return;const m=loadSaved(await f.text());if(m)$("cs").textContent=m;};
   $("copy").onclick=async()=>{
     const t=summaryText();
     try{await navigator.clipboard.writeText(t);$("cs").textContent="Copied to clipboard.";}
@@ -585,7 +881,7 @@ function render(){
 
 $("restart").onclick=()=>{
   if(!confirm("Start again? This clears your choices and progress in this browser."))return;
-  st={prof:{d:null,st:null,sc:null,inv:[]},ans:{},mark:{},at:"start"};save();render();
+  st={prof:{d:null,st:null,sc:null,inv:[]},ans:{},mark:{},pick:{},other:{},at:"start"};save();render();
 };
 render();
 </script>
