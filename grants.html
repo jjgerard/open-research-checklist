@@ -139,6 +139,26 @@ summary{cursor:pointer;color:var(--accent-ink);padding:6px 2px;font-weight:600}
 .tl{list-style:none;padding-left:0!important}
 .tl li{display:grid;gap:1px;padding:6px 0;border-bottom:1px solid var(--line)}
 .dis{margin:0}
+.search{display:grid;gap:6px}
+select{font:inherit;font-size:16px;padding:10px 12px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);max-width:340px}
+.count{font:500 13px var(--mono);color:var(--muted);margin-top:4px}
+.scard{display:grid;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.schead{display:grid;gap:3px}
+.schead b{font-size:19px}
+.schead .sub{font-size:14.5px;color:var(--muted)}
+.stbadge{font-style:normal;margin-left:8px;background:var(--rec-soft);color:var(--rec);padding:2px 6px;border-radius:4px;text-transform:none;letter-spacing:0}
+.stbadge.closed{background:var(--warn-soft);color:var(--warn)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tags i{font:500 12px var(--mono);font-style:normal;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted)}
+.empty{color:var(--muted);padding:12px 0}
+.addbox{border-top:1px solid var(--line);padding-top:16px;margin-top:6px;display:grid;gap:8px}
+.addbox h3{font-size:19px}
+textarea.rv{min-height:110px;font:15px/1.4 var(--font)}
+.reqs{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:8px}
+.reqs input{width:18px;height:18px;vertical-align:-3px}
+.ev{display:block;font-size:14px;color:var(--muted);margin:2px 0 0 26px}
+input[type=file]{font:inherit;max-width:100%}
+.schead .sf{margin-bottom:2px}
 </style>
 </head>
 <body>
@@ -154,7 +174,7 @@ summary{cursor:pointer;color:var(--accent-ink);padding:6px 2px;font-weight:600}
 
   <footer>
     <p class="dis"><b>Check before relying on it.</b> Scheme facts are summarised from each funder's own web pages as seen in October 2026 and change often, sometimes between calls. The week offsets that set "decide by" dates are suggested planning times, not funder requirements. Always follow the live call text, your funder's terms, and the advice of the Ulster research office and research finance team.</p>
-    <p>Funders covered: <a href="https://www.ukri.org/">UKRI</a> (AHRC, BBSRC, EPSRC, ESRC, MRC, NERC, STFC, Innovate UK), <a href="https://www.leverhulme.ac.uk/">Leverhulme Trust</a>, <a href="https://www.thebritishacademy.ac.uk/funding/">British Academy</a>, <a href="https://wellcome.org/research-funding">Wellcome</a>, <a href="https://royalsociety.org/grants/">Royal Society</a>, <a href="https://raeng.org.uk/">Royal Academy of Engineering</a>, <a href="https://www.nihr.ac.uk/funding">NIHR</a>, the <a href="https://erc.europa.eu/apply-grant">ERC</a> and <a href="https://www.ukri.org/apply-for-funding/horizon-europe/">Horizon Europe</a>.</p>
+    <p>Funders covered: <a href="https://www.ukri.org/">UKRI</a> (AHRC, BBSRC, EPSRC, ESRC, MRC, NERC, STFC, Innovate UK), <a href="https://www.leverhulme.ac.uk/">Leverhulme Trust</a>, <a href="https://www.thebritishacademy.ac.uk/funding/">British Academy</a>, <a href="https://wellcome.org/research-funding">Wellcome</a>, <a href="https://www.nuffieldfoundation.org/funding-for-research">Nuffield Foundation</a>, <a href="https://royalsociety.org/grants/">Royal Society</a>, <a href="https://raeng.org.uk/">Royal Academy of Engineering</a>, <a href="https://www.nihr.ac.uk/funding">NIHR</a>, the <a href="https://erc.europa.eu/apply-grant">ERC</a> and <a href="https://www.ukri.org/apply-for-funding/horizon-europe/">Horizon Europe</a>.</p>
     <p>Your choices and notes are stored only in this browser.</p>
   </footer>
 </main>
@@ -163,33 +183,8 @@ summary{cursor:pointer;color:var(--accent-ink);padding:6px 2px;font-weight:600}
 const U="https://www.ulster.ac.uk/research/resources/";
 const HUB=["Ulster research hub","https://www.ulster.ac.uk/research"];
 const GE=["Ulster governance and ethics",U+"governance-and-ethics"];
-const RDM=["Ulster research data management",U+"rdm"];
+const RDM=["Ulster research data management",U+"research-data-management"];
 const UK="https://www.ukri.org/apply-for-funding/";
-
-/* ---------- About you ---------- */
-const STAGE=[
- {id:"early",n:"Early career",d:"Postdoc, new lecturer, or within roughly 10 years of your PhD"},
- {id:"mid",n:"Mid career",d:"Established independent researcher, building a group or a second major project"},
- {id:"est",n:"Established / senior",d:"Leading a group or programme, with a strong independent track record"},
- {id:"any",n:"Not sure",d:"Show me everything and I will check eligibility myself"}
-];
-const DISC=[
- {id:"ah",n:"Arts & humanities",d:"History, languages, literature, philosophy, media, creative practice",council:["AHRC","https://www.ukri.org/councils/ahrc/guidance-for-applicants/"]},
- {id:"ss",n:"Social sciences, business & law",d:"Surveys, interviews, policy, economics, organisations",council:["ESRC","https://www.ukri.org/councils/esrc/guidance-for-applicants/"]},
- {id:"stem",n:"Physical sciences, maths & computing",d:"Physics, chemistry, mathematics, data science, AI",council:["EPSRC (or STFC for astronomy and particle physics)","https://www.ukri.org/councils/epsrc/guidance-for-applicants/"]},
- {id:"eng",n:"Engineering & built environment",d:"Engineering, design, materials, energy, construction",council:["EPSRC","https://www.ukri.org/councils/epsrc/guidance-for-applicants/"]},
- {id:"life",n:"Life, earth & environmental sciences",d:"Biology, ecology, agriculture, climate, geoscience",council:["BBSRC or NERC","https://www.ukri.org/councils/bbsrc/guidance-for-applicants/"]},
- {id:"health",n:"Health & medicine",d:"Clinical, biomedical, nursing, psychology, public health",council:["MRC","https://www.ukri.org/councils/mrc/guidance-for-applicants/"]},
- {id:"any",n:"Not sure",d:"Show me everything",council:null}
-];
-const GOAL=[
- {id:"fellowship",n:"Time and independence for me",d:"A fellowship that funds my salary and a research programme"},
- {id:"project",n:"A funded research project",d:"Money for staff, costs and a defined piece of work, maybe with a team"},
- {id:"small",n:"A small grant to get started",d:"Pilot data, travel, archive visits, a small project or a stepping stone"},
- {id:"partner",n:"Work with business or other partners",d:"Knowledge exchange, innovation or a multi-partner consortium"},
- {id:"eu",n:"A European scheme",d:"ERC, Marie Skłodowska-Curie or Horizon Europe collaborations"},
- {id:"any",n:"Not sure yet",d:"Show me everything so I can compare"}
-];
 
 /* ---------- Schemes ----------
    g = goals matched, st = career stages (omit = any), d = disciplines (omit = any)
@@ -204,6 +199,7 @@ const UKGEN=[
  ["UKRI: submitting your application",UK+"develop-your-application/submitting-your-application/"],
  ["UKRI: what happens next",UK+"develop-your-application/what-happens-next/"]
 ];
+const rq=(p,k)=>!!(p.sch&&p.sch.reqs&&p.sch.reqs[k]);
 const SCH=[
  {id:"ukri-resp",f:"UKRI",n:"Responsive-mode research grants",sub:"AHRC, BBSRC, EPSRC, ESRC, MRC, NERC, STFC",g:["project","small"],type:"project",
   size:"UKRI normally funds 80% of the full economic cost (FEC). The EPSRC standard research grant, for example, has no set limit on value or length.",
@@ -243,7 +239,7 @@ const SCH=[
   commit:"The Academy covers 100% of the fellow's time during the award. A public engagement plan is expected.",
   elig:"Applicants should usually be within 15 years of their doctorate.",
   route:"British Academy applications portal",
-  links:[["Mid-Career Fellowships","https://www.thebritishacademy.ac.uk/funding/schemes/mid-career-fellowships/"],["Scheme guidance notes","https://www.thebritishacademy.ac.uk/funding/schemes/mid-career-fellowships/guidance-notes/"]]},
+  links:[["Mid-Career Fellowships","https://www.thebritishacademy.ac.uk/funding/schemes/mid-career-fellowships/"],["Scheme guidance notes","https://www.thebritishacademy.ac.uk/funding/schemes/mid-career-fellowships/guidance-notes/"],["Guidance notes 2026-27 (PDF)","https://www.thebritishacademy.ac.uk/documents/6231/Mid-Career_Fellowship_2026-27_-_Scheme_Guidance_Notes.pdf"]]},
  {id:"ba-pdf",f:"British Academy",n:"Postdoctoral Fellowships",sub:"Humanities and social sciences, two-stage",g:["fellowship"],st:["early"],d:["ah","ss"],type:"fellowship",interview:true,
   size:"Three years. Outline stage first, then a second stage by invitation.",
   resub:"The scheme does not accept resubmissions.",
@@ -309,10 +305,41 @@ const SCH=[
   elig:"UK applicants have been eligible for direct EC funding since 1 January 2024 for 2024 to 2027 work programme calls. Consortium proposals need partners from several countries.",
   route:"EU Funding & Tenders Portal",
   links:[["UKRI: Horizon Europe help for UK applicants",UK+"horizon-europe/"],["UKRI: applying for Horizon Europe funding",UK+"horizon-europe/apply-for-funding/"],["UKRI: contact support services",UK+"horizon-europe/contact-support-services/"],["Horizon Europe work programmes (European Commission)","https://research-and-innovation.ec.europa.eu/funding/funding-opportunities/funding-programmes-and-open-calls/horizon-europe/horizon-europe-work-programmes_en"],["Horizon Europe (European Commission)","https://commission.europa.eu/funding-tenders/find-funding/eu-funding-programmes/horizon-europe_en"]]},
- {id:"other",f:"Another funder",n:"A scheme not listed here, or still comparing",sub:"Charities, trusts, government departments, industry",g:[],type:"project",
-  elig:"Use the generic decision steps. Paste your funder's guidance into your notes alongside each step, and add your own links via your research office.",
-  route:"Check the funder's call",
-  links:[["UKRI funding finder","https://www.ukri.org/opportunity/"],["Nuffield Foundation","https://www.nuffieldfoundation.org/"],["Wolfson Foundation","https://www.wolfson.org.uk/"],["Royal Society of Edinburgh","https://rse.org.uk/"],["Academy of Medical Sciences","https://acmedsci.ac.uk/"]]}
+ {id:"nuf-main",f:"Nuffield Foundation",n:"Main Grants (Research, Development and Analysis Fund)",sub:"Social policy research on education, welfare, justice and more",g:["project","small"],type:"project",status:"Open: outline deadline April 2027",
+  size:"Up to £500,000, usually for six months to three years. Most awards are smaller, and smaller grants (under £15,000) are also available.",
+  elig:"Funds projects addressing one or more of the Foundation's priorities. Applications start with an outline, so read the Guide for applicants before you begin.",
+  route:"Nuffield Foundation grants system (outline stage first)",
+  links:[["Main Grants (Research, Development and Analysis Fund)","https://www.nuffieldfoundation.org/funding-for-research/main-grants"],["Nuffield: guide for applicants","https://www.nuffieldfoundation.org/funding-for-research/resources/guide-for-applicants"],["Nuffield: use of AI in applications","https://www.nuffieldfoundation.org/about/governance/use-of-generative-ai-in-funding-applications-and-assessment"],["Nuffield: support for grant-holders","https://www.nuffieldfoundation.org/funding-for-research/support-for-grant-holders"]]},
+ {id:"nuf-skills",f:"Nuffield Foundation",n:"Essential Employment Skills Fund",sub:"Young people aged 16-24 facing barriers to work",g:["project"],type:"project",status:"Open: outline deadline 10 December 2026",
+  size:"Grants of up to £500,000.",
+  elig:"Builds evidence on helping young people who face significant barriers to work.",
+  route:"Nuffield Foundation grants system (outline stage first)",
+  links:[["Essential Employment Skills Fund","https://www.nuffieldfoundation.org/funding-for-research/essential-employment-skills-fund"],["Nuffield: guide for applicants","https://www.nuffieldfoundation.org/funding-for-research/resources/guide-for-applicants"],["Nuffield: use of AI in applications","https://www.nuffieldfoundation.org/about/governance/use-of-generative-ai-in-funding-applications-and-assessment"],["Nuffield: support for grant-holders","https://www.nuffieldfoundation.org/funding-for-research/support-for-grant-holders"]]},
+ {id:"nuf-racial",f:"Nuffield Foundation",n:"Racial Diversity UK Fund",sub:"Barriers and pathways to a racially just and inclusive society",g:["project"],type:"project",status:"Closed: 2026 deadline passed; the 2027 round is expected to reopen",
+  size:"Up to £500,000, usually for six months to three years.",
+  elig:"The 2027 round is expected to focus on the economics of racial diversity. Check the page for the new call.",
+  route:"Nuffield Foundation grants system (outline stage first)",
+  links:[["Racial Diversity UK Fund","https://www.nuffieldfoundation.org/funding-for-research/racial-diversity-uk-fund"],["Nuffield: guide for applicants","https://www.nuffieldfoundation.org/funding-for-research/resources/guide-for-applicants"],["Nuffield: use of AI in applications","https://www.nuffieldfoundation.org/about/governance/use-of-generative-ai-in-funding-applications-and-assessment"],["Nuffield: support for grant-holders","https://www.nuffieldfoundation.org/funding-for-research/support-for-grant-holders"]]},
+ {id:"nuf-strat",f:"Nuffield Foundation",n:"Strategic Fund",sub:"Ambitious projects on the UK's biggest social and economic challenges",g:["project","partner"],type:"project",status:"Closed: next round likely in the first half of 2027",
+  size:"£1 million to £3 million over two to five years.",
+  elig:"For large, ambitious projects. Check the page for the next call.",
+  route:"Nuffield Foundation grants system",
+  links:[["Strategic Fund","https://www.nuffieldfoundation.org/funding-for-research/strategic-fund"],["Nuffield: guide for applicants","https://www.nuffieldfoundation.org/funding-for-research/resources/guide-for-applicants"],["Nuffield: use of AI in applications","https://www.nuffieldfoundation.org/about/governance/use-of-generative-ai-in-funding-applications-and-assessment"],["Nuffield: support for grant-holders","https://www.nuffieldfoundation.org/funding-for-research/support-for-grant-holders"]]},
+ {id:"nuf-bird",f:"Nuffield Foundation",n:"Oliver Bird Fund",sub:"Social and economic well-being of people with musculoskeletal conditions",g:["project"],type:"project",status:"Closed: next deadline to be confirmed",
+  size:"Up to £750,000 over up to four years.",
+  elig:"Research on the social and economic well-being of people with musculoskeletal conditions.",
+  route:"Nuffield Foundation grants system",
+  links:[["Oliver Bird Fund","https://www.nuffieldfoundation.org/funding-for-research/oliver-bird-fund"],["Nuffield: guide for applicants","https://www.nuffieldfoundation.org/funding-for-research/resources/guide-for-applicants"],["Nuffield: use of AI in applications","https://www.nuffieldfoundation.org/about/governance/use-of-generative-ai-in-funding-applications-and-assessment"],["Nuffield: support for grant-holders","https://www.nuffieldfoundation.org/funding-for-research/support-for-grant-holders"]]},
+ {id:"nuf-rapid",f:"Nuffield Foundation",n:"UK impacts of the US-Iran conflict",sub:"Rapid-response research on UK economic and social impacts",g:["small","project"],type:"small",status:"Closed",
+  size:"Up to eight projects, with a total budget of over £350,000, lasting three to six months.",
+  elig:"Rapid-response research on the economic and social impacts in the UK of the 2026 conflict.",
+  route:"Nuffield Foundation grants system",
+  links:[["UK impacts of the US-Iran conflict","https://www.nuffieldfoundation.org/funding-for-research/uk-impacts-of-the-us-iran-conflict"],["Nuffield: guide for applicants","https://www.nuffieldfoundation.org/funding-for-research/resources/guide-for-applicants"],["Nuffield: use of AI in applications","https://www.nuffieldfoundation.org/about/governance/use-of-generative-ai-in-funding-applications-and-assessment"],["Nuffield: support for grant-holders","https://www.nuffieldfoundation.org/funding-for-research/support-for-grant-holders"]]},
+ {id:"nuf-post",f:"Nuffield Foundation",n:"POST Fellowship",sub:"Fellowship listed by the Nuffield Foundation",g:["fellowship"],type:"fellowship",status:"Check the page for current status",
+  size:"Details not confirmed by this page's author. See the scheme page.",
+  elig:"See the scheme page for who can apply and how.",
+  route:"See the scheme page",
+  links:[["POST Fellowship","https://www.nuffieldfoundation.org/funding-for-research/post-fellowship"],["Nuffield: guide for applicants","https://www.nuffieldfoundation.org/funding-for-research/resources/guide-for-applicants"],["Nuffield: use of AI in applications","https://www.nuffieldfoundation.org/about/governance/use-of-generative-ai-in-funding-applications-and-assessment"],["Nuffield: support for grant-holders","https://www.nuffieldfoundation.org/funding-for-research/support-for-grant-holders"]]}
 ];
 const schById=Object.fromEntries(SCH.map(s=>[s.id,s]));
 
@@ -335,10 +362,18 @@ const S=[
  {id:"f-intl",t:"f",ch:"choose",wk:999,flag:"intl",title:"Will you work with collaborators, fieldwork or data outside the UK?",hint:"International partners, overseas hosts, or data transferred across borders."},
  {id:"f-resub",t:"f",ch:"choose",wk:999,flag:"resub",title:"Is this a resubmission of an idea a funder has already assessed?",hint:"Including a revised version of a proposal sent to this or another funder."},
 
+ {id:"d-outline",t:"d",ch:"choose",wk:21,w:p=>rq(p,"stage"),title:"How will you handle a two-stage process (outline first, then full application)?",
+  why:"Your guidance describes more than one stage. The outline is often written quickly, and what you promise in it constrains the full application. Decide what you can commit to now.",
+  opts:["Stage one deadline and format confirmed","Core idea settled before the outline","Date for the full application worked out","Partners and costs checked early enough"],
+  help:"Your research office."},
+ {id:"d-guide",t:"d",ch:"choose",wk:23,w:p=>!!(p.sch&&p.sch.custom&&p.sch.reqs&&Object.keys(p.sch.reqs).length),title:"Which requirements in your guidance do you need to plan for?",
+  why:"These requirements were detected automatically in the guidance you added. Tick the ones that apply, check them against the original document, and plan time for each.",
+  opts:[],reqList:true,
+  help:"Read the original guidance in full. The detection is a reading aid, not a replacement."},
  {id:"d-fit",t:"d",ch:"choose",wk:24,title:"Is this the right scheme for you and your idea?",
   why:"Most rejections without review come from eligibility or remit, not quality. Decide early whether you fit, because everything else depends on the answer.",
   opts:["Eligibility confirmed","Career-stage window checked","Remit and aims match my idea","Funder guidance and call text read in full","Backup scheme identified"],
-  facts:["elig","route"],
+  facts:["elig","route","dates"],
   help:"Your research office and your head of school or research director. Ask a colleague who has held an award from this funder."},
  {id:"d-role",t:"d",ch:"choose",wk:22,title:"What role will you take, and how much of your time will it need?",
   why:"Funders set the minimum time you must commit, and your School must agree to release it. Teaching buy-out and cover need lead time.",
@@ -350,7 +385,7 @@ const S=[
   opts:["Research office contacted","Internal deadline confirmed","Internal peer review booked","Expression of interest needed","Demand management or application limit checked"],
   links:[HUB],
   help:"Your research office and research finance team (find them via the Ulster research hub)."},
- {id:"d-host",t:"d",ch:"choose",wk:20,w:p=>p.sch&&p.sch.type==="fellowship",title:"Who will be your mentor, host or sponsor, and who will write references?",
+ {id:"d-host",t:"d",ch:"choose",wk:20,w:p=>p.sch&&(p.sch.type==="fellowship"||rq(p,"mentor")),title:"Who will be your mentor, host or sponsor, and who will write references?",
   why:"Fellowship panels look for a credible environment around you. Mentors and referees need weeks of notice, not days.",
   opts:["Mentor identified","Host department support letter requested","Referees asked","Environment statement drafted"],
   help:"Your research director, senior colleagues, and past supervisors."},
@@ -369,10 +404,9 @@ const S=[
  {id:"d-panel",t:"d",ch:"design",wk:14,title:"Which discipline, council or panel should assess it?",
   why:"Where your proposal lands determines who reviews it and which criteria apply. Interdisciplinary work needs a deliberate choice.",
   opts:["Primary discipline or panel chosen","Secondary area noted","Funder contacted about remit","Reviewer-friendly framing considered"],
-  councilTip:true,
   links:[["UKRI: if your research spans disciplines",UK+"get-support-for-your-project/if-your-research-spans-different-disciplines"]],
   help:"The funder's programme manager or helpdesk, named in the call."},
- {id:"d-ethics",t:"d",ch:"design",wk:12,w:p=>p.F.has("people"),title:"Which ethics and governance approvals will you need, and when can you get them?",
+ {id:"d-ethics",t:"d",ch:"design",wk:12,w:p=>p.F.has("people")||rq(p,"ethics"),title:"Which ethics and governance approvals will you need, and when can you get them?",
   why:"Some funders need ethics information at application, others before the award starts. Approvals can take months, so decide the route and plan for it.",
   opts:["Ethics route identified","Data protection assessment needed","Sponsorship or NHS approvals needed","Animal, biosafety or site permissions","Vulnerable participants considered"],
   links:[GE],
@@ -419,6 +453,7 @@ const S=[
  {id:"d-submit",t:"d",ch:"submit",wk:1,title:"Is everything checked, and how have you used AI tools?",
   why:"Final checks catch formatting and file errors. Several funders have policies on generative AI in applications, so check what you must declare.",
   opts:["Page, word and file limits checked","Funder's formatting rules followed","Generative AI policy checked","Final proofread","Submission confirmation saved"],
+  facts:["limits"],
   links:[["UKRI: generative AI in applications and assessment","https://www.ukri.org/publications/generative-artificial-intelligence-in-application-and-assessment-policy/"],["UKRI: submitting your application",UK+"develop-your-application/submitting-your-application/"]]},
  {id:"d-interview",t:"d",ch:"after",wk:-8,w:p=>p.sch&&p.sch.interview,title:"How will you prepare for a possible interview or panel?",
   why:"Several schemes shortlist for interview. Time between invitation and interview is often short, so decide now who can rehearse with you.",
@@ -430,21 +465,42 @@ const S=[
   links:[["UKRI: what happens next",UK+"develop-your-application/what-happens-next/"]]}
 ];
 const byId=Object.fromEntries(S.map(s=>[s.id,s]));
+const TYPES=[["fellowship","Fellowships"],["project","Research projects"],["small","Small grants"],["partner","Partnerships & innovation"],["eu","European"]];
+const TYPE_LABEL={fellowship:"Fellowship",project:"Research project",small:"Small grant",partner:"Partnership"};
+const REQ={
+ cv:["Narrative CV or track record",/narrative cv|curriculum vitae|\bCV\b|r[eé]sum[eé]|R4RI|track record/i],
+ budget:["Budget and costs",/budget|full economic cost|\bFEC\b|justification of resources|eligible costs/i],
+ dmp:["Data management or open access",/data management|\bDMP\b|data sharing|open access|open research|open data/i],
+ ethics:["Ethics or governance approval",/ethic|governance|approval/i],
+ letters:["Letters of support",/letters? of support|support letters?|endorsement/i],
+ refs:["Referees or references",/referee|references? (letter|from)|reference letters?/i],
+ workplan:["Work plan, milestones or timeline",/work plan|work package|gantt|milestones?|project plan|timeline/i],
+ impact:["Impact or public engagement",/impact|public engagement|knowledge exchange|pathways/i],
+ edi:["Equality, diversity and inclusion",/equality|diversity|inclusion|\bEDI\b/i],
+ stage:["Two-stage process (outline first)",/outline (application|stage|proposal)|expression of interest|two[- ]stage|stage (one|1)\b|first stage/i],
+ interview:["Interview or panel",/interview|panel meeting|shortlist/i],
+ partner:["Partners or collaborators",/partner|collaborat|co-?applicant|co-?investigator|consortium/i],
+ mentor:["Mentor, host or sponsor",/mentor|host (institution|organisation|department)|sponsor/i],
+ ai:["Generative AI policy",/generative ai|artificial intelligence|large language model/i]
+};
 
 /* ---------- State ---------- */
 const store={
   get(k,d){try{const v=localStorage.getItem("gr:"+k);return v?JSON.parse(v):d}catch(e){return d}},
   set(k,v){try{localStorage.setItem("gr:"+k,JSON.stringify(v))}catch(e){}}
 };
-const blank=()=>({p:{stage:null,disc:null,goal:null},sch:null,dl:"",ans:{},mark:{},pick:{},other:{},notes:{},all:false,at:"start"});
+const blank=()=>({sch:null,dl:"",ans:{},mark:{},pick:{},notes:{},custom:[],at:"start"});
 let st=Object.assign(blank(),store.get("st",null)||{});
-st.p=Object.assign({stage:null,disc:null,goal:null},st.p);
-["ans","mark","pick","other","notes"].forEach(k=>st[k]=st[k]||{});
+["ans","mark","pick","notes"].forEach(k=>st[k]=st[k]||{});
+if(!Array.isArray(st.custom))st.custom=[];
 const save=()=>store.set("st",st);
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const $=id=>document.getElementById(id);
-const name=(list,id)=>(list.find(x=>x.id===id)||{}).n||"";
-const profileDone=()=>st.p.stage&&st.p.disc&&st.p.goal&&st.sch;
+const allSch=()=>st.custom.concat(SCH);
+const getSch=id=>allSch().find(s=>s.id===id);
+const ready=()=>!!getSch(st.sch);
+const q={text:"",ty:"all",fun:"all"};
+let draft=null;
 
 /* ---------- Dates ---------- */
 const DAY=864e5;
@@ -452,13 +508,12 @@ const parseD=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||"");return m?new Da
 const fmt=d=>d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
 const iso=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0");
 const today=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());};
-function dueDate(wk){const dl=parseD(st.dl);return dl?new Date(dl.getTime()-wk*7*DAY):null;}
+const dueDate=wk=>{const dl=parseD(st.dl);return dl?new Date(dl.getTime()-wk*7*DAY):null;};
 function whenText(s){
   const w=s.wk, d=dueDate(w);
   const rel=w>0?`${w} week${w===1?"":"s"} before the deadline`:`${-w} week${w===-1?"":"s"} after the deadline`;
   if(!d)return {txt:"About "+rel,late:false};
-  const late=d<today()&&w>0;
-  return {txt:`Decide by ${fmt(d)} (${rel})`,late};
+  return {txt:`Decide by ${fmt(d)} (${rel})`,late:d<today()&&w>0};
 }
 
 /* ---------- Path ---------- */
@@ -468,21 +523,19 @@ function flags(){
   return F;
 }
 function path(){
-  const p={sch:schById[st.sch],F:flags(),stage:st.p.stage,disc:st.p.disc};
+  const p={sch:getSch(st.sch),F:flags()};
   const all=S.filter(s=>!s.w||s.w(p));
-  const forks=all.filter(s=>s.t==="f");
-  const ds=all.filter(s=>s.t==="d").sort((a,b)=>b.wk-a.wk);
-  return forks.concat(ds);
+  return all.filter(s=>s.t==="f").concat(all.filter(s=>s.t==="d").sort((a,b)=>b.wk-a.wk));
 }
 const nextFrom=id=>{const pa=path(),i=pa.findIndex(s=>s.id===id);return (pa[i+1]||{id:"summary"}).id;};
 const prevFrom=id=>{const pa=path(),i=pa.findIndex(s=>s.id===id);return i>0?pa[i-1].id:"deadline";};
 
-/* ---------- Rendering ---------- */
+/* ---------- Shared rendering ---------- */
 function go(at){st.at=at;save();render();const s=$("stage");s.focus({preventScroll:true});window.scrollTo({top:0,behavior:"auto"});}
-
+const NOMAP=["start","add","review","deadline"];
 function renderMap(){
   const m=$("map");
-  if(!profileDone()||!st.dl||["start","stage","disc","goal","scheme","deadline"].includes(st.at)){m.hidden=true;m.innerHTML="";return;}
+  if(!ready()||!st.dl||NOMAP.includes(st.at)){m.hidden=true;m.innerHTML="";return;}
   m.hidden=false;
   const pa=path(), cur=byId[st.at];
   m.innerHTML=CH.map(c=>{
@@ -490,12 +543,10 @@ function renderMap(){
     const n=ds.filter(s=>st.mark[s.id]==="yes").length;
     const first=pa.find(s=>s.ch===c.id);
     const pct=ds.length?Math.round(n/ds.length*100):0;
-    const here=cur&&cur.ch===c.id;
-    return `<li><button type="button" data-ch="${c.id}" ${first?"":"disabled"} ${here?'aria-current="step"':""}><span class="nm">${c.n}</span><span class="ct">${n} / ${ds.length}</span><span class="bar"><i style="width:${pct}%"></i></span></button></li>`;
+    return `<li><button type="button" data-ch="${c.id}" ${first?"":"disabled"} ${cur&&cur.ch===c.id?'aria-current="step"':""}><span class="nm">${c.n}</span><span class="ct">${n} / ${ds.length}</span><span class="bar"><i style="width:${pct}%"></i></span></button></li>`;
   }).join("");
   m.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const f=path().find(s=>s.ch===b.dataset.ch);if(f)go(f.id);}));
 }
-
 function choose(sel,set,attr){
   const bs=$("stage").querySelectorAll(sel);
   bs.forEach(b=>b.onclick=()=>{
@@ -504,95 +555,243 @@ function choose(sel,set,attr){
     if($("nx"))$("nx").disabled=false;renderMap();
   });
 }
+const linkHtml=l=>`<a href="${esc(l[1])}" ${/^https?:/.test(l[1])?'target="_blank" rel="noopener"':""}>${esc(l[0])}${/^https?:/.test(l[1])?" ↗":""}</a>`;
 
+/* ---------- Start: search ---------- */
+function haystack(s){return [s.f,s.n,s.sub,s.size,s.elig,s.status,s.commit,(s.links||[]).map(l=>l[0]).join(" ")].join(" ").toLowerCase();}
+function matches(s){
+  if(q.ty!=="all"&&!(s.g||[]).includes(q.ty))return false;
+  if(q.fun!=="all"&&s.f!==q.fun)return false;
+  const h=haystack(s);
+  return q.text.toLowerCase().split(/\s+/).filter(Boolean).every(t=>h.includes(t));
+}
+function schemeCard(s){
+  const facts=[["How big",s.size],["Your time",s.commit],["Who can apply",s.elig],["Resubmission",s.resub],["Dates",s.dates],["Limits",s.limits],["Route",s.route]].filter(f=>f[1]);
+  const found=s.reqs?Object.entries(s.reqs).map(([k,v])=>`<li><b>${esc(REQ[k][0])}:</b> “${esc(v)}”</li>`).join(""):"";
+  const tags=(s.g||[]).filter(g=>TYPE_LABEL[g]||g==="eu").map(g=>g==="eu"?"European":TYPE_LABEL[g]);
+  return `<li class="scard"><div class="schead"><span class="sf">${esc(s.f||"Your upload")}${s.custom?'<em class="fitbadge">Added by you</em>':""}${s.status?`<em class="stbadge ${/^closed/i.test(s.status)?"closed":""}">${esc(s.status)}</em>`:""}</span>
+    <b>${esc(s.n)}</b><span class="sub">${esc(s.sub||"")}</span>
+    ${tags.length?`<span class="tags">${tags.map(t=>`<i>${esc(t)}</i>`).join("")}</span>`:""}</div>
+    <details><summary>Key facts and guidance${s.links&&s.links.length?` (${s.links.length} links)`:""}</summary>
+      <dl class="facts">${facts.map(f=>`<dt>${f[0]}</dt><dd>${esc(f[1])}</dd>`).join("")}</dl>
+      ${found?`<p class="q">Found in your guidance</p><ul class="lk">${found}</ul>`:""}
+      ${s.links&&s.links.length?`<ul class="lk">${s.links.map(l=>`<li>${linkHtml(l)}</li>`).join("")}</ul>`:""}
+    </details>
+    <div class="actions"><button type="button" class="btn" data-pick="${s.id}">Plan this application</button>${s.custom?`<button type="button" class="btn ghost" data-rm="${s.id}">Remove</button>`:""}</div></li>`;
+}
+function refreshResults(){
+  const list=allSch().filter(matches);
+  $("count").textContent=`${list.length} grant${list.length===1?"":"s"}`;
+  $("res").innerHTML=list.length?list.map(schemeCard).join(""):`<li class="empty">No grants match. Clear a filter, or add the guidance for your grant below.</li>`;
+  $("res").querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{st.sch=b.dataset.pick;go("deadline");});
+  $("res").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{
+    if(!confirm("Remove this grant you added? Your answers for it stay saved."))return;
+    st.custom=st.custom.filter(c=>c.id!==b.dataset.rm);if(st.sch===b.dataset.rm)st.sch=null;save();render();
+  });
+}
 function renderStart(){
+  const funders=[...new Set(allSch().map(s=>s.f).filter(Boolean))].sort();
+  const resume=ready()&&st.dl;
   $("stage").innerHTML=`<span class="eyebrow">A choose-your-own-adventure</span>
   <h1>Plan your grant application</h1>
-  <p class="story lead"><strong>Grants are won in the decisions you make months before you start writing.</strong> Tell us about you and the scheme you are aiming at. We will work backwards from the deadline and show you which decisions to make, in what order, and by when.</p>
-  <p class="story">It takes a couple of minutes to set up. We gather the funders' own guidance for UKRI councils, Leverhulme, the British Academy, Wellcome, the Royal Society, the Royal Academy of Engineering, NIHR, the ERC and Horizon Europe. Your choices stay in this browser.</p>
-  <div class="actions">${profileDone()&&st.dl?`<button class="btn" id="resume">Continue my plan</button>`:""}<button class="btn ${profileDone()&&st.dl?"ghost":""}" id="begin">${profileDone()&&st.dl?"Change my choices":"Begin"}</button></div>`;
-  $("begin").onclick=()=>go("stage");
+  <p class="story lead"><strong>Grants are won in the decisions you make months before you start writing.</strong> Find your grant below. Then we work back from the deadline and show which decisions to make, in what order, and by when.</p>
+  ${resume?`<div class="actions"><button class="btn" id="resume">Continue my plan for ${esc(getSch(st.sch).n)}</button></div>`:""}
+  <div class="search">
+    <label class="lbl" for="qt">Search grants</label>
+    <input type="search" id="qt" class="other" placeholder="Try fellowship, ERC, Nuffield, small grant…" value="${esc(q.text)}" autocomplete="off">
+    <p class="q">Type</p>
+    <div class="chips" role="group" aria-label="Grant type"><button type="button" class="chip" data-ty="all" aria-pressed="${q.ty==="all"}">All</button>${TYPES.map(t=>`<button type="button" class="chip" data-ty="${t[0]}" aria-pressed="${q.ty===t[0]}">${t[1]}</button>`).join("")}</div>
+    <label class="lbl" for="qf">Funder</label>
+    <select id="qf"><option value="all">All funders</option>${funders.map(f=>`<option ${q.fun===f?"selected":""}>${esc(f)}</option>`).join("")}</select>
+    <span class="count" id="count" role="status"></span>
+  </div>
+  <ul class="schemes" id="res"></ul>
+  <div class="addbox"><h3>Can't find your grant?</h3><p class="story">Upload the funder's guidance (PDF, Word, text or HTML) or paste it in. We read it in your browser, pull out the key facts and requirements, and let you check them before building your plan. Nothing is sent anywhere.</p><div class="actions"><button class="btn ghost" id="add">Add guidance for another grant</button></div></div>`;
+  $("qt").oninput=e=>{q.text=e.target.value;refreshResults();};
+  $("qf").onchange=e=>{q.fun=e.target.value;refreshResults();};
+  $("stage").querySelectorAll("[data-ty]").forEach(b=>b.onclick=()=>{q.ty=b.dataset.ty;$("stage").querySelectorAll("[data-ty]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));refreshResults();});
+  $("add").onclick=()=>go("add");
   if($("resume"))$("resume").onclick=()=>go(path().find(s=>!(s.id in st.mark)&&!(s.id in st.ans))?.id||"summary");
+  refreshResults();
 }
 
-function picker(list,key,q){
-  return `<p class="q">${q}</p><ul class="choices ${list.length>3?"two":""}">${list.map(o=>`<li><button type="button" class="choice" data-v="${o.id}" aria-pressed="${st.p[key]===o.id}"><b>${esc(o.n)}</b><span>${esc(o.d)}</span></button></li>`).join("")}</ul>`;
+/* ---------- Guidance reader ---------- */
+const MAXTEXT=600000;
+async function inflateRaw(data){return new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();}
+async function readDocx(buf){
+  const v=new DataView(buf),u=new Uint8Array(buf),dec=new TextDecoder();
+  let e=-1;for(let i=u.length-22;i>=Math.max(0,u.length-65557);i--){if(v.getUint32(i,true)===0x06054b50){e=i;break;}}
+  if(e<0)throw new Error("Not a Word (.docx) file.");
+  const n=v.getUint16(e+10,true);let p=v.getUint32(e+16,true),xml="";
+  for(let i=0;i<n&&v.getUint32(p,true)===0x02014b50;i++){
+    const method=v.getUint16(p+10,true),cs=v.getUint32(p+20,true),nl=v.getUint16(p+28,true),xl=v.getUint16(p+30,true),cl=v.getUint16(p+32,true),lho=v.getUint32(p+42,true);
+    const nm=dec.decode(u.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;
+    if(nm==="word/document.xml"){
+      const start=lho+30+v.getUint16(lho+26,true)+v.getUint16(lho+28,true),data=u.subarray(start,start+cs);
+      xml=method===0?dec.decode(data):await inflateRaw(data);break;
+    }
+  }
+  if(!xml)throw new Error("Could not find the text in this Word file.");
+  return xml.replace(/<\/w:p>/g,"\n").replace(/<w:tab\/>/g," ").replace(/<[^>]+>/g,"")
+    .replace(/&#(\d+);/g,(m,c)=>String.fromCharCode(+c)).replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,"&");
 }
-function renderProfile(step){
-  const cfg={
-    stage:{eye:"Step 1 of 4",h:"Where are you in your career?",list:STAGE,key:"stage",q:"Choose the closest",next:"disc",back:"start"},
-    disc:{eye:"Step 2 of 4",h:"What is your field?",list:DISC,key:"disc",q:"Choose the closest",next:"goal",back:"stage"},
-    goal:{eye:"Step 3 of 4",h:"What are you hoping to fund?",list:GOAL,key:"goal",q:"Choose the best fit",next:"scheme",back:"disc"}
-  }[step];
-  $("stage").innerHTML=`<span class="eyebrow">${cfg.eye}</span><h2>${cfg.h}</h2>${picker(cfg.list,cfg.key,cfg.q)}
-  <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="nx" ${st.p[cfg.key]?"":"disabled"}>Next</button></div>`;
-  choose(".choice",v=>{st.p[cfg.key]=v;if(cfg.key!=="goal")st.all=false;save();},"v");
-  $("nx").onclick=()=>go(cfg.next);
-  $("bk").onclick=()=>go(cfg.back);
+let pdfLoad=null;
+function loadPdfJs(){
+  if(window.pdfjsLib)return Promise.resolve(window.pdfjsLib);
+  return pdfLoad||(pdfLoad=new Promise((res,rej)=>{
+    const s=document.createElement("script");s.src="vendor/pdf.min.js";
+    s.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc="vendor/pdf.worker.min.js";res(window.pdfjsLib);};
+    s.onerror=()=>rej(new Error("The PDF reader could not load."));document.head.appendChild(s);
+  }));
+}
+async function readPdf(buf){
+  const lib=await loadPdfJs(),pdf=await lib.getDocument({data:buf}).promise;let out="";
+  for(let i=1;i<=pdf.numPages&&out.length<MAXTEXT;i++){
+    const c=await (await pdf.getPage(i)).getTextContent();
+    c.items.forEach(it=>{out+=it.str+(it.hasEOL?"\n":" ");});out+="\n";
+  }
+  return out;
+}
+async function readFile(f){
+  const ext=(f.name.split(".").pop()||"").toLowerCase();
+  if(ext==="docx")return readDocx(await f.arrayBuffer());
+  if(ext==="pdf")return readPdf(await f.arrayBuffer());
+  if(ext==="doc")throw new Error("Old .doc files can't be read. Save as .docx or PDF, or paste the text.");
+  const t=await f.text();
+  if(ext==="html"||ext==="htm"){const d=new DOMParser().parseFromString(t.replace(/<\/(p|div|h[1-6]|li|tr)>|<br\s*\/?>/gi,"$&\n"),"text/html");d.querySelectorAll("script,style").forEach(x=>x.remove());return d.body.textContent;}
+  return t;
 }
 
-function fits(s){
-  const P=st.p;
-  const g=P.goal==="any"||s.g.includes(P.goal);
-  const sg=P.stage==="any"||!s.st||s.st.includes(P.stage);
-  const dd=P.disc==="any"||!s.d||s.d.includes(P.disc);
-  return s.id==="other"?false:(g&&sg&&dd);
+/* ---------- Parser (rules, no AI) ---------- */
+const FUNDERS=[["UK Research and Innovation|\\bUKRI\\b","UKRI"],["Innovate UK","Innovate UK"],["Leverhulme","Leverhulme Trust"],["Wellcome","Wellcome"],["British Academy","British Academy"],["Royal Academy of Engineering","Royal Academy of Engineering"],["Royal Society of Edinburgh","Royal Society of Edinburgh"],["Royal Society","Royal Society"],["Academy of Medical Sciences","Academy of Medical Sciences"],["\\bNIHR\\b|National Institute for Health","NIHR"],["European Research Council|\\bERC\\b","European Research Council"],["European Commission|Horizon Europe|Marie Sk","European Commission"],["Nuffield","Nuffield Foundation"],["Wolfson","Wolfson Foundation"],["Cancer Research UK","Cancer Research UK"],["British Council","British Council"],["Carnegie","Carnegie Trust"],["Gatsby","Gatsby Foundation"],["Wolfson","Wolfson Foundation"]];
+const MON="january|february|march|april|may|june|july|august|september|october|november|december";
+const MI=Object.fromEntries(MON.split("|").map((m,i)=>[m.slice(0,3),i]));
+function findDates(t){
+  const out=[],push=(d,idx)=>{if(!isNaN(d))out.push({d,idx});};
+  let m;const a=new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${MON}|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\\.?,?\\s+(20\\d\\d)`,"gi");
+  while((m=a.exec(t)))push(new Date(+m[3],MI[m[2].slice(0,3).toLowerCase()],+m[1]),m.index);
+  const b=new RegExp(`\\b(${MON}|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s+(20\\d\\d)`,"gi");
+  while((m=b.exec(t)))push(new Date(+m[3],MI[m[1].slice(0,3).toLowerCase()],+m[2]),m.index);
+  const c=/\b(20\d\d)-(\d{2})-(\d{2})\b/g;
+  while((m=c.exec(t)))push(new Date(+m[1],+m[2]-1,+m[3]),m.index);
+  return out;
 }
-function schemeCard(s,match){
-  const facts=[["How big",s.size],["Your time",s.commit],["Who can apply",s.elig],["Resubmission",s.resub],["Route",s.route]].filter(f=>f[1]);
-  return `<li class="scard"><button type="button" class="choice" data-v="${s.id}" aria-pressed="${st.sch===s.id}">
-    <span class="sf">${esc(s.f)}${match?'<em class="fitbadge">Good fit</em>':""}</span>
-    <b>${esc(s.n)}</b><span>${esc(s.sub)}</span></button>
-    <details><summary>Key facts and guidance (${s.links.length} links)</summary>
-      <dl class="facts">${facts.map(f=>`<dt>${f[0]}</dt><dd>${esc(f[1])}</dd>`).join("")}</dl>
-      <ul class="lk">${s.links.map(l=>`<li><a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])} ↗</a></li>`).join("")}</ul>
-    </details></li>`;
-}
-function renderScheme(){
-  const dd=DISC.find(x=>x.id===st.p.disc);
-  const ms=SCH.filter(fits), rest=SCH.filter(s=>!fits(s)&&s.id!=="other");
-  const other=schById.other;
-  $("stage").innerHTML=`<span class="eyebrow">Step 4 of 4</span><h2>Which scheme are you aiming at?</h2>
-  <p class="story">${ms.length?`These ${ms.length} scheme${ms.length===1?"":"s"} match what you told us. Open any card for key facts and the funder's guidance documents.`:"Nothing matched exactly, so everything is listed below."} Facts are summaries from each funder's own pages. <strong>Always confirm them in the live call</strong> before you commit.</p>
-  ${dd&&dd.council&&st.p.disc!=="any"?`<p class="tip"><b>UKRI route for ${esc(dd.n)}</b>Your closest UKRI council is usually ${esc(dd.council[0])}. See its <a href="${esc(dd.council[1])}" target="_blank" rel="noopener">guidance for applicants ↗</a>.</p>`:""}
-  ${ms.length?`<ul class="schemes">${ms.map(s=>schemeCard(s,true)).join("")}</ul>`:""}
-  <details class="more" ${st.all||!ms.length?"open":""}><summary>${ms.length?"See the other schemes too":"All schemes"} (${rest.length})</summary><ul class="schemes">${rest.map(s=>schemeCard(s,false)).join("")}</ul></details>
-  <ul class="schemes">${schemeCard(other,false)}</ul>
-  <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="nx" ${st.sch?"":"disabled"}>Next</button></div>`;
-  $("stage").querySelector(".more").addEventListener("toggle",e=>{st.all=e.target.open;save();});
-  $("stage").querySelectorAll("button.choice").forEach(b=>b.onclick=()=>{
-    st.sch=b.dataset.v;save();
-    $("stage").querySelectorAll("button.choice").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
-    $("nx").disabled=false;
+const toIso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+function parseGuidance(raw,fname){
+  const text=raw.replace(/\r/g,"").slice(0,MAXTEXT);
+  const flat=text.replace(/[ \t]+/g," ").replace(/\n+/g," ");
+  const sents=flat.split(/(?<=[.!?])\s+(?=[A-Z•(\d])/).map(s=>s.trim()).filter(s=>s.length>=25&&s.length<=600);
+  const clip=(s,n=300)=>s.length>n?s.slice(0,n-1).trimEnd()+"…":s;
+  const pick=(re,n=1)=>[...new Set(sents.filter(s=>re.test(s)).slice(0,n).map(s=>clip(s)))];
+  const lines=text.split("\n").map(l=>l.trim()).filter(Boolean);
+  const head=flat.slice(0,4000);
+  const ttl=lines.slice(0,25).find(l=>l.length>=8&&l.length<=110&&!/[.:;]$/.test(l)&&/grant|fellowship|award|scheme|programme|call|prize|fund|studentship|guidance|networks?/i.test(l))||lines.find(l=>l.length>=8&&l.length<=110)||fname.replace(/\.[^.]+$/,"").replace(/[_-]+/g," ");
+  let f="";for(const [re,n] of FUNDERS){if(new RegExp(re,"i").test(head)){f=n;break;}}
+  if(!f){const m=/\b((?:The )?[A-Z][A-Za-z&' -]{2,40} (?:Trust|Foundation|Council|Society|Academy|Institute|Agency|Fund))\b/.exec(head);if(m)f=m[1];}
+  const sample=flat.slice(0,8000).toLowerCase(), cnt=re=>(sample.match(re)||[]).length;
+  const scores={fellowship:cnt(/fellow/g)*2,small:cnt(/small grant|pilot|seed fund|travel grant|up to £\d{1,2},\d{3}\b/g)*3,partner:cnt(/consortium|knowledge transfer|partnership|business partner|industry/g)*2,project:cnt(/research project|project grant|co-?investigator/g)*2+1};
+  const ty=Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0];
+  const size=pick(/[£€$]\s?\d|\bFEC\b|full economic cost|(up to|maximum|at most).{0,40}(million|\bk\b)/i,2).join(" ");
+  const dur=sents.filter(x=>!/PhD|doctorate|awarded|since/i.test(x)&&/(duration|tenure|lasts?|over|for up to|up to|maximum of|for a)\b.{0,40}\b(\d+|one|two|three|four|five|six|twelve|eighteen)[ -]?(months?|years?)\b/i.test(x)).slice(0,1).map(x=>clip(x));
+  const commit=pick(/\b\d{2,3}\s?%\s*(of\s+)?(your\s+|their\s+|the\s+)?(working\s+|research\s+)?time|\bFTE\b|full[- ]time|time commitment|at least \d+\s?%/i,1).join(" ");
+  const elig=pick(/\beligib|must (be|hold|have|not)\b|applicants? (must|should|need)|open to\b/i,3).join(" ");
+  const resub=pick(/resubmi|re-submi|previously (submitted|unsuccessful)|unsuccessful applicants/i,1).join(" ");
+  const limits=pick(/\b\d+\s*(pages?|words?|characters?|MB)\b|page limit|word limit|font size|margins?/i,3).join(" ");
+  const dateCtx=[];
+  sents.filter(s=>/deadline|clos(e|es|ing)|submit(ted)? by|opens?|decision|notif|interview/i.test(s)).forEach(s=>{
+    findDates(s).forEach(x=>dateCtx.push({d:x.d,ctx:clip(s,160),closing:/deadline|clos/i.test(s)}));
   });
-  $("nx").onclick=()=>go("deadline");
-  $("bk").onclick=()=>go("goal");
+  const closing=dateCtx.filter(x=>x.closing).sort((a,b)=>a.d-b.d);
+  const futureClose=closing.find(x=>x.d>=today())||closing[closing.length-1];
+  const dates=[...new Map(dateCtx.slice(0,6).map(x=>[toIso(x.d),`${fmt(x.d)}: ${x.ctx}`])).values()].join(" | ");
+  const reqs={};
+  Object.entries(REQ).forEach(([k,[,re]])=>{const s=sents.find(x=>re.test(x));if(s)reqs[k]=clip(s,240);});
+  const links=[...new Set((flat.match(/https?:\/\/[^\s)>\]"']+/g)||[]).map(u=>u.replace(/[.,;]+$/,"")))].slice(0,8).map(u=>[u.replace(/^https?:\/\/(www\.)?/,"").slice(0,70),u]);
+  return {n:clip(ttl,110),f,ty,size:[size,...dur.filter(x=>!size.includes(x))].filter(Boolean).join(" "),commit,elig,resub,limits,dates,dl:futureClose?toIso(futureClose.d):"",reqs,links,chars:text.length};
 }
 
+/* ---------- Add and review ---------- */
+function renderAdd(){
+  $("stage").innerHTML=`<span class="eyebrow">Add your own grant</span><h2>Add the funder's guidance</h2>
+  <p class="story">Upload one or more guidance documents, or paste text. We read them <strong>in your browser</strong>: nothing is uploaded to a server. You will be able to check and edit everything we find before it is used.</p>
+  <p class="mark">Works with PDF, Word (.docx), text, Markdown and HTML. Scanned PDFs (pictures of text) can't be read.</p>
+  <label class="lbl" for="fl">Files</label><input type="file" id="fl" multiple accept=".pdf,.docx,.txt,.md,.html,.htm,text/plain">
+  <label class="lbl" for="pt">Or paste guidance text</label><textarea id="pt" aria-label="Pasted guidance" placeholder="Paste the call text or guidance notes here"></textarea>
+  <span class="status" id="as" role="status"></span>
+  <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="read">Read the guidance</button></div>`;
+  $("bk").onclick=()=>go("start");
+  $("read").onclick=async()=>{
+    const files=[...$("fl").files], pasted=$("pt").value.trim();
+    if(!files.length&&!pasted){$("as").textContent="Choose a file or paste some text first.";return;}
+    $("read").disabled=true;$("as").textContent="Reading…";
+    let txt="",names=[];
+    try{
+      for(const f of files){txt+="\n"+await readFile(f);names.push(f.name);}
+      if(pasted){txt+="\n"+pasted;names.push("pasted text");}
+      if(txt.trim().length<200)throw new Error("Very little text was found. If this is a scanned PDF, paste the text instead.");
+      const r=parseGuidance(txt,names[0]||"guidance");
+      draft=Object.assign(r,{src:names.join(", ")});go("review");
+    }catch(e){$("as").textContent=e.message||"Could not read that.";$("read").disabled=false;}
+  };
+}
+function renderReview(){
+  if(!draft)return go("add");
+  const d=draft, tyOpts=[["fellowship","Fellowship"],["project","Research project"],["small","Small grant"],["partner","Partnership"]];
+  const fld=(id,lab,val,multi)=>`<label class="lbl" for="${id}">${lab}</label>${multi?`<textarea id="${id}" class="rv">${esc(val)}</textarea>`:`<input type="text" id="${id}" class="other" value="${esc(val)}" maxlength="140">`}`;
+  $("stage").innerHTML=`<span class="eyebrow">Check what we found</span><h2>Review the details</h2>
+  <p class="story">We read ${d.chars.toLocaleString("en-GB")} characters from <em>${esc(d.src)}</em>. This is automatic and can be wrong, so correct anything before you continue. Blank fields are fine.</p>
+  ${fld("r-n","Grant name",d.n)}${fld("r-f","Funder",d.f)}
+  <label class="lbl" for="r-ty">Type</label><select id="r-ty">${tyOpts.map(o=>`<option value="${o[0]}" ${d.ty===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select>
+  ${fld("r-size","Size and length of award",d.size,1)}${fld("r-commit","Time commitment",d.commit,1)}${fld("r-elig","Who can apply",d.elig,1)}${fld("r-resub","Resubmission rules",d.resub,1)}${fld("r-limits","Length and format limits",d.limits,1)}${fld("r-dates","Dates mentioned",d.dates,1)}
+  <label class="lbl" for="r-dl">Closing date</label><input type="date" id="r-dl" value="${esc(d.dl)}">
+  <p class="q">Requirements to plan for <span class="mark">tick what applies</span></p>
+  <ul class="reqs">${Object.entries(REQ).map(([k,v])=>`<li><label><input type="checkbox" data-k="${k}" ${d.reqs[k]?"checked":""}> <b>${esc(v[0])}</b></label>${d.reqs[k]?`<span class="ev">“${esc(d.reqs[k])}”</span>`:""}</li>`).join("")}</ul>
+  <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="ok">Use this grant</button></div>`;
+  $("bk").onclick=()=>go("add");
+  $("ok").onclick=()=>{
+    const v=id=>$(id).value.trim(), reqs={};
+    $("stage").querySelectorAll("[data-k]").forEach(c=>{if(c.checked)reqs[c.dataset.k]=d.reqs[c.dataset.k]||"(added by you)";});
+    const c=cleanCustom({id:"c-"+Date.now().toString(36),custom:true,f:v("r-f"),n:v("r-n")||"My grant",type:$("r-ty").value,size:v("r-size"),commit:v("r-commit"),elig:v("r-elig"),resub:v("r-resub"),limits:v("r-limits"),dates:v("r-dates"),reqs,links:d.links,src:d.src});
+    st.custom.unshift(c);st.sch=c.id;st.dl=$("r-dl").value||"";draft=null;go("deadline");
+  };
+}
+function cleanCustom(c){
+  const s=(v,n=600)=>typeof v==="string"?v.slice(0,n):"";
+  const type=["fellowship","project","small","partner"].includes(c.type)?c.type:"project";
+  const reqs={};Object.entries(c.reqs||{}).forEach(([k,v])=>{if(REQ[k]&&typeof v==="string")reqs[k]=v.slice(0,300);});
+  const links=(Array.isArray(c.links)?c.links:[]).filter(l=>Array.isArray(l)&&/^https?:\/\//.test(l[1]||"")).slice(0,8).map(l=>[s(l[0],80),s(l[1],300)]);
+  return {id:s(c.id,40)||("c-"+Date.now().toString(36)),custom:true,f:s(c.f,140),n:s(c.n,140)||"My grant",sub:"Added from "+(s(c.src,120)||"your guidance"),g:[type],type,size:s(c.size),commit:s(c.commit),elig:s(c.elig),resub:s(c.resub),limits:s(c.limits),dates:s(c.dates),route:"",reqs,interview:!!reqs.interview,links,src:s(c.src,120)};
+}
+
+/* ---------- Deadline ---------- */
 function renderDeadline(){
-  const s=schById[st.sch];
+  const s=getSch(st.sch);
   $("stage").innerHTML=`<span class="eyebrow">One last thing</span><h2>When is your deadline?</h2>
   <p class="story">We will count back from the funder's closing date for <strong>${esc(s.n)}</strong> to show the date by which each decision should be made. Use the funder's date, then ask your research office for the earlier internal one.</p>
+  ${s.status?`<p class="warnbox"><b>Status</b>${esc(s.status)}</p>`:""}
   <label class="lbl" for="dl">Funder deadline</label><input type="date" id="dl" value="${esc(st.dl&&st.dl!=="none"?st.dl:"")}">
   <p class="mark">No fixed date yet, or the scheme is open all year? Choose that below and we will show decisions as weeks before you submit instead.</p>
   <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="nx" ${st.dl?"":"disabled"}>See my decisions</button><button class="btn ghost" id="nodate">I do not have a date yet</button></div>`;
   $("dl").oninput=e=>{st.dl=e.target.value;save();$("nx").disabled=!st.dl;};
   $("nx").onclick=()=>go(path()[0].id);
   $("nodate").onclick=()=>{st.dl="none";save();go(path()[0].id);};
-  $("bk").onclick=()=>go("scheme");
+  $("bk").onclick=()=>go("start");
 }
 
+/* ---------- Scenes ---------- */
+const FACT_LAB={elig:"Who can apply",route:"Route",commit:"Time commitment",size:"Size and length",resub:"Resubmission",dates:"Dates in the guidance",limits:"Length and format limits"};
 function factsBox(s,d){
-  const items=(d.facts||[]).map(k=>s[k]&&[{elig:"Who can apply",route:"Route",commit:"Time commitment",size:"Size and length",resub:"Resubmission"}[k],s[k]]).filter(Boolean);
-  if(!items.length)return "";
-  return `<p class="tip"><b>For ${esc(s.n)}</b>${items.map(i=>`<span class="fl"><strong>${i[0]}.</strong> ${esc(i[1])}</span>`).join("")}</p>`;
+  const items=(d.facts||[]).filter(k=>s[k]).map(k=>[FACT_LAB[k],s[k]]);
+  return items.length?`<p class="tip"><b>For ${esc(s.n)}</b>${items.map(i=>`<span class="fl"><strong>${i[0]}.</strong> ${esc(i[1])}</span>`).join("")}</p>`:"";
 }
+const FORK_REQ={partner:"partner",people:"ethics",resub:null};
 function renderScene(s){
-  const chap=CH.find(c=>c.id===s.ch), sch=schById[st.sch];
+  const chap=CH.find(c=>c.id===s.ch), sch=getSch(st.sch);
   let h=`<span class="eyebrow">${chap.n}</span>`;
   if(s.t==="f"){
-    const a=st.ans[s.id];
+    const a=st.ans[s.id], rk=FORK_REQ[s.flag], ev=rk&&sch.reqs&&sch.reqs[rk];
     h+=`<h2>${esc(s.title)}</h2><p class="story">${esc(s.hint)}</p>
+    ${ev?`<p class="tip"><b>Your guidance mentions this</b>“${esc(ev)}”</p>`:""}
     <ul class="choices two"><li><button type="button" class="choice" data-a="yes" aria-pressed="${a==="yes"}"><b>Yes, or probably</b><span>Add the related decisions</span></button></li>
     <li><button type="button" class="choice" data-a="no" aria-pressed="${a==="no"}"><b>No, or not sure yet</b><span>Skip them; I can change my mind</span></button></li></ul>
     <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="nx" ${a?"":"disabled"}>Next</button></div>`;
@@ -601,19 +800,20 @@ function renderScene(s){
     $("nx").onclick=()=>go(nextFrom(s.id));
   }else{
     const m=st.mark[s.id], w=whenText(s);
-    const dd=DISC.find(x=>x.id===st.p.disc);
-    const links=(s.links||[]).concat(s.id==="d-fit"?sch.links.slice(0,3):[]).map(l=>`<li><a href="${esc(l[1])}" ${/^https?:/.test(l[1])?'target="_blank" rel="noopener"':""}>${esc(l[0])}${/^https?:/.test(l[1])?" ↗":""}</a></li>`).join("");
-    const schemeLinks=sch.links.slice(0,8).map(l=>`<li><a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])} ↗</a></li>`).join("");
+    const opts=s.reqList?Object.keys(sch.reqs||{}).map(k=>REQ[k][0]):s.opts;
+    const links=(s.links||[]).concat(s.id==="d-fit"?(sch.links||[]).slice(0,3):[]).map(l=>`<li>${linkHtml(l)}</li>`).join("");
+    const schemeLinks=(sch.links||[]).slice(0,8).map(l=>`<li>${linkHtml(l)}</li>`).join("");
+    const ev=s.reqList?Object.entries(sch.reqs||{}).map(([k,v])=>`<li><b>${esc(REQ[k][0])}:</b> “${esc(v)}”</li>`).join(""):"";
     h+=`<h2>${esc(s.title)}</h2>
     <div class="badges"><span class="b ${w.late?"late":"exp"}">${w.txt}${w.late?" (already passed: compress)":""}</span></div>
     <p class="why"><strong>Why it matters:</strong> ${esc(s.why)}</p>
     ${factsBox(sch,s)}
-    ${s.councilTip&&dd&&dd.council&&st.p.disc!=="any"?`<p class="tip"><b>For ${esc(dd.n)}</b>Likely UKRI council: ${esc(dd.council[0])}. <a href="${esc(dd.council[1])}" target="_blank" rel="noopener">Its guidance ↗</a></p>`:""}
+    ${ev?`<div class="res"><h3>Found in your guidance</h3><ul>${ev}</ul></div>`:""}
     ${links?`<div class="res"><h3>Guidance and resources</h3><ul>${links}</ul></div>`:""}
-    ${s.id==="d-fit"||s.id==="d-scope"||s.id==="d-cost"?`<details class="res"><summary>All guidance for ${esc(sch.n)}</summary><ul>${schemeLinks}</ul></details>`:""}
+    ${["d-fit","d-scope","d-cost"].includes(s.id)&&schemeLinks?`<details class="res"><summary>All guidance for ${esc(sch.n)}</summary><ul>${schemeLinks}</ul></details>`:""}
     ${s.help?`<p class="help"><b>Who can help:</b> ${esc(s.help)}</p>`:""}
     <div class="opts"><p class="q">What have you decided or still need to? <span class="mark">Select all that apply</span></p>
-      <div class="chips" role="group" aria-label="Considerations">${s.opts.map(o=>`<button type="button" class="chip" data-o="${esc(o)}" aria-pressed="${(st.pick[s.id]||[]).includes(o)}">${esc(o)}</button>`).join("")}</div>
+      <div class="chips" role="group" aria-label="Considerations">${opts.map(o=>`<button type="button" class="chip" data-o="${esc(o)}" aria-pressed="${(st.pick[s.id]||[]).includes(o)}">${esc(o)}</button>`).join("")}</div>
       <label class="lbl" for="nt">Your notes (optional)</label><input type="text" class="other" id="nt" maxlength="300" placeholder="e.g. who, what, or the date you agreed" value="${esc(st.notes[s.id]||"")}"></div>
     <p class="q">Where are you with this decision?</p>
     <ul class="choices two">${MARKS.map(k=>`<li><button type="button" class="choice" data-m="${k}" aria-pressed="${m===k}"><b>${MARK[k]}</b></button></li>`).join("")}</ul>
@@ -622,8 +822,7 @@ function renderScene(s){
     choose("[data-m]",v=>{st.mark[s.id]=v;save();},"m");
     $("stage").querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>{
       const a=st.pick[s.id]=st.pick[s.id]||[], v=b.dataset.o, i=a.indexOf(v);
-      i<0?a.push(v):a.splice(i,1);
-      b.setAttribute("aria-pressed",String(i<0));save();
+      i<0?a.push(v):a.splice(i,1);b.setAttribute("aria-pressed",String(i<0));save();
     });
     $("nt").oninput=e=>{st.notes[s.id]=e.target.value.slice(0,300);save();};
     $("nx").onclick=()=>go(nextFrom(s.id));
@@ -636,14 +835,12 @@ function items(){
   return path().filter(s=>s.t==="d").map(s=>({id:s.id,ch:s.ch,title:s.title,wk:s.wk,due:dueDate(s.wk),status:MARK[st.mark[s.id]]||"Not yet reviewed",picks:st.pick[s.id]||[],note:st.notes[s.id]||""}));
 }
 const BOX={"Decided":"[x]","Still deciding":"[~]","Not relevant to me":"[-]"};
-function profileLine(){
-  const s=schById[st.sch];
-  return `${s.f}: ${s.n} · ${name(STAGE,st.p.stage)} · ${name(DISC,st.p.disc)}`+(parseD(st.dl)?` · Deadline ${fmt(parseD(st.dl))}`:"");
-}
+const relTxt=i=>i.due?fmt(i.due):(i.wk>0?i.wk+" wks before":(-i.wk)+" wks after");
+function profileLine(){const s=getSch(st.sch),d=parseD(st.dl);return `${s.f?s.f+": ":""}${s.n}`+(d?` · Deadline ${fmt(d)}`:"");}
 function planText(md){
   const L=[md?"# My grant application decisions":"My grant application decisions",profileLine(),"","Prepared: "+fmt(new Date()),""];
   CH.forEach(c=>{
-    const it=items().filter(i=>i.ch===c.id); if(!it.length)return;
+    const it=items().filter(i=>i.ch===c.id);if(!it.length)return;
     L.push(md?"## "+c.n:c.n.toUpperCase(),"");
     it.forEach(i=>{
       L.push(`${BOX[i.status]||"[ ]"} ${md?"**"+i.title+"**":i.title} - ${i.status}${i.due?` - decide by ${fmt(i.due)}`:` - ${i.wk>0?i.wk+" weeks before":(-i.wk)+" weeks after"} the deadline`}`);
@@ -657,14 +854,14 @@ function planText(md){
 function wordDoc(){
   return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>My grant application decisions</title></head><body style="font-family:Calibri,Arial,sans-serif">
 <h1>My grant application decisions</h1><p>${esc(profileLine())}<br>Prepared: ${fmt(new Date())}</p>
-${CH.map(c=>{const it=items().filter(i=>i.ch===c.id);return it.length?`<h2>${esc(c.n)}</h2><table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%"><tr><th align="left">Decision</th><th align="left">Decide by</th><th align="left">Status</th><th align="left">Notes</th></tr>${it.map(i=>`<tr><td>${esc(i.title)}</td><td>${i.due?fmt(i.due):(i.wk>0?i.wk+" wks before":(-i.wk)+" wks after")}</td><td>${esc(i.status)}</td><td>${esc([i.picks.join("; "),i.note].filter(Boolean).join(" | "))}</td></tr>`).join("")}</table>`:"";}).join("")}
+${CH.map(c=>{const it=items().filter(i=>i.ch===c.id);return it.length?`<h2>${esc(c.n)}</h2><table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%"><tr><th align="left">Decision</th><th align="left">Decide by</th><th align="left">Status</th><th align="left">Notes</th></tr>${it.map(i=>`<tr><td>${esc(i.title)}</td><td>${relTxt(i)}</td><td>${esc(i.status)}</td><td>${esc([i.picks.join("; "),i.note].filter(Boolean).join(" | "))}</td></tr>`).join("")}</table>`:"";}).join("")}
 <p><small>Unofficial prototype. Check all funder details against the live call.</small></p></body></html>`;
 }
 function ics(){
   const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Grant planner//EN","CALSCALE:GREGORIAN"];
   const ev=(uid,d,sum,desc)=>{const e=new Date(d.getTime()+DAY);L.push("BEGIN:VEVENT","UID:"+uid+"@grant-planner","DTSTAMP:"+iso(new Date())+"T000000Z","DTSTART;VALUE=DATE:"+iso(d),"DTEND;VALUE=DATE:"+iso(e),"SUMMARY:"+sum.replace(/[,;\n]/g," "),"DESCRIPTION:"+desc.replace(/[,;\n]/g," "),"END:VEVENT");};
   const dl=parseD(st.dl);
-  if(dl)ev("deadline",dl,"Funder deadline: "+schById[st.sch].n,"Funder deadline");
+  if(dl)ev("deadline",dl,"Funder deadline: "+getSch(st.sch).n,"Funder deadline");
   items().filter(i=>i.due&&i.status!=="Not relevant to me").forEach(i=>ev(i.id,i.due,"Decide: "+i.title,"Grant planning decision ("+i.status+")"));
   L.push("END:VCALENDAR");return L.join("\r\n");
 }
@@ -675,36 +872,35 @@ function download(n,type,text){
 function loadSaved(text){
   let o;try{o=JSON.parse(text)}catch(e){return "That file isn't a saved plan.";}
   if(!o||o.app!=="grant-planner"||!o.state)return "That file isn't a saved plan.";
-  const x=o.state, n=blank(), str=v=>typeof v==="string";
-  const ok=(l,v)=>l.some(i=>i.id===v);
-  if(x.p){if(ok(STAGE,x.p.stage))n.p.stage=x.p.stage;if(ok(DISC,x.p.disc))n.p.disc=x.p.disc;if(ok(GOAL,x.p.goal))n.p.goal=x.p.goal;}
-  if(schById[x.sch])n.sch=x.sch;
+  const x=o.state,n=blank(),str=v=>typeof v==="string";
+  n.custom=(Array.isArray(x.custom)?x.custom:[]).slice(0,20).filter(c=>c&&str(c.id)).map(cleanCustom);
+  const known=id=>n.custom.some(c=>c.id===id)||SCH.some(s=>s.id===id);
+  if(str(x.sch)&&known(x.sch))n.sch=x.sch;
   if(str(x.dl)&&(x.dl==="none"||parseD(x.dl)))n.dl=x.dl;
   Object.entries(x.ans||{}).forEach(([k,v])=>{if(byId[k]&&(v==="yes"||v==="no"))n.ans[k]=v;});
   Object.entries(x.mark||{}).forEach(([k,v])=>{if(byId[k]&&MARK[v])n.mark[k]=v;});
   Object.entries(x.pick||{}).forEach(([k,v])=>{if(byId[k]&&Array.isArray(v))n.pick[k]=v.filter(str).slice(0,30);});
   Object.entries(x.notes||{}).forEach(([k,v])=>{if(byId[k]&&str(v))n.notes[k]=v.slice(0,300);});
-  st=n;st.at=profileDone()&&st.dl?"summary":"start";save();render();return "";
+  st=n;st.at=ready()&&st.dl?"summary":"start";save();render();return "";
 }
 function renderSummary(){
-  const it=items(), sch=schById[st.sch], done=it.filter(i=>i.status==="Decided").length;
-  const dl=parseD(st.dl);
+  const it=items(), sch=getSch(st.sch), done=it.filter(i=>i.status==="Decided").length, dl=parseD(st.dl);
   $("stage").innerHTML=`<span class="eyebrow">Your timeline</span><h1>Your decision timeline</h1>
   <p class="story lead">${done} of ${it.length} decisions made for <strong>${esc(sch.n)}</strong>${dl?`, deadline ${fmt(dl)}`:""}.</p>
-  <div class="sum">${CH.map(c=>{const x=it.filter(i=>i.ch===c.id);return x.length?`<h3>${esc(c.n)}<span class="count">${x.length}</span></h3><ul class="tl">${x.map(i=>`<li><a href="#" data-j="${i.id}">${esc(i.title)}</a><span class="sel"><b>${i.due?fmt(i.due):(i.wk>0?i.wk+" wks before":(-i.wk)+" wks after")}</b> · ${esc(i.status)}${i.note?" · "+esc(i.note):""}</span></li>`).join("")}</ul>`:"";}).join("")}</div>
+  <div class="sum">${CH.map(c=>{const x=it.filter(i=>i.ch===c.id);return x.length?`<h3>${esc(c.n)}<span class="count">${x.length}</span></h3><ul class="tl">${x.map(i=>`<li><a href="#" data-j="${i.id}">${esc(i.title)}</a><span class="sel"><b>${relTxt(i)}</b> · ${esc(i.status)}${i.note?" · "+esc(i.note):""}</span></li>`).join("")}</ul>`:"";}).join("")}</div>
   <h3>Take it with you</h3>
   <div class="dl"><button class="btn" id="dlmd">Download (Markdown)</button><button class="btn" id="dldoc">Download (Word)</button>${dl?`<button class="btn" id="dlics">Add to calendar (.ics)</button>`:""}<button class="btn ghost" id="dljson">Save progress file</button><label class="btn ghost" for="ld" style="cursor:pointer">Load a saved file</label><input type="file" id="ld" accept=".json,application/json" hidden></div>
-  <div class="actions"><button class="btn ghost" id="copy">Copy as text</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="again">Revisit from the start</button><button class="btn ghost" id="chg">Change scheme or deadline</button></div>
+  <div class="actions"><button class="btn ghost" id="copy">Copy as text</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="again">Revisit from the start</button><button class="btn ghost" id="chg">Choose a different grant</button></div>
   <span class="status" id="cs" role="status"></span><textarea id="fb" hidden readonly aria-label="Plan text"></textarea>
   <p class="story">Share this with your research office early. They will tell you about internal deadlines, costing and sign-off. Start from the <a href="${HUB[1]}" target="_blank" rel="noopener">Ulster research hub ↗</a>.</p>`;
   $("stage").querySelectorAll("[data-j]").forEach(a=>a.onclick=e=>{e.preventDefault();go(a.dataset.j);});
   $("again").onclick=()=>go(path()[0].id);
-  $("chg").onclick=()=>go("scheme");
+  $("chg").onclick=()=>go("start");
   $("print").onclick=()=>window.print();
   $("dlmd").onclick=()=>download("grant-decisions.md","text/markdown",planText(true));
   $("dldoc").onclick=()=>download("grant-decisions.doc","application/msword",wordDoc());
   if($("dlics"))$("dlics").onclick=()=>download("grant-decisions.ics","text/calendar",ics());
-  $("dljson").onclick=()=>download("grant-planner-progress.json","application/json",JSON.stringify({app:"grant-planner",version:1,state:st},null,2));
+  $("dljson").onclick=()=>download("grant-planner-progress.json","application/json",JSON.stringify({app:"grant-planner",version:2,state:st},null,2));
   $("ld").onchange=async e=>{const f=e.target.files[0];if(!f)return;const m=loadSaved(await f.text());if(m)$("cs").textContent=m;};
   $("copy").onclick=async()=>{
     const t=planText();
@@ -717,9 +913,9 @@ function render(){
   renderMap();
   const at=st.at;
   if(at==="start")return renderStart();
-  if(["stage","disc","goal"].includes(at))return renderProfile(at);
-  if(at==="scheme")return renderScheme();
-  if(!st.p.stage||!st.p.disc||!st.p.goal||!st.sch)return go("start");
+  if(at==="add")return renderAdd();
+  if(at==="review")return renderReview();
+  if(!ready())return go("start");
   if(at==="deadline")return renderDeadline();
   if(!st.dl)return go("deadline");
   if(at==="summary")return renderSummary();
@@ -728,8 +924,8 @@ function render(){
   renderScene(s);
 }
 $("restart").onclick=()=>{
-  if(!confirm("Start again? This clears your choices and progress in this browser."))return;
-  st=blank();save();render();
+  if(!confirm("Start again? This clears your choices, progress and any grants you added in this browser."))return;
+  st=blank();draft=null;save();render();
 };
 render();
 </script>

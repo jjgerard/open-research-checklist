@@ -15,7 +15,15 @@ It is an interactive version of *From Closed to Open: Practices and Guidelines f
 
 ## Grant application adventure
 
-`grants.html` is a second choose-your-own-adventure, for putting together a research grant application. The reader gives career stage, field and what they want to fund, picks a scheme from a shortlist (UKRI councils, Future Leaders Fellowships, Innovate UK KTPs, Leverhulme, British Academy, Wellcome, Royal Society, Royal Academy of Engineering, NIHR, ERC, MSCA and Horizon Europe), and enters the deadline. Fork questions (partners, people or sensitive data, equipment, international work, resubmission) add decisions. The page then walks through the decisions in order, each with a suggested "decide by" date counted back from the deadline, the scheme's key facts and the funder's own guidance links. The timeline can be downloaded as Markdown, Word or a calendar (.ics) file.
+`grants.html` is a second choose-your-own-adventure, for putting together a research grant application.
+
+1. **Find your grant.** A search box with filters for grant type (fellowships, research projects, small grants, partnerships, European) and funder. Schemes cover UKRI councils, Future Leaders Fellowships, Innovate UK KTPs, Leverhulme, British Academy, Wellcome, the Nuffield Foundation (each fund separately), Royal Society, Royal Academy of Engineering, NIHR, ERC, MSCA and Horizon Europe. Each card has key facts and the funder's guidance links.
+2. **Enter the deadline.** Decisions are then dated by counting back from it.
+3. **Walk through the decisions.** Fork questions (partners, people or sensitive data, equipment, international work, resubmission) add decisions. Each decision has a suggested "decide by" date, the scheme's key facts and guidance links. The timeline downloads as Markdown, Word or a calendar (.ics) file.
+
+**Grant not listed?** "Add guidance for another grant" accepts PDF, Word (.docx), text, Markdown or HTML files, or pasted text. The file is read in the browser and nothing is uploaded. A rule-based parser (no AI) pulls out the name, funder, type, award size, time commitment, eligibility, resubmission rules, page limits, dates, and which of 14 requirement types are mentioned (CV, budget, data plan, ethics, letters of support, two-stage process, interview and so on). The reader checks and edits everything before it is used. Detected requirements add decisions to the plan, and the grant is saved in the browser. Scanned (image-only) PDFs can't be read; paste the text instead.
+
+PDF reading uses [pdf.js](https://github.com/mozilla/pdf.js) 3.11.174 (Apache-2.0, © Mozilla Foundation), vendored in `vendor/` and loaded only when a PDF is added. Serve the folder over HTTP (for example GitHub Pages) for PDF reading to work; Word, text and HTML work from a local file too.
 
 Scheme facts and links were gathered from the funders' own pages in October 2026. Many funder sites block automated checks, so see `LINK-CHECK.md` and click through before publishing. The week offsets are suggested planning times, not funder rules. Schemes and decisions are plain arrays at the top of the `<script>` block.
 
