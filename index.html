@@ -137,7 +137,8 @@ const DISC=[
  {id:"soc",  n:"Social sciences, business & law",   d:"Surveys, interviews, policy, economics, organisations"},
  {id:"hum",  n:"Humanities",                        d:"History, languages, literature, archives, philosophy, media"},
  {id:"art",  n:"Arts, design & creative practice",  d:"Practice-based research, exhibitions, performances, built works"},
- {id:"comp", n:"Computing & data science",          d:"Software, AI, data analytics, simulation"}
+ {id:"comp", n:"Computing & data science",          d:"Software, AI, data analytics, simulation"},
+ {id:"any",  n:"Skip this / not sure",              d:"Start without a discipline; you'll see the general steps without discipline-specific tips"}
 ];
 const STAGE=[
  {id:"pgr",n:"Postgraduate researcher",d:"Working towards a PhD or research degree"},
@@ -531,7 +532,7 @@ function renderScene(s){
 function summaryText(){
   const pa=path().filter(s=>s.t==="a");
   const lines=["My open research checklist (Ulster University)",
-    `${name(DISC,st.prof.d)} · ${name(STAGE,st.prof.st)} · ${name(SCOPE,st.prof.sc)}`,""];
+    `${st.prof.d==='any'?'Any discipline':name(DISC,st.prof.d)} · ${name(STAGE,st.prof.st)} · ${name(SCOPE,st.prof.sc)}`,""];
   [["done","Done"],["later","To do"],[null,"Not yet reviewed"]].forEach(([k,lab])=>{
     const items=pa.filter(s=>(st.mark[s.id]||null)===k);
     if(!items.length)return;
@@ -545,7 +546,7 @@ function renderSummary(){
   const sec=(k,label)=>{const it=g(k);return it.length?`<h3>${label}<span class="count">${it.length}</span></h3><ul>${it.map(s=>`<li><a href="#" data-j="${s.id}">${esc(s.title)}</a> <span class="mark">· ${LVL[s.lvl][1]}</span></li>`).join("")}</ul>`:"";};
   const done=g("done").length;
   $("stage").innerHTML=`<span class="eyebrow">Journey map</span><h1>Your open research map</h1>
-  <p class="story lead">${done} of ${pa.length} steps done for <strong>${esc(name(DISC,st.prof.d))}</strong>, ${esc(name(STAGE,st.prof.st).toLowerCase())}, working on ${esc(name(SCOPE,st.prof.sc).toLowerCase())}.</p>
+  <p class="story lead">${done} of ${pa.length} steps done for ${st.prof.d==='any'?'':`<strong>${esc(name(DISC,st.prof.d))}</strong>, `}${esc(name(STAGE,st.prof.st).toLowerCase())}, working on ${esc(name(SCOPE,st.prof.sc).toLowerCase())}.</p>
   <div class="sum">${sec("later","To do later")}${sec(null,"Not yet reviewed")}${sec("done","Done")}${sec("skip","Not for me")}</div>
   <div class="actions"><button class="btn" id="copy">Copy my checklist</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="again">Revisit from the start</button></div>
   <span class="status" id="cs" role="status"></span><textarea id="fb" hidden readonly aria-label="Checklist text"></textarea>
