@@ -1117,5 +1117,6 @@ function openImport(){
 }
 
 LIB=loadLib();P=LIB.charts.find(c=>c.id===LIB.cur).p;render();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>render());
 </script>
 </body></html>
