@@ -13,6 +13,12 @@ It is an interactive version of *From Closed to Open: Practices and Guidelines f
 
 `index.html` is a choose-your-own-adventure route through the same checklist. Readers pick a discipline, career stage and project scope, then move through Plan, Ethics & governance, Conduct, Publish, Share and Teach chapters. Fork questions add or remove steps, and each step has discipline and career-stage tips plus Ulster resource links. See `PLAN.md` for the design. The Ulster site blocked automated access while this was built, so **all links need a manual click-through before publishing**.
 
+## Grant application adventure
+
+`grants.html` is a second choose-your-own-adventure, for putting together a research grant application. The reader gives career stage, field and what they want to fund, picks a scheme from a shortlist (UKRI councils, Future Leaders Fellowships, Innovate UK KTPs, Leverhulme, British Academy, Wellcome, Royal Society, Royal Academy of Engineering, NIHR, ERC, MSCA and Horizon Europe), and enters the deadline. Fork questions (partners, people or sensitive data, equipment, international work, resubmission) add decisions. The page then walks through the decisions in order, each with a suggested "decide by" date counted back from the deadline, the scheme's key facts and the funder's own guidance links. The timeline can be downloaded as Markdown, Word or a calendar (.ics) file.
+
+Scheme facts and links were gathered from the funders' own pages in October 2026. Many funder sites block automated checks, so see `LINK-CHECK.md` and click through before publishing. The week offsets are suggested planning times, not funder rules. Schemes and decisions are plain arrays at the top of the `<script>` block.
+
 ## Credits
 
 Content: Hanna, L., Evans, E., Bond, R., Butter, S., Cahoon, A., Casey, F., McChesney, I. and Shukla, P. (2026) *From Closed to Open: Practices and Guidelines for Open Research at Ulster*. Ulster University. Licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

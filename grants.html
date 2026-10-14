@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Unofficial prototype: a choose-your-own-adventure that shows which decisions to make, and by when, when putting together a UKRI, Leverhulme, Wellcome, British Academy, ERC or other research grant application.">
+<title>Grant Application Adventure</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+:root{
+  /* Approximate Ulster palette (same as checklist.html): swap in official brand values */
+  --band:#10203f; --band-ink:#fff; --band-muted:#b8c4dc;
+  --bg:#f3f5f8; --surface:#fff; --ink:#10203f; --muted:#56627a; --line:#d9dfe8;
+  --accent:#0072ce; --accent-soft:#e2eefb; --accent-ink:#00508f;
+  --exp:#10203f; --exp-soft:#dfe5f0; --rec:#2f7a4f; --rec-soft:#e2f2e8; --go:#6b4fa3; --go-soft:#eee8f7;
+  --warn:#8a4b00; --warn-soft:#fdf0dc;
+  --font:"Source Sans 3","Segoe UI",system-ui,Arial,sans-serif;
+  --mono:ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1426; --surface:#16213a; --ink:#e8edf6; --muted:#9ba8c0; --line:#283654;
+  --accent:#5fa8ff; --accent-soft:#132a4c; --accent-ink:#a9cdff;
+  --exp:#c4d3f0; --exp-soft:#22325a; --rec:#7fcf9e; --rec-soft:#183126; --go:#b9a2ea; --go-soft:#2a2340;
+  --warn:#f0c27a; --warn-soft:#3a2d14; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 var(--font);padding-inline:16px;padding-block-end:48px;-webkit-text-size-adjust:100%}
+a{color:var(--accent-ink);text-underline-offset:3px}
+a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.15}
+.wrap{max-width:820px;margin:0 auto}
+.proto{font:500 12px/1.4 var(--mono);color:#fff;background:var(--accent);padding:6px 16px;text-align:center;margin-inline:-16px}
+.band{background:var(--band);color:var(--band-ink);margin-inline:-16px;padding:14px 16px}
+.band .wrap{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between;align-items:center}
+.wordmark{font-weight:800;font-size:20px}
+.wordmark span{font-weight:400;color:var(--band-muted);margin-left:10px;padding-left:10px;border-left:1px solid var(--band-muted);font-size:16px}
+.band nav a{color:var(--band-muted);font-size:14px;margin-left:14px}
+.band button{all:unset;cursor:pointer;color:var(--band-muted);font-size:14px;text-decoration:underline;text-underline-offset:3px;margin-left:14px}
+
+/* chapter map */
+.map{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:20px 0 6px;padding:0;list-style:none}
+.map button{width:100%;text-align:left;font:inherit;appearance:none;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:8px 10px;cursor:pointer;display:grid;gap:5px;min-width:0}
+.map button[aria-current="step"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.map button:disabled{opacity:.5;cursor:not-allowed}
+.map .nm{font-weight:600;font-size:13.5px;line-height:1.2}
+.map .ct{font:500 11px var(--mono);opacity:.8}
+.map[hidden]{display:none}
+.bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+@media (max-width:640px){.map{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* scene */
+.scene{background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--accent);border-radius:6px;padding:clamp(18px,4vw,34px);margin-top:16px;display:grid;gap:16px}
+.scene:focus{outline:none}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(30px,6vw,46px);font-weight:800;letter-spacing:-.015em}
+h2{font-size:clamp(24px,4.5vw,32px);font-weight:800}
+.story{margin:0;max-width:62ch}
+.story.lead{font-size:19px}
+.choices{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.choices.two{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.choice{width:100%;text-align:left;font:inherit;appearance:none;background:var(--bg);color:var(--ink);border:2px solid var(--line);border-radius:6px;padding:14px 16px;cursor:pointer;display:grid;gap:3px;min-height:56px}
+.choice:hover{border-color:var(--accent)}
+.choice[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.choice b{font-size:18px}
+.choice span{font-size:14.5px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{appearance:none;font:inherit;font-size:15px;background:var(--bg);color:var(--ink);border:2px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip[aria-pressed="true"]::before{content:"✓ "}
+.q{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:8px 0 0}
+
+.badges{display:flex;flex-wrap:wrap;gap:6px}
+.b{font:500 12px/1 var(--mono);padding:5px 8px;border-radius:5px;white-space:nowrap}
+.b.exp{background:var(--exp-soft);color:var(--exp)}
+.b.rec{background:var(--rec-soft);color:var(--rec)}
+.b.go{background:var(--go-soft);color:var(--go)}
+.b.eff{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.why{margin:0}
+.tip{background:var(--accent-soft);border-left:4px solid var(--accent);border-radius:4px;padding:10px 14px;margin:0;font-size:16px}
+.tip b{display:block;font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:2px}
+input.other{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);margin-top:8px}
+input.other[hidden]{display:none}
+.opts .q{margin-bottom:8px}
+.sel{display:block;font-size:14.5px;color:var(--muted)}
+.dl{display:flex;flex-wrap:wrap;gap:8px}
+.warnbox{margin:0;background:var(--warn-soft);color:var(--warn);border-radius:4px;padding:10px 14px;font-size:15.5px}
+.warnbox b{display:block;font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
+.how h3,.eg b{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.how h3{margin-bottom:6px}
+.how ol{margin:0;padding-left:22px;display:grid;gap:4px}
+.eg{margin:10px 0 0;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 14px;font-size:15.5px}
+.eg b{display:block;margin-bottom:2px}
+.res h3{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.res ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.res a{font-weight:600}
+.res .note{font-size:14px;color:var(--muted);font-weight:400}
+.help{margin:0;font-size:15px;color:var(--muted)}
+.help b{color:var(--ink)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:4px}
+.btn{appearance:none;font:600 16px var(--font);border:2px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:4px;padding:11px 18px;cursor:pointer;min-height:46px}
+.btn:hover{border-color:var(--accent)}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.ok{background:var(--rec);border-color:var(--rec);color:#fff}
+.btn:disabled{background:var(--line);border-color:var(--line);color:var(--muted);cursor:not-allowed}
+.status{font-size:14px;color:var(--rec);min-height:1.3em}
+.back{all:unset;cursor:pointer;color:var(--accent-ink);font-size:15px;text-decoration:underline;text-underline-offset:3px;margin-right:auto}
+.back:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.mark{font-size:14px;color:var(--muted)}
+
+/* summary */
+.sum h3{font-size:19px;margin-top:6px}
+.sum ul{margin:6px 0 0;padding-left:20px;display:grid;gap:4px}
+.sum .count{font:500 13px var(--mono);color:var(--muted);margin-left:6px}
+textarea{width:100%;min-height:140px;font:13px/1.4 var(--mono);background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px}
+footer{margin-top:28px;border-top:1px solid var(--line);padding-top:18px;font-size:14px;color:var(--muted);display:grid;gap:10px}
+footer p{margin:0}
+.dis{background:var(--warn-soft);color:var(--warn);border-radius:4px;padding:10px 14px;font-size:14px;margin:0}
+@media print{.proto,.band,.map,.actions,footer{display:none}.scene{border:0}body{background:#fff}}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+/* grant planner additions */
+.scene>*{min-width:0}
+.b.exp,.b.late{white-space:normal;line-height:1.35}
+.b.late{background:var(--warn-soft);color:var(--warn)}
+.lbl{display:block;font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:12px}
+input[type=date]{font:inherit;font-size:18px;padding:10px 12px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);max-width:260px}
+.schemes{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.scard{display:grid;gap:4px}
+.scard .choice{min-height:0}
+.sf{font:500 12px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)!important}
+.fitbadge{font-style:normal;margin-left:8px;background:var(--rec-soft);color:var(--rec);padding:2px 6px;border-radius:4px}
+.scard details,.more,details.res{font-size:15px}
+summary{cursor:pointer;color:var(--accent-ink);padding:6px 2px;font-weight:600}
+.facts{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:8px 0}
+.facts dt{font:600 12px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding-top:3px}
+.facts dd{margin:0}
+@media (max-width:560px){.facts{grid-template-columns:1fr}.facts dd{margin-bottom:6px}}
+.lk,details.res ul{margin:6px 0 10px;padding-left:18px;display:grid;gap:4px}
+.fl{display:block;margin-top:3px}
+.tl{list-style:none;padding-left:0!important}
+.tl li{display:grid;gap:1px;padding:6px 0;border-bottom:1px solid var(--line)}
+.dis{margin:0}
+</style>
+</head>
+<body>
+<div class="proto">UNOFFICIAL PROTOTYPE · a format proposal, not a published University resource</div>
+<div class="band"><div class="wrap">
+  <span class="wordmark">Ulster University<span>Grant Application Adventure</span></span>
+  <nav aria-label="Site"><a href="index.html">Open research adventure</a><a href="checklist.html">Full checklist</a><button type="button" id="restart">Start again</button></nav>
+</div></div>
+
+<main class="wrap">
+  <ol class="map" id="map" aria-label="Chapters" hidden></ol>
+  <div id="stage" class="scene" tabindex="-1" aria-live="polite"></div>
+
+  <footer>
+    <p class="dis"><b>Check before relying on it.</b> Scheme facts are summarised from each funder's own web pages as seen in October 2026 and change often, sometimes between calls. The week offsets that set "decide by" dates are suggested planning times, not funder requirements. Always follow the live call text, your funder's terms, and the advice of the Ulster research office and research finance team.</p>
+    <p>Funders covered: <a href="https://www.ukri.org/">UKRI</a> (AHRC, BBSRC, EPSRC, ESRC, MRC, NERC, STFC, Innovate UK), <a href="https://www.leverhulme.ac.uk/">Leverhulme Trust</a>, <a href="https://www.thebritishacademy.ac.uk/funding/">British Academy</a>, <a href="https://wellcome.org/research-funding">Wellcome</a>, <a href="https://royalsociety.org/grants/">Royal Society</a>, <a href="https://raeng.org.uk/">Royal Academy of Engineering</a>, <a href="https://www.nihr.ac.uk/funding">NIHR</a>, the <a href="https://erc.europa.eu/apply-grant">ERC</a> and <a href="https://www.ukri.org/apply-for-funding/horizon-europe/">Horizon Europe</a>.</p>
+    <p>Your choices and notes are stored only in this browser.</p>
+  </footer>
+</main>
+
+<script>
+const U="https://www.ulster.ac.uk/research/resources/";
+const HUB=["Ulster research hub","https://www.ulster.ac.uk/research"];
+const GE=["Ulster governance and ethics",U+"governance-and-ethics"];
+const RDM=["Ulster research data management",U+"rdm"];
+const UK="https://www.ukri.org/apply-for-funding/";
+
+/* ---------- About you ---------- */
+const STAGE=[
+ {id:"early",n:"Early career",d:"Postdoc, new lecturer, or within roughly 10 years of your PhD"},
+ {id:"mid",n:"Mid career",d:"Established independent researcher, building a group or a second major project"},
+ {id:"est",n:"Established / senior",d:"Leading a group or programme, with a strong independent track record"},
+ {id:"any",n:"Not sure",d:"Show me everything and I will check eligibility myself"}
+];
+const DISC=[
+ {id:"ah",n:"Arts & humanities",d:"History, languages, literature, philosophy, media, creative practice",council:["AHRC","https://www.ukri.org/councils/ahrc/guidance-for-applicants/"]},
+ {id:"ss",n:"Social sciences, business & law",d:"Surveys, interviews, policy, economics, organisations",council:["ESRC","https://www.ukri.org/councils/esrc/guidance-for-applicants/"]},
+ {id:"stem",n:"Physical sciences, maths & computing",d:"Physics, chemistry, mathematics, data science, AI",council:["EPSRC (or STFC for astronomy and particle physics)","https://www.ukri.org/councils/epsrc/guidance-for-applicants/"]},
+ {id:"eng",n:"Engineering & built environment",d:"Engineering, design, materials, energy, construction",council:["EPSRC","https://www.ukri.org/councils/epsrc/guidance-for-applicants/"]},
+ {id:"life",n:"Life, earth & environmental sciences",d:"Biology, ecology, agriculture, climate, geoscience",council:["BBSRC or NERC","https://www.ukri.org/councils/bbsrc/guidance-for-applicants/"]},
+ {id:"health",n:"Health & medicine",d:"Clinical, biomedical, nursing, psychology, public health",council:["MRC","https://www.ukri.org/councils/mrc/guidance-for-applicants/"]},
+ {id:"any",n:"Not sure",d:"Show me everything",council:null}
+];
+const GOAL=[
+ {id:"fellowship",n:"Time and independence for me",d:"A fellowship that funds my salary and a research programme"},
+ {id:"project",n:"A funded research project",d:"Money for staff, costs and a defined piece of work, maybe with a team"},
+ {id:"small",n:"A small grant to get started",d:"Pilot data, travel, archive visits, a small project or a stepping stone"},
+ {id:"partner",n:"Work with business or other partners",d:"Knowledge exchange, innovation or a multi-partner consortium"},
+ {id:"eu",n:"A European scheme",d:"ERC, Marie Skłodowska-Curie or Horizon Europe collaborations"},
+ {id:"any",n:"Not sure yet",d:"Show me everything so I can compare"}
+];
+
+/* ---------- Schemes ----------
+   g = goals matched, st = career stages (omit = any), d = disciplines (omit = any)
+   Facts come from the funders' own pages (checked October 2026) and must be confirmed against the live call. */
+const UKGEN=[
+ ["UKRI: how applicants use the Funding Service",UK+"develop-your-application/how-applicants-use-the-ukri-funding-service/"],
+ ["UKRI: core application questions and assessment",UK+"develop-your-application/responsive-mode-opportunities-funding-service-core-application-section-questions-and-assessment/"],
+ ["UKRI: Resume for Research and Innovation (R4RI) guidance",UK+"develop-your-application/resume-for-research-and-innovation-r4ri-guidance/"],
+ ["UKRI: eligible and non-eligible costs",UK+"develop-your-application/what-costs-are-eligible-for-ukri-funding"],
+ ["UKRI: how to include costs",UK+"develop-your-application/how-to-include-costs-in-your-application"],
+ ["UKRI: individual eligibility",UK+"before-you-apply/individual-eligibility/"],
+ ["UKRI: submitting your application",UK+"develop-your-application/submitting-your-application/"],
+ ["UKRI: what happens next",UK+"develop-your-application/what-happens-next/"]
+];
+const SCH=[
+ {id:"ukri-resp",f:"UKRI",n:"Responsive-mode research grants",sub:"AHRC, BBSRC, EPSRC, ESRC, MRC, NERC, STFC",g:["project","small"],type:"project",
+  size:"UKRI normally funds 80% of the full economic cost (FEC). The EPSRC standard research grant, for example, has no set limit on value or length.",
+  elig:"Open to eligible UK research organisations. Three layers of guidance apply: the funding opportunity text, UKRI's general guidance, and your council's guidance.",
+  resub:"Uninvited resubmissions of projects already submitted to UKRI or another funder may not be accepted. Read UKRI's resubmissions policy first.",
+  route:"UKRI Funding Service",
+  links:[["Find a UKRI funding opportunity","https://www.ukri.org/opportunity/"],["EPSRC standard research grant (example call)","https://www.ukri.org/opportunity/epsrc-responsive-mode-standard-research-grant/"],["UKRI: find guidance on applying",UK+"how-to-apply/find-guidance-on-applying-for-funding/"],["UKRI: before you apply",UK+"before-you-apply/"],["UKRI: resubmissions policy",UK+"develop-your-application/application-resubmissions/"],["UKRI: demand management",UK+"before-you-apply/demand-management-for-funding-applications/"],["UKRI: if your research spans disciplines",UK+"get-support-for-your-project/if-your-research-spans-different-disciplines"],["UKRI: generative AI in applications and assessment","https://www.ukri.org/publications/generative-artificial-intelligence-in-application-and-assessment-policy/"],["UKRI: principles of assessment and decision-making","https://www.ukri.org/publications/ukri-principles-of-assessment-and-decision-making/uk-research-and-innovation-ukri-funding-assessment-and-decision-making-policy-and-principles/"],["UKRI: funding modes",UK+"funding-modes/"],["UKRI: disability and accessibility support",UK+"how-to-apply/disability-and-accessibility-support-for-ukri-applicants-and-grant-holders/"]].concat(UKGEN.slice(0,8))},
+ {id:"ukri-flf",f:"UKRI",n:"Future Leaders Fellowships",sub:"Cross-UKRI, all disciplines",g:["fellowship"],st:["early","mid"],type:"fellowship",interview:true,
+  size:"Four years, with the option to apply for up to three more. Past awards ranged from about £300,000 to over £2 million.",
+  commit:"In most cases fellows are expected to spend 100% of their working time on the fellowship.",
+  elig:"For early-career researchers and innovators moving to, or establishing, independence. Senior academics are excluded. Submission route has varied by round, so check the current call.",
+  route:"UKRI Funding Service (check each round)",
+  links:[["Future Leaders Fellowships",UK+"our-fellowship-opportunities/future-leaders-fellowships/"],["Find a UKRI funding opportunity","https://www.ukri.org/opportunity/"]].concat(UKGEN.slice(0,4))},
+ {id:"iuk-ktp",f:"Innovate UK",n:"Knowledge Transfer Partnerships",sub:"University + business, with a graduate Associate",g:["partner"],type:"partner",
+  size:"A partnership places a highly qualified graduate (the KTP Associate) in a business for 12 to 36 months. The business contributes to project costs.",
+  elig:"The application is led by a UK registered university, college, RTO or Catapult working with a UK registered business with two or more full-time employees. Only the knowledge base can submit.",
+  route:"Innovate UK (see KTP how-to-apply page)",
+  links:[["KTP guidance","https://www.ukri.org/councils/innovate-uk/guidance-for-applicants/guidance-for-specific-funds/knowledge-transfer-partnership-guidance/"],["How to apply for a KTP","https://www.ukri.org/councils/innovate-uk/guidance-for-applicants/guidance-for-specific-funds/knowledge-transfer-partnership-guidance/how-to-apply/"],["Innovate UK: general guidance","https://www.ukri.org/councils/innovate-uk/guidance-for-applicants/general-guidance/"],["Innovate UK: guidance for applicants","https://www.ukri.org/councils/innovate-uk/guidance-for-applicants/"],["Innovate UK: funding assessment and award management","https://www.ukri.org/councils/innovate-uk/funding-assessment-and-award-management/"]]},
+ {id:"lev-rpg",f:"Leverhulme Trust",n:"Research Project Grants",sub:"All disciplines, two-stage",g:["project","small"],type:"project",
+  size:"Up to £500,000 for six months to five years, with up to three co-applicants. Associated research costs are capped at 25% of the total budget.",
+  elig:"The PI must be employed by an eligible institution and direct the grant. Two stages: an outline application, then an invited detailed application. The Trust changed the scheme in 2026, so read its news page.",
+  resub:"Significant changes to the aims or objectives are not permitted between stages, and resubmission rules apply.",
+  route:"Leverhulme Grant System",
+  links:[["Research Project Grants","https://www.leverhulme.ac.uk/research-project-grants"],["Detailed applications","https://www.leverhulme.ac.uk/detailed-applications-research-project-grants-0"],["Important changes in 2026","https://www.leverhulme.ac.uk/news/RPG2026"],["Guidance for outline applications (2025 edition)","https://www.leverhulme.ac.uk/sites/default/files/2025ORPG_guidance_0.pdf"],["Leverhulme Grant System","https://www.leverhulme.ac.uk/leverhulme-grant-system"]]},
+ {id:"lev-ecf",f:"Leverhulme Trust",n:"Early Career Fellowships",sub:"All disciplines",g:["fellowship"],st:["early"],type:"fellowship",
+  elig:"For early-career researchers. Read the 2026 guidance for eligibility, funding and the host-institution role.",
+  route:"Leverhulme Grant System",
+  links:[["Early Career Fellowships guidance 2026","https://www.leverhulme.ac.uk/sites/default/files/Help_notes/2026_ECF_guidance.pdf"],["Leverhulme Grant System","https://www.leverhulme.ac.uk/leverhulme-grant-system"],["Leverhulme Trust","https://www.leverhulme.ac.uk/"]]},
+ {id:"ba-srg",f:"British Academy / Leverhulme",n:"Small Research Grants",sub:"Humanities and social sciences",g:["small"],st:["early","mid","est"],d:["ah","ss"],type:"small",
+  size:"Up to £10,000 over a maximum of 24 months. Funds cannot pay for replacement teaching or salary buy-out.",
+  elig:"For postdoctoral researchers in the humanities and social sciences. Mid-Career Fellows are not eligible while holding that fellowship.",
+  resub:"Under the 2026-27 guidance, unsuccessful applicants cannot resubmit in the round immediately after.",
+  route:"British Academy applications portal",
+  links:[["Small Research Grants","https://www.thebritishacademy.ac.uk/funding/schemes/ba-leverhulme-small-research-grants/"],["Scheme guidance 2026-27 (PDF)","https://www.thebritishacademy.ac.uk/documents/6295/202627_SRG_Scheme_Guidance.pdf"],["Objectives of Academy research funding","https://www.thebritishacademy.ac.uk/funding/schemes/general-information-about-british-academy-research-funding/"]]},
+ {id:"ba-mcf",f:"British Academy",n:"Mid-Career Fellowships",sub:"Humanities and social sciences",g:["fellowship"],st:["mid"],d:["ah","ss"],type:"fellowship",interview:false,
+  size:"Six to twelve months of research leave. The 2026-27 cap is £80,000 at 80% FEC, with research costs up to £8,000.",
+  commit:"The Academy covers 100% of the fellow's time during the award. A public engagement plan is expected.",
+  elig:"Applicants should usually be within 15 years of their doctorate.",
+  route:"British Academy applications portal",
+  links:[["Mid-Career Fellowships","https://www.thebritishacademy.ac.uk/funding/schemes/mid-career-fellowships/"],["Scheme guidance notes","https://www.thebritishacademy.ac.uk/funding/schemes/mid-career-fellowships/guidance-notes/"]]},
+ {id:"ba-pdf",f:"British Academy",n:"Postdoctoral Fellowships",sub:"Humanities and social sciences, two-stage",g:["fellowship"],st:["early"],d:["ah","ss"],type:"fellowship",interview:true,
+  size:"Three years. Outline stage first, then a second stage by invitation.",
+  resub:"The scheme does not accept resubmissions.",
+  route:"British Academy applications portal",
+  links:[["Postdoctoral Fellowships","https://www.thebritishacademy.ac.uk/funding/postdoctoral-fellowships/"],["Outline stage scheme guidance notes 2026-27 (PDF)","https://www.thebritishacademy.ac.uk/documents/6243/PDF-Outline-Stage-Scheme-Guidance-Notes-2026-27.pdf"],["Outline stage application notes 2026-27 (PDF)","https://www.thebritishacademy.ac.uk/documents/6244/PDF-Outline-Stage-Application-Notes-2026-27.pdf"]]},
+ {id:"wel-eca",f:"Wellcome",n:"Early-Career Awards",sub:"Any discipline, research that could improve human life, health and wellbeing",g:["fellowship"],st:["early"],type:"fellowship",interview:true,
+  size:"Your salary plus up to £400,000 for research expenses, usually over five years.",
+  commit:"You must be able to commit at least 80% of your research time to the project.",
+  elig:"Applicants should have passed their PhD viva (or have at least four years of equivalent research experience) and up to three years of postdoctoral experience. Co-applicants are not accepted.",
+  route:"Wellcome Funding portal",
+  links:[["Wellcome Early-Career Awards","https://wellcome.org/research-funding/schemes/wellcome-early-career-awards"],["Wellcome: prepare to apply","https://wellcome.org/research-funding/guidance/prepare-to-apply"],["Wellcome: funding policies and grant conditions","https://wellcome.org/research-funding/guidance/policies-grant-conditions"],["Wellcome: how funding decisions are made","https://wellcome.org/research-funding/guidance/how-wellcome-makes-funding-decisions/funding-application-advisory-committees"]]},
+ {id:"wel-disc",f:"Wellcome",n:"Discovery Research schemes",sub:"Career Development and Discovery Awards",g:["project","fellowship"],st:["mid","est"],type:"project",interview:true,
+  size:"Career Development Awards are aimed at mid-career researchers and Discovery Awards at established researchers and teams. Each scheme has several deadlines a year.",
+  elig:"Open to all disciplines where the research could improve human life, health and wellbeing.",
+  route:"Wellcome Funding portal",
+  links:[["Find a Wellcome scheme","https://wellcome.org/research-funding/schemes"],["Wellcome: prepare to apply","https://wellcome.org/research-funding/guidance/prepare-to-apply"],["Wellcome: funding guidance","https://wellcome.org/research-funding/guidance"],["Wellcome: funding policies and grant conditions","https://wellcome.org/research-funding/guidance/policies-grant-conditions"],["Wellcome: research careers","https://wellcome.org/grant-funding/research-careers"]]},
+ {id:"rs-urf",f:"Royal Society",n:"University Research Fellowship",sub:"Natural sciences, engineering and medical sciences",g:["fellowship"],st:["early"],d:["stem","eng","life","health"],type:"fellowship",interview:true,
+  elig:"For outstanding scientists in the early stages of their research career who have the potential to become leaders. Check the scheme page for current eligibility and application dates.",
+  route:"Royal Society Flexi-Grant",
+  links:[["University Research Fellowship","https://royalsociety.org/grants/university-research/"],["How to apply","https://royalsociety.org/grants/applications/"],["Application dates","https://royalsociety.org/grants/application-dates/"],["All Royal Society grants","https://royalsociety.org/grants/search/grant-listings/"]]},
+ {id:"raeng-rf",f:"Royal Academy of Engineering",n:"Research Fellowships",sub:"Engineering, UK universities",g:["fellowship"],st:["early"],d:["eng","stem"],type:"fellowship",interview:true,
+  size:"Up to £800,000 over five years, with mentoring and reduced teaching.",
+  elig:"For early-career engineering researchers, up to four years and six months after the PhD award date. Expression of interest first, then a full application.",
+  route:"Royal Academy of Engineering application portal",
+  links:[["Research Fellowships","https://raeng.org.uk/programmes-and-prizes/programmes/uk-grants-and-prizes/support-for-research/research-fellowships/"],["Eligibility","https://raeng.org.uk/programmes-and-prizes/programmes/uk-grants-and-prizes/support-for-research/research-fellowships/eligibility"],["FAQ","https://raeng.org.uk/programmes-and-prizes/programmes/uk-grants-and-prizes/support-for-research/research-fellowships/faq"],["Applicant guidance notes 2025/26 (PDF)","https://raeng.org.uk/media/3ckjt2hn/applicant-guidance-raeng-research-fellowships-2025-2026.pdf"]]},
+ {id:"nihr-dse",f:"NIHR",n:"Development and Skills Enhancement (DSE) Award",sub:"Health and care research",g:["fellowship"],st:["early","mid"],d:["health"],type:"fellowship",
+  elig:"Applicants must be current or recent NIHR Academy members, and the host must be an English higher education institution, NHS body or other health or care provider. Check carefully if you are based in Northern Ireland, where a different health research route may apply.",
+  route:"NIHR awards management system (ORCID required)",
+  links:[["DSE award","https://www.nihr.ac.uk/funding/nihr-development-and-skills-enhancement-award-dse/33250"],["DSE guidance notes","https://www.nihr.ac.uk/nihr-development-and-skills-enhancement-award-dse-guidance-notes"],["NIHR fellowships FAQs","https://www.nihr.ac.uk/documents/nihr-fellowships-faqs/19902"],["NIHR funding opportunities","https://www.nihr.ac.uk/funding"]]},
+ {id:"erc-stg",f:"European Research Council",n:"ERC Starting Grant",sub:"Frontier research, any field, excellence-only",g:["fellowship","project","eu"],st:["early"],type:"project",interview:true,
+  size:"Up to €1.5 million over 60 months, with up to €1 million more on request (Work Programme 2027).",
+  commit:"The PI must commit at least 50% of their working time to the project (Work Programme 2027).",
+  elig:"PhD defended in the ten years before 1 January 2027 (WP 2027). Previous Starting Grant holders cannot apply. One proposal per Work Programme.",
+  resub:"Check the Work Programme for resubmission restrictions after a low-scoring evaluation.",
+  route:"EU Funding & Tenders Portal",
+  links:[["ERC Starting Grant","https://erc.europa.eu/apply-grant/starting-grant"],["Applying in the 2027 competitions: what you need to know","https://erc.europa.eu/news-events/news/applying-erc-grant-2027-competitions-what-you-need-know"],["ERC Work Programme 2027 (PDF)","https://erc.europa.eu/system/files/2026-07/ERC_Work_Programme_2027.pdf"],["ERC document library","https://erc.europa.eu/support/document-library"],["ERC panel members database","https://erc.europa.eu/apply-grant/panel-members"]]},
+ {id:"erc-cog",f:"European Research Council",n:"ERC Consolidator Grant",sub:"Frontier research, any field, excellence-only",g:["fellowship","project","eu"],st:["early","mid"],type:"project",interview:true,
+  size:"Up to about €2 million over five years (WP 2026; confirm in the current Work Programme).",
+  elig:"Roughly 5 to 15 years after the PhD. Check the Work Programme for the exact window.",
+  route:"EU Funding & Tenders Portal",
+  links:[["ERC Consolidator Grant","https://erc.europa.eu/apply-grant/consolidator-grant"],["ERC Work Programme 2027 (PDF)","https://erc.europa.eu/system/files/2026-07/ERC_Work_Programme_2027.pdf"],["ERC document library","https://erc.europa.eu/support/document-library"],["ERC panel members database","https://erc.europa.eu/apply-grant/panel-members"]]},
+ {id:"erc-adg",f:"European Research Council",n:"ERC Advanced Grant",sub:"Frontier research, established leaders",g:["project","eu"],st:["est","mid"],type:"project",interview:true,
+  size:"Up to about €2.5 million over five years (WP 2026; confirm in the current Work Programme).",
+  elig:"For established research leaders with a recognised track record of significant achievements in the last 10 years.",
+  route:"EU Funding & Tenders Portal",
+  links:[["ERC Advanced Grant","https://erc.europa.eu/apply-grant/advanced-grants"],["ERC Work Programme 2027 (PDF)","https://erc.europa.eu/system/files/2026-07/ERC_Work_Programme_2027.pdf"],["ERC document library","https://erc.europa.eu/support/document-library"]]},
+ {id:"erc-syg",f:"European Research Council",n:"ERC Synergy Grant",sub:"Teams of 2 to 4 principal investigators",g:["project","eu","partner"],st:["mid","est"],type:"project",interview:true,
+  size:"Up to about €10 million over six years (WP 2026; confirm in the current Work Programme).",
+  elig:"Two to four PIs, with the proposal needing to go beyond what the PIs could achieve alone.",
+  route:"EU Funding & Tenders Portal",
+  links:[["ERC Synergy Grant","https://erc.europa.eu/apply-grant/synergy-grants"],["ERC Work Programme 2027 (PDF)","https://erc.europa.eu/system/files/2026-07/ERC_Work_Programme_2027.pdf"],["ERC document library","https://erc.europa.eu/support/document-library"]]},
+ {id:"erc-poc",f:"European Research Council",n:"ERC Proof of Concept",sub:"For current or past ERC grantees",g:["small","eu","partner"],st:["early","mid","est"],type:"small",
+  size:"Typically a €150,000 lump sum for up to 18 months (WP 2026).",
+  elig:"The PI must show the link between the idea and their ERC frontier research project.",
+  route:"EU Funding & Tenders Portal",
+  links:[["ERC Proof of Concept","https://erc.europa.eu/apply-grant/proof-concept"],["ERC document library","https://erc.europa.eu/support/document-library"]]},
+ {id:"msca-pf",f:"European Commission",n:"Marie Skłodowska-Curie Postdoctoral Fellowships",sub:"Mobility fellowships, any field",g:["fellowship","eu"],st:["early"],type:"fellowship",
+  size:"European Fellowships last 1 to 2 years. Global Fellowships involve a period outside Europe.",
+  elig:"The UK has been associated with Horizon Europe since January 2024, so UK hosts and UK nationals can apply. Many universities run an internal expression-of-interest process well before the EC deadline.",
+  route:"EU Funding & Tenders Portal",
+  links:[["UKRI: Horizon Europe help for UK applicants",UK+"horizon-europe/"],["UKRI: applying for Horizon Europe funding",UK+"horizon-europe/apply-for-funding/"],["Horizon Europe work programmes (European Commission)","https://research-and-innovation.ec.europa.eu/funding/funding-opportunities/funding-programmes-and-open-calls/horizon-europe/horizon-europe-work-programmes_en"],["UKRO (UK Research Office)","https://www.ukro.ac.uk/"]]},
+ {id:"he-collab",f:"European Commission",n:"Horizon Europe collaborative projects",sub:"Multi-partner consortia",g:["partner","eu","project"],st:["early","mid","est"],type:"partner",interview:false,
+  elig:"UK applicants have been eligible for direct EC funding since 1 January 2024 for 2024 to 2027 work programme calls. Consortium proposals need partners from several countries.",
+  route:"EU Funding & Tenders Portal",
+  links:[["UKRI: Horizon Europe help for UK applicants",UK+"horizon-europe/"],["UKRI: applying for Horizon Europe funding",UK+"horizon-europe/apply-for-funding/"],["UKRI: contact support services",UK+"horizon-europe/contact-support-services/"],["Horizon Europe work programmes (European Commission)","https://research-and-innovation.ec.europa.eu/funding/funding-opportunities/funding-programmes-and-open-calls/horizon-europe/horizon-europe-work-programmes_en"],["Horizon Europe (European Commission)","https://commission.europa.eu/funding-tenders/find-funding/eu-funding-programmes/horizon-europe_en"]]},
+ {id:"other",f:"Another funder",n:"A scheme not listed here, or still comparing",sub:"Charities, trusts, government departments, industry",g:[],type:"project",
+  elig:"Use the generic decision steps. Paste your funder's guidance into your notes alongside each step, and add your own links via your research office.",
+  route:"Check the funder's call",
+  links:[["UKRI funding finder","https://www.ukri.org/opportunity/"],["Nuffield Foundation","https://www.nuffieldfoundation.org/"],["Wolfson Foundation","https://www.wolfson.org.uk/"],["Royal Society of Edinburgh","https://rse.org.uk/"],["Academy of Medical Sciences","https://acmedsci.ac.uk/"]]}
+];
+const schById=Object.fromEntries(SCH.map(s=>[s.id,s]));
+
+/* ---------- Chapters and scenes ---------- */
+const CH=[
+ {id:"choose",n:"Choose & commit"},
+ {id:"design",n:"Shape the project"},
+ {id:"build",n:"Cost & assemble"},
+ {id:"submit",n:"Review & submit"},
+ {id:"after",n:"After you submit"}
+];
+const MARK={yes:"Decided",wip:"Still deciding",na:"Not relevant to me"};
+const MARKS=["yes","wip","na"];
+
+/* Forks add flags that bring in extra decisions. wk = weeks before the deadline the decision should be made */
+const S=[
+ {id:"f-partner",t:"f",ch:"choose",wk:999,flag:"partner",title:"Will you work with partners outside your own group?",hint:"Other universities, businesses, the NHS, charities or community organisations that contribute to the work or its costs."},
+ {id:"f-people",t:"f",ch:"choose",wk:999,flag:"people",title:"Will the work involve people, animals, personal data, sensitive sites or materials?",hint:"Interviews, surveys, clinical samples, vulnerable groups, archives with restrictions, hazardous materials."},
+ {id:"f-kit",t:"f",ch:"choose",wk:999,flag:"kit",title:"Will you need major equipment, specialist facilities or fieldwork?",hint:"Lab time, computing, instruments, overseas travel, research vessels, studios."},
+ {id:"f-intl",t:"f",ch:"choose",wk:999,flag:"intl",title:"Will you work with collaborators, fieldwork or data outside the UK?",hint:"International partners, overseas hosts, or data transferred across borders."},
+ {id:"f-resub",t:"f",ch:"choose",wk:999,flag:"resub",title:"Is this a resubmission of an idea a funder has already assessed?",hint:"Including a revised version of a proposal sent to this or another funder."},
+
+ {id:"d-fit",t:"d",ch:"choose",wk:24,title:"Is this the right scheme for you and your idea?",
+  why:"Most rejections without review come from eligibility or remit, not quality. Decide early whether you fit, because everything else depends on the answer.",
+  opts:["Eligibility confirmed","Career-stage window checked","Remit and aims match my idea","Funder guidance and call text read in full","Backup scheme identified"],
+  facts:["elig","route"],
+  help:"Your research office and your head of school or research director. Ask a colleague who has held an award from this funder."},
+ {id:"d-role",t:"d",ch:"choose",wk:22,title:"What role will you take, and how much of your time will it need?",
+  why:"Funders set the minimum time you must commit, and your School must agree to release it. Teaching buy-out and cover need lead time.",
+  opts:["Principal Investigator","Co-Investigator","Fellow","Teaching or admin cover arranged","Head of school support agreed"],
+  facts:["commit"],
+  help:"Your head of school and research office."},
+ {id:"d-office",t:"d",ch:"choose",wk:20,title:"Who at Ulster needs to know, and what are their internal deadlines?",
+  why:"Universities often have an internal deadline well before the funder's, plus demand-management limits, internal peer review or expression-of-interest rounds. Missing these can stop you applying.",
+  opts:["Research office contacted","Internal deadline confirmed","Internal peer review booked","Expression of interest needed","Demand management or application limit checked"],
+  links:[HUB],
+  help:"Your research office and research finance team (find them via the Ulster research hub)."},
+ {id:"d-host",t:"d",ch:"choose",wk:20,w:p=>p.sch&&p.sch.type==="fellowship",title:"Who will be your mentor, host or sponsor, and who will write references?",
+  why:"Fellowship panels look for a credible environment around you. Mentors and referees need weeks of notice, not days.",
+  opts:["Mentor identified","Host department support letter requested","Referees asked","Environment statement drafted"],
+  help:"Your research director, senior colleagues, and past supervisors."},
+ {id:"d-resub",t:"d",ch:"choose",wk:20,w:p=>p.F.has("resub"),title:"What will be different from the last time it was assessed?",
+  why:"Many funders limit or forbid resubmissions, or require you to say how reviewers' comments were addressed. Decide what really changed before you start rewriting.",
+  opts:["Reviewer comments collated","Funder's resubmission rule checked","Material changes to design or team listed","Alternative funder considered"],
+  facts:["resub"]},
+ {id:"d-part",t:"d",ch:"design",wk:16,w:p=>p.F.has("partner"),title:"Who are your partners, and what exactly will each of them do and contribute?",
+  why:"Partner roles, contributions and letters of support take time to agree. Agree intellectual property and data sharing early, since this can hold up costing and sign-off.",
+  opts:["Partners and roles agreed","Letters of support requested","Cash or in-kind contributions confirmed","IP and data-sharing principles agreed","Contracts and legal review requested"],
+  help:"Your research office and contracts team before you promise anything in writing."},
+ {id:"d-scope",t:"d",ch:"design",wk:16,title:"What exactly are you asking for: the question, the scope, and the size of the request?",
+  why:"Panels reward a clear question, realistic scope and a request that matches the scheme. Overstretched proposals and requests that sit outside the scheme's limits are common reasons for rejection.",
+  opts:["Core question in one sentence","Scope matched to scheme limits","Duration chosen","Team size chosen","Risks to scope identified"],
+  facts:["size"]},
+ {id:"d-panel",t:"d",ch:"design",wk:14,title:"Which discipline, council or panel should assess it?",
+  why:"Where your proposal lands determines who reviews it and which criteria apply. Interdisciplinary work needs a deliberate choice.",
+  opts:["Primary discipline or panel chosen","Secondary area noted","Funder contacted about remit","Reviewer-friendly framing considered"],
+  councilTip:true,
+  links:[["UKRI: if your research spans disciplines",UK+"get-support-for-your-project/if-your-research-spans-different-disciplines"]],
+  help:"The funder's programme manager or helpdesk, named in the call."},
+ {id:"d-ethics",t:"d",ch:"design",wk:12,w:p=>p.F.has("people"),title:"Which ethics and governance approvals will you need, and when can you get them?",
+  why:"Some funders need ethics information at application, others before the award starts. Approvals can take months, so decide the route and plan for it.",
+  opts:["Ethics route identified","Data protection assessment needed","Sponsorship or NHS approvals needed","Animal, biosafety or site permissions","Vulnerable participants considered"],
+  links:[GE],
+  help:"Ulster research governance and ethics team."},
+ {id:"d-open",t:"d",ch:"design",wk:12,title:"What is your data management and open research plan?",
+  why:"Most funders require a data management and sharing plan, and open access for outputs. Decide where data will live and who looks after it, then cost it.",
+  opts:["Data types and volumes listed","Repository chosen","Licence and access terms chosen","Costs of storage and curation included","Open access publishing costs included"],
+  links:[RDM,["Open research adventure at Ulster","index.html"]],
+  help:"Ulster data stewards and the library open access team. The Open Research Adventure on this site walks through the same decisions in more detail."},
+ {id:"d-intl",t:"d",ch:"design",wk:12,w:p=>p.F.has("intl"),title:"Which international rules affect your plan?",
+  why:"Funder eligibility, spending outside the UK, data transfer and research security can all shape what you can include and who can be a partner. Check early.",
+  opts:["Partner country eligibility checked","International data transfer plan","Research security or export-control screening","Overseas costs allowed by funder","UK association status checked"],
+  help:"Your research office, and the UKRI Horizon Europe support pages for EU schemes.",
+  links:[["UKRI: Horizon Europe support",UK+"horizon-europe/contact-support-services/"]]},
+ {id:"d-wp",t:"d",ch:"build",wk:10,title:"How will you structure the work, and what is the timeline?",
+  why:"Reviewers look for a credible, staged plan with milestones, dependencies and a way of handling risk. Decide the structure before you cost it so costs follow the plan.",
+  opts:["Work packages or phases defined","Milestones and deliverables listed","Dependencies and critical path mapped","Risks and contingencies noted","Gantt or timeline prepared"],
+  help:"Colleagues who have run projects of similar size. A Gantt chart tool is coming to this site."},
+ {id:"d-cost",t:"d",ch:"build",wk:8,title:"What will it cost, and what are you asking the funder to pay?",
+  why:"Research finance must cost the application, including full economic costs, staff on-costs, indirects and any partner contributions. This is the stage most likely to take longer than expected.",
+  opts:["Staff time and salaries costed","Travel and subsistence","Consumables and equipment","Open access and data costs","Costing approved by research finance"],
+  facts:["size"],
+  links:[["UKRI: how to include costs",UK+"develop-your-application/how-to-include-costs-in-your-application"],["UKRI: eligible and non-eligible costs",UK+"develop-your-application/what-costs-are-eligible-for-ukri-funding"]],
+  help:"Research finance. Give them your draft work plan as early as you can."},
+ {id:"d-kit",t:"d",ch:"build",wk:8,w:p=>p.F.has("kit"),title:"What equipment, facilities and fieldwork do you need, and who must you book or consult?",
+  why:"Facilities have their own lead times, quotes and sign-off, and some funders ask for evidence of access or institutional contribution.",
+  opts:["Quotes obtained","Facility access agreed","Fieldwork risk assessments started","Institutional contribution requested","Technical support costed"],
+  links:[["Infraportal: find research facilities","https://www.infraportal.org.uk/"]]},
+ {id:"d-cv",t:"d",ch:"build",wk:6,title:"What evidence of track record will you present, and in what format?",
+  why:"Funders increasingly ask for narrative CVs that reward many kinds of contribution. Decide which achievements best show you can deliver this project, and gather any evidence or permissions.",
+  opts:["Narrative CV format identified","Key outputs and contributions chosen","Team members' CVs requested","Career breaks or context explained","ORCID and Pure records up to date"],
+  links:[["UKRI: R4RI guidance",UK+"develop-your-application/resume-for-research-and-innovation-r4ri-guidance/"]]},
+ {id:"d-impact",t:"d",ch:"build",wk:6,title:"How will the work reach people who can use it, and how will you handle equality, diversity and inclusion?",
+  why:"Impact pathways, public engagement and inclusive practice are assessed or expected by many funders. Decide the audiences and activities early so they are costed and credible.",
+  opts:["Audiences and users identified","Engagement activities planned","Partner or user input secured","EDI considerations addressed","Plain-language summary drafted"],
+  help:"Ulster public engagement and impact staff."},
+ {id:"d-draft",t:"d",ch:"submit",wk:4,title:"Who will read your draft, and when?",
+  why:"Fresh readers find what you cannot see. Book expert and non-expert readers and a mock panel while the draft still has time to change.",
+  opts:["Expert internal reviewer booked","Non-specialist reader booked","Mock panel or internal peer review","Time to revise after comments","Language and style check"]},
+ {id:"d-sign",t:"d",ch:"submit",wk:3,title:"Who must approve or sign the application, and what is the internal sign-off deadline?",
+  why:"Heads of department, partners, referees and finance may all need to validate their accounts or sign before submission. Some portals will block submission until every participant has validated.",
+  opts:["Signatories identified","Account validation reminders sent","Head of school sign-off","Research office submission slot booked","Contingency day built in"],
+  help:"Your research office. Check their internal deadline carefully."},
+ {id:"d-submit",t:"d",ch:"submit",wk:1,title:"Is everything checked, and how have you used AI tools?",
+  why:"Final checks catch formatting and file errors. Several funders have policies on generative AI in applications, so check what you must declare.",
+  opts:["Page, word and file limits checked","Funder's formatting rules followed","Generative AI policy checked","Final proofread","Submission confirmation saved"],
+  links:[["UKRI: generative AI in applications and assessment","https://www.ukri.org/publications/generative-artificial-intelligence-in-application-and-assessment-policy/"],["UKRI: submitting your application",UK+"develop-your-application/submitting-your-application/"]]},
+ {id:"d-interview",t:"d",ch:"after",wk:-8,w:p=>p.sch&&p.sch.interview,title:"How will you prepare for a possible interview or panel?",
+  why:"Several schemes shortlist for interview. Time between invitation and interview is often short, so decide now who can rehearse with you.",
+  opts:["Mock interview arranged","Mentor briefed","Presentation prepared","Key weaknesses and responses noted","Dates in diary"]},
+ {id:"d-after",t:"d",ch:"after",wk:-4,title:"What will you do with the outcome: reviewer comments, feedback or a rejection?",
+  why:"Some funders let you respond to reviewers. Others limit resubmission. Decide in advance who you will ask for feedback and what you would do next.",
+  opts:["Response to reviewers possible","Feedback requested","Resubmission rules read","Alternative funders shortlisted","Debrief with research office"],
+  facts:["resub"],
+  links:[["UKRI: what happens next",UK+"develop-your-application/what-happens-next/"]]}
+];
+const byId=Object.fromEntries(S.map(s=>[s.id,s]));
+
+/* ---------- State ---------- */
+const store={
+  get(k,d){try{const v=localStorage.getItem("gr:"+k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem("gr:"+k,JSON.stringify(v))}catch(e){}}
+};
+const blank=()=>({p:{stage:null,disc:null,goal:null},sch:null,dl:"",ans:{},mark:{},pick:{},other:{},notes:{},all:false,at:"start"});
+let st=Object.assign(blank(),store.get("st",null)||{});
+st.p=Object.assign({stage:null,disc:null,goal:null},st.p);
+["ans","mark","pick","other","notes"].forEach(k=>st[k]=st[k]||{});
+const save=()=>store.set("st",st);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $=id=>document.getElementById(id);
+const name=(list,id)=>(list.find(x=>x.id===id)||{}).n||"";
+const profileDone=()=>st.p.stage&&st.p.disc&&st.p.goal&&st.sch;
+
+/* ---------- Dates ---------- */
+const DAY=864e5;
+const parseD=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||"");return m?new Date(+m[1],+m[2]-1,+m[3]):null;};
+const fmt=d=>d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+const iso=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0");
+const today=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate());};
+function dueDate(wk){const dl=parseD(st.dl);return dl?new Date(dl.getTime()-wk*7*DAY):null;}
+function whenText(s){
+  const w=s.wk, d=dueDate(w);
+  const rel=w>0?`${w} week${w===1?"":"s"} before the deadline`:`${-w} week${w===-1?"":"s"} after the deadline`;
+  if(!d)return {txt:"About "+rel,late:false};
+  const late=d<today()&&w>0;
+  return {txt:`Decide by ${fmt(d)} (${rel})`,late};
+}
+
+/* ---------- Path ---------- */
+function flags(){
+  const F=new Set();
+  Object.entries(st.ans).forEach(([id,v])=>{const s=byId[id]; if(s&&v==="yes")F.add(s.flag);});
+  return F;
+}
+function path(){
+  const p={sch:schById[st.sch],F:flags(),stage:st.p.stage,disc:st.p.disc};
+  const all=S.filter(s=>!s.w||s.w(p));
+  const forks=all.filter(s=>s.t==="f");
+  const ds=all.filter(s=>s.t==="d").sort((a,b)=>b.wk-a.wk);
+  return forks.concat(ds);
+}
+const nextFrom=id=>{const pa=path(),i=pa.findIndex(s=>s.id===id);return (pa[i+1]||{id:"summary"}).id;};
+const prevFrom=id=>{const pa=path(),i=pa.findIndex(s=>s.id===id);return i>0?pa[i-1].id:"deadline";};
+
+/* ---------- Rendering ---------- */
+function go(at){st.at=at;save();render();const s=$("stage");s.focus({preventScroll:true});window.scrollTo({top:0,behavior:"auto"});}
+
+function renderMap(){
+  const m=$("map");
+  if(!profileDone()||!st.dl||["start","stage","disc","goal","scheme","deadline"].includes(st.at)){m.hidden=true;m.innerHTML="";return;}
+  m.hidden=false;
+  const pa=path(), cur=byId[st.at];
+  m.innerHTML=CH.map(c=>{
+    const ds=pa.filter(s=>s.ch===c.id&&s.t==="d");
+    const n=ds.filter(s=>st.mark[s.id]==="yes").length;
+    const first=pa.find(s=>s.ch===c.id);
+    const pct=ds.length?Math.round(n/ds.length*100):0;
+    const here=cur&&cur.ch===c.id;
+    return `<li><button type="button" data-ch="${c.id}" ${first?"":"disabled"} ${here?'aria-current="step"':""}><span class="nm">${c.n}</span><span class="ct">${n} / ${ds.length}</span><span class="bar"><i style="width:${pct}%"></i></span></button></li>`;
+  }).join("");
+  m.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const f=path().find(s=>s.ch===b.dataset.ch);if(f)go(f.id);}));
+}
+
+function choose(sel,set,attr){
+  const bs=$("stage").querySelectorAll(sel);
+  bs.forEach(b=>b.onclick=()=>{
+    set(b.dataset[attr]);
+    bs.forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+    if($("nx"))$("nx").disabled=false;renderMap();
+  });
+}
+
+function renderStart(){
+  $("stage").innerHTML=`<span class="eyebrow">A choose-your-own-adventure</span>
+  <h1>Plan your grant application</h1>
+  <p class="story lead"><strong>Grants are won in the decisions you make months before you start writing.</strong> Tell us about you and the scheme you are aiming at. We will work backwards from the deadline and show you which decisions to make, in what order, and by when.</p>
+  <p class="story">It takes a couple of minutes to set up. We gather the funders' own guidance for UKRI councils, Leverhulme, the British Academy, Wellcome, the Royal Society, the Royal Academy of Engineering, NIHR, the ERC and Horizon Europe. Your choices stay in this browser.</p>
+  <div class="actions">${profileDone()&&st.dl?`<button class="btn" id="resume">Continue my plan</button>`:""}<button class="btn ${profileDone()&&st.dl?"ghost":""}" id="begin">${profileDone()&&st.dl?"Change my choices":"Begin"}</button></div>`;
+  $("begin").onclick=()=>go("stage");
+  if($("resume"))$("resume").onclick=()=>go(path().find(s=>!(s.id in st.mark)&&!(s.id in st.ans))?.id||"summary");
+}
+
+function picker(list,key,q){
+  return `<p class="q">${q}</p><ul class="choices ${list.length>3?"two":""}">${list.map(o=>`<li><button type="button" class="choice" data-v="${o.id}" aria-pressed="${st.p[key]===o.id}"><b>${esc(o.n)}</b><span>${esc(o.d)}</span></button></li>`).join("")}</ul>`;
+}
+function renderProfile(step){
+  const cfg={
+    stage:{eye:"Step 1 of 4",h:"Where are you in your career?",list:STAGE,key:"stage",q:"Choose the closest",next:"disc",back:"start"},
+    disc:{eye:"Step 2 of 4",h:"What is your field?",list:DISC,key:"disc",q:"Choose the closest",next:"goal",back:"stage"},
+    goal:{eye:"Step 3 of 4",h:"What are you hoping to fund?",list:GOAL,key:"goal",q:"Choose the best fit",next:"scheme",back:"disc"}
+  }[step];
+  $("stage").innerHTML=`<span class="eyebrow">${cfg.eye}</span><h2>${cfg.h}</h2>${picker(cfg.list,cfg.key,cfg.q)}
+  <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="nx" ${st.p[cfg.key]?"":"disabled"}>Next</button></div>`;
+  choose(".choice",v=>{st.p[cfg.key]=v;if(cfg.key!=="goal")st.all=false;save();},"v");
+  $("nx").onclick=()=>go(cfg.next);
+  $("bk").onclick=()=>go(cfg.back);
+}
+
+function fits(s){
+  const P=st.p;
+  const g=P.goal==="any"||s.g.includes(P.goal);
+  const sg=P.stage==="any"||!s.st||s.st.includes(P.stage);
+  const dd=P.disc==="any"||!s.d||s.d.includes(P.disc);
+  return s.id==="other"?false:(g&&sg&&dd);
+}
+function schemeCard(s,match){
+  const facts=[["How big",s.size],["Your time",s.commit],["Who can apply",s.elig],["Resubmission",s.resub],["Route",s.route]].filter(f=>f[1]);
+  return `<li class="scard"><button type="button" class="choice" data-v="${s.id}" aria-pressed="${st.sch===s.id}">
+    <span class="sf">${esc(s.f)}${match?'<em class="fitbadge">Good fit</em>':""}</span>
+    <b>${esc(s.n)}</b><span>${esc(s.sub)}</span></button>
+    <details><summary>Key facts and guidance (${s.links.length} links)</summary>
+      <dl class="facts">${facts.map(f=>`<dt>${f[0]}</dt><dd>${esc(f[1])}</dd>`).join("")}</dl>
+      <ul class="lk">${s.links.map(l=>`<li><a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])} ↗</a></li>`).join("")}</ul>
+    </details></li>`;
+}
+function renderScheme(){
+  const dd=DISC.find(x=>x.id===st.p.disc);
+  const ms=SCH.filter(fits), rest=SCH.filter(s=>!fits(s)&&s.id!=="other");
+  const other=schById.other;
+  $("stage").innerHTML=`<span class="eyebrow">Step 4 of 4</span><h2>Which scheme are you aiming at?</h2>
+  <p class="story">${ms.length?`These ${ms.length} scheme${ms.length===1?"":"s"} match what you told us. Open any card for key facts and the funder's guidance documents.`:"Nothing matched exactly, so everything is listed below."} Facts are summaries from each funder's own pages. <strong>Always confirm them in the live call</strong> before you commit.</p>
+  ${dd&&dd.council&&st.p.disc!=="any"?`<p class="tip"><b>UKRI route for ${esc(dd.n)}</b>Your closest UKRI council is usually ${esc(dd.council[0])}. See its <a href="${esc(dd.council[1])}" target="_blank" rel="noopener">guidance for applicants ↗</a>.</p>`:""}
+  ${ms.length?`<ul class="schemes">${ms.map(s=>schemeCard(s,true)).join("")}</ul>`:""}
+  <details class="more" ${st.all||!ms.length?"open":""}><summary>${ms.length?"See the other schemes too":"All schemes"} (${rest.length})</summary><ul class="schemes">${rest.map(s=>schemeCard(s,false)).join("")}</ul></details>
+  <ul class="schemes">${schemeCard(other,false)}</ul>
+  <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="nx" ${st.sch?"":"disabled"}>Next</button></div>`;
+  $("stage").querySelector(".more").addEventListener("toggle",e=>{st.all=e.target.open;save();});
+  $("stage").querySelectorAll("button.choice").forEach(b=>b.onclick=()=>{
+    st.sch=b.dataset.v;save();
+    $("stage").querySelectorAll("button.choice").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+    $("nx").disabled=false;
+  });
+  $("nx").onclick=()=>go("deadline");
+  $("bk").onclick=()=>go("goal");
+}
+
+function renderDeadline(){
+  const s=schById[st.sch];
+  $("stage").innerHTML=`<span class="eyebrow">One last thing</span><h2>When is your deadline?</h2>
+  <p class="story">We will count back from the funder's closing date for <strong>${esc(s.n)}</strong> to show the date by which each decision should be made. Use the funder's date, then ask your research office for the earlier internal one.</p>
+  <label class="lbl" for="dl">Funder deadline</label><input type="date" id="dl" value="${esc(st.dl&&st.dl!=="none"?st.dl:"")}">
+  <p class="mark">No fixed date yet, or the scheme is open all year? Choose that below and we will show decisions as weeks before you submit instead.</p>
+  <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="nx" ${st.dl?"":"disabled"}>See my decisions</button><button class="btn ghost" id="nodate">I do not have a date yet</button></div>`;
+  $("dl").oninput=e=>{st.dl=e.target.value;save();$("nx").disabled=!st.dl;};
+  $("nx").onclick=()=>go(path()[0].id);
+  $("nodate").onclick=()=>{st.dl="none";save();go(path()[0].id);};
+  $("bk").onclick=()=>go("scheme");
+}
+
+function factsBox(s,d){
+  const items=(d.facts||[]).map(k=>s[k]&&[{elig:"Who can apply",route:"Route",commit:"Time commitment",size:"Size and length",resub:"Resubmission"}[k],s[k]]).filter(Boolean);
+  if(!items.length)return "";
+  return `<p class="tip"><b>For ${esc(s.n)}</b>${items.map(i=>`<span class="fl"><strong>${i[0]}.</strong> ${esc(i[1])}</span>`).join("")}</p>`;
+}
+function renderScene(s){
+  const chap=CH.find(c=>c.id===s.ch), sch=schById[st.sch];
+  let h=`<span class="eyebrow">${chap.n}</span>`;
+  if(s.t==="f"){
+    const a=st.ans[s.id];
+    h+=`<h2>${esc(s.title)}</h2><p class="story">${esc(s.hint)}</p>
+    <ul class="choices two"><li><button type="button" class="choice" data-a="yes" aria-pressed="${a==="yes"}"><b>Yes, or probably</b><span>Add the related decisions</span></button></li>
+    <li><button type="button" class="choice" data-a="no" aria-pressed="${a==="no"}"><b>No, or not sure yet</b><span>Skip them; I can change my mind</span></button></li></ul>
+    <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="nx" ${a?"":"disabled"}>Next</button></div>`;
+    $("stage").innerHTML=h;
+    choose(".choice",v=>{st.ans[s.id]=v;save();},"a");
+    $("nx").onclick=()=>go(nextFrom(s.id));
+  }else{
+    const m=st.mark[s.id], w=whenText(s);
+    const dd=DISC.find(x=>x.id===st.p.disc);
+    const links=(s.links||[]).concat(s.id==="d-fit"?sch.links.slice(0,3):[]).map(l=>`<li><a href="${esc(l[1])}" ${/^https?:/.test(l[1])?'target="_blank" rel="noopener"':""}>${esc(l[0])}${/^https?:/.test(l[1])?" ↗":""}</a></li>`).join("");
+    const schemeLinks=sch.links.slice(0,8).map(l=>`<li><a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])} ↗</a></li>`).join("");
+    h+=`<h2>${esc(s.title)}</h2>
+    <div class="badges"><span class="b ${w.late?"late":"exp"}">${w.txt}${w.late?" (already passed: compress)":""}</span></div>
+    <p class="why"><strong>Why it matters:</strong> ${esc(s.why)}</p>
+    ${factsBox(sch,s)}
+    ${s.councilTip&&dd&&dd.council&&st.p.disc!=="any"?`<p class="tip"><b>For ${esc(dd.n)}</b>Likely UKRI council: ${esc(dd.council[0])}. <a href="${esc(dd.council[1])}" target="_blank" rel="noopener">Its guidance ↗</a></p>`:""}
+    ${links?`<div class="res"><h3>Guidance and resources</h3><ul>${links}</ul></div>`:""}
+    ${s.id==="d-fit"||s.id==="d-scope"||s.id==="d-cost"?`<details class="res"><summary>All guidance for ${esc(sch.n)}</summary><ul>${schemeLinks}</ul></details>`:""}
+    ${s.help?`<p class="help"><b>Who can help:</b> ${esc(s.help)}</p>`:""}
+    <div class="opts"><p class="q">What have you decided or still need to? <span class="mark">Select all that apply</span></p>
+      <div class="chips" role="group" aria-label="Considerations">${s.opts.map(o=>`<button type="button" class="chip" data-o="${esc(o)}" aria-pressed="${(st.pick[s.id]||[]).includes(o)}">${esc(o)}</button>`).join("")}</div>
+      <label class="lbl" for="nt">Your notes (optional)</label><input type="text" class="other" id="nt" maxlength="300" placeholder="e.g. who, what, or the date you agreed" value="${esc(st.notes[s.id]||"")}"></div>
+    <p class="q">Where are you with this decision?</p>
+    <ul class="choices two">${MARKS.map(k=>`<li><button type="button" class="choice" data-m="${k}" aria-pressed="${m===k}"><b>${MARK[k]}</b></button></li>`).join("")}</ul>
+    <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="nx" ${m?"":"disabled"}>Next</button></div>`;
+    $("stage").innerHTML=h;
+    choose("[data-m]",v=>{st.mark[s.id]=v;save();},"m");
+    $("stage").querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>{
+      const a=st.pick[s.id]=st.pick[s.id]||[], v=b.dataset.o, i=a.indexOf(v);
+      i<0?a.push(v):a.splice(i,1);
+      b.setAttribute("aria-pressed",String(i<0));save();
+    });
+    $("nt").oninput=e=>{st.notes[s.id]=e.target.value.slice(0,300);save();};
+    $("nx").onclick=()=>go(nextFrom(s.id));
+  }
+  $("bk").onclick=()=>go(prevFrom(s.id));
+}
+
+/* ---------- Summary and export ---------- */
+function items(){
+  return path().filter(s=>s.t==="d").map(s=>({id:s.id,ch:s.ch,title:s.title,wk:s.wk,due:dueDate(s.wk),status:MARK[st.mark[s.id]]||"Not yet reviewed",picks:st.pick[s.id]||[],note:st.notes[s.id]||""}));
+}
+const BOX={"Decided":"[x]","Still deciding":"[~]","Not relevant to me":"[-]"};
+function profileLine(){
+  const s=schById[st.sch];
+  return `${s.f}: ${s.n} · ${name(STAGE,st.p.stage)} · ${name(DISC,st.p.disc)}`+(parseD(st.dl)?` · Deadline ${fmt(parseD(st.dl))}`:"");
+}
+function planText(md){
+  const L=[md?"# My grant application decisions":"My grant application decisions",profileLine(),"","Prepared: "+fmt(new Date()),""];
+  CH.forEach(c=>{
+    const it=items().filter(i=>i.ch===c.id); if(!it.length)return;
+    L.push(md?"## "+c.n:c.n.toUpperCase(),"");
+    it.forEach(i=>{
+      L.push(`${BOX[i.status]||"[ ]"} ${md?"**"+i.title+"**":i.title} - ${i.status}${i.due?` - decide by ${fmt(i.due)}`:` - ${i.wk>0?i.wk+" weeks before":(-i.wk)+" weeks after"} the deadline`}`);
+      if(i.picks.length)L.push("    Considerations: "+i.picks.join("; "));
+      if(i.note)L.push("    Notes: "+i.note);
+    });
+    L.push("");
+  });
+  return L.join("\n");
+}
+function wordDoc(){
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>My grant application decisions</title></head><body style="font-family:Calibri,Arial,sans-serif">
+<h1>My grant application decisions</h1><p>${esc(profileLine())}<br>Prepared: ${fmt(new Date())}</p>
+${CH.map(c=>{const it=items().filter(i=>i.ch===c.id);return it.length?`<h2>${esc(c.n)}</h2><table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%"><tr><th align="left">Decision</th><th align="left">Decide by</th><th align="left">Status</th><th align="left">Notes</th></tr>${it.map(i=>`<tr><td>${esc(i.title)}</td><td>${i.due?fmt(i.due):(i.wk>0?i.wk+" wks before":(-i.wk)+" wks after")}</td><td>${esc(i.status)}</td><td>${esc([i.picks.join("; "),i.note].filter(Boolean).join(" | "))}</td></tr>`).join("")}</table>`:"";}).join("")}
+<p><small>Unofficial prototype. Check all funder details against the live call.</small></p></body></html>`;
+}
+function ics(){
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Grant planner//EN","CALSCALE:GREGORIAN"];
+  const ev=(uid,d,sum,desc)=>{const e=new Date(d.getTime()+DAY);L.push("BEGIN:VEVENT","UID:"+uid+"@grant-planner","DTSTAMP:"+iso(new Date())+"T000000Z","DTSTART;VALUE=DATE:"+iso(d),"DTEND;VALUE=DATE:"+iso(e),"SUMMARY:"+sum.replace(/[,;\n]/g," "),"DESCRIPTION:"+desc.replace(/[,;\n]/g," "),"END:VEVENT");};
+  const dl=parseD(st.dl);
+  if(dl)ev("deadline",dl,"Funder deadline: "+schById[st.sch].n,"Funder deadline");
+  items().filter(i=>i.due&&i.status!=="Not relevant to me").forEach(i=>ev(i.id,i.due,"Decide: "+i.title,"Grant planning decision ("+i.status+")"));
+  L.push("END:VCALENDAR");return L.join("\r\n");
+}
+function download(n,type,text){
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=n;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function loadSaved(text){
+  let o;try{o=JSON.parse(text)}catch(e){return "That file isn't a saved plan.";}
+  if(!o||o.app!=="grant-planner"||!o.state)return "That file isn't a saved plan.";
+  const x=o.state, n=blank(), str=v=>typeof v==="string";
+  const ok=(l,v)=>l.some(i=>i.id===v);
+  if(x.p){if(ok(STAGE,x.p.stage))n.p.stage=x.p.stage;if(ok(DISC,x.p.disc))n.p.disc=x.p.disc;if(ok(GOAL,x.p.goal))n.p.goal=x.p.goal;}
+  if(schById[x.sch])n.sch=x.sch;
+  if(str(x.dl)&&(x.dl==="none"||parseD(x.dl)))n.dl=x.dl;
+  Object.entries(x.ans||{}).forEach(([k,v])=>{if(byId[k]&&(v==="yes"||v==="no"))n.ans[k]=v;});
+  Object.entries(x.mark||{}).forEach(([k,v])=>{if(byId[k]&&MARK[v])n.mark[k]=v;});
+  Object.entries(x.pick||{}).forEach(([k,v])=>{if(byId[k]&&Array.isArray(v))n.pick[k]=v.filter(str).slice(0,30);});
+  Object.entries(x.notes||{}).forEach(([k,v])=>{if(byId[k]&&str(v))n.notes[k]=v.slice(0,300);});
+  st=n;st.at=profileDone()&&st.dl?"summary":"start";save();render();return "";
+}
+function renderSummary(){
+  const it=items(), sch=schById[st.sch], done=it.filter(i=>i.status==="Decided").length;
+  const dl=parseD(st.dl);
+  $("stage").innerHTML=`<span class="eyebrow">Your timeline</span><h1>Your decision timeline</h1>
+  <p class="story lead">${done} of ${it.length} decisions made for <strong>${esc(sch.n)}</strong>${dl?`, deadline ${fmt(dl)}`:""}.</p>
+  <div class="sum">${CH.map(c=>{const x=it.filter(i=>i.ch===c.id);return x.length?`<h3>${esc(c.n)}<span class="count">${x.length}</span></h3><ul class="tl">${x.map(i=>`<li><a href="#" data-j="${i.id}">${esc(i.title)}</a><span class="sel"><b>${i.due?fmt(i.due):(i.wk>0?i.wk+" wks before":(-i.wk)+" wks after")}</b> · ${esc(i.status)}${i.note?" · "+esc(i.note):""}</span></li>`).join("")}</ul>`:"";}).join("")}</div>
+  <h3>Take it with you</h3>
+  <div class="dl"><button class="btn" id="dlmd">Download (Markdown)</button><button class="btn" id="dldoc">Download (Word)</button>${dl?`<button class="btn" id="dlics">Add to calendar (.ics)</button>`:""}<button class="btn ghost" id="dljson">Save progress file</button><label class="btn ghost" for="ld" style="cursor:pointer">Load a saved file</label><input type="file" id="ld" accept=".json,application/json" hidden></div>
+  <div class="actions"><button class="btn ghost" id="copy">Copy as text</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="again">Revisit from the start</button><button class="btn ghost" id="chg">Change scheme or deadline</button></div>
+  <span class="status" id="cs" role="status"></span><textarea id="fb" hidden readonly aria-label="Plan text"></textarea>
+  <p class="story">Share this with your research office early. They will tell you about internal deadlines, costing and sign-off. Start from the <a href="${HUB[1]}" target="_blank" rel="noopener">Ulster research hub ↗</a>.</p>`;
+  $("stage").querySelectorAll("[data-j]").forEach(a=>a.onclick=e=>{e.preventDefault();go(a.dataset.j);});
+  $("again").onclick=()=>go(path()[0].id);
+  $("chg").onclick=()=>go("scheme");
+  $("print").onclick=()=>window.print();
+  $("dlmd").onclick=()=>download("grant-decisions.md","text/markdown",planText(true));
+  $("dldoc").onclick=()=>download("grant-decisions.doc","application/msword",wordDoc());
+  if($("dlics"))$("dlics").onclick=()=>download("grant-decisions.ics","text/calendar",ics());
+  $("dljson").onclick=()=>download("grant-planner-progress.json","application/json",JSON.stringify({app:"grant-planner",version:1,state:st},null,2));
+  $("ld").onchange=async e=>{const f=e.target.files[0];if(!f)return;const m=loadSaved(await f.text());if(m)$("cs").textContent=m;};
+  $("copy").onclick=async()=>{
+    const t=planText();
+    try{await navigator.clipboard.writeText(t);$("cs").textContent="Copied to clipboard.";}
+    catch(e){const f=$("fb");f.value=t;f.hidden=false;f.select();$("cs").textContent="Select and copy the text below.";}
+  };
+}
+
+function render(){
+  renderMap();
+  const at=st.at;
+  if(at==="start")return renderStart();
+  if(["stage","disc","goal"].includes(at))return renderProfile(at);
+  if(at==="scheme")return renderScheme();
+  if(!st.p.stage||!st.p.disc||!st.p.goal||!st.sch)return go("start");
+  if(at==="deadline")return renderDeadline();
+  if(!st.dl)return go("deadline");
+  if(at==="summary")return renderSummary();
+  const s=byId[at];
+  if(!s||!path().includes(s))return go(path()[0].id);
+  renderScene(s);
+}
+$("restart").onclick=()=>{
+  if(!confirm("Start again? This clears your choices and progress in this browser."))return;
+  st=blank();save();render();
+};
+render();
+</script>
+</body></html>
