@@ -142,6 +142,15 @@ summary{cursor:pointer;color:var(--accent-ink);padding:6px 2px;font-weight:600}
 .search{display:grid;gap:6px}
 .selrow{display:flex;flex-wrap:wrap;gap:0 16px}
 .selrow [hidden]{display:none}
+.msw{display:grid;gap:0}
+details.ms{position:relative;min-width:200px}
+details.ms>summary{list-style:none;font:inherit;font-size:16px;font-weight:400;color:var(--ink);padding:10px 12px;border:2px solid var(--line);border-radius:6px;background:var(--bg);cursor:pointer}
+details.ms>summary::-webkit-details-marker{display:none}
+details.ms>summary::after{content:" ▾";color:var(--muted)}
+.mslist{position:absolute;z-index:5;left:0;top:100%;margin-top:4px;min-width:280px;max-height:320px;overflow:auto;background:var(--surface);border:2px solid var(--line);border-radius:6px;padding:8px 12px;display:grid;gap:6px;box-shadow:0 6px 18px rgba(0,0,0,.15)}
+.mslist label{display:flex;gap:8px;align-items:flex-start;font-size:15.5px;cursor:pointer}
+.mslist input{width:18px;height:18px;margin-top:2px;flex:none}
+.mslist .any{border-top:1px solid var(--line);padding-top:8px;color:var(--muted)}
 select{font:inherit;font-size:16px;padding:10px 12px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);max-width:340px}
 .count{font:500 13px var(--mono);color:var(--muted);margin-top:4px}
 .scard{display:grid;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
@@ -671,7 +680,7 @@ const UKFUT=["UKRI future opportunities","https://www.ukri.org/apply-for-funding
 {const i=SCH.findIndex(s=>s.id==="ukri-resp");if(i>=0)SCH.splice(i,1);}
 
 /* Size facts for existing entries, and corrections to the small-grant tagging */
-const FIX={"lev-rpg":{small:false,g:["project"]},"nuf-main":{small:false,g:["project"]},"erc-poc":{g:["eu","partner"]},"nuf-rapid":{g:["project"]},"ba-srg":{max:10000},"ba-mcf":{max:80000},"iuk-ktp":{f:"UKRI",co:["Innovate UK"]},"ba-srg":{f:"British Academy",sub:"Joint with the Leverhulme Trust: humanities and social sciences"},"ukri-flf":{status:"Upcoming: round 12 expected February 2027"}};
+const FIX={"lev-rpg":{small:false,g:["project"]},"nuf-main":{small:false,g:["project"]},"erc-poc":{g:["eu","partner"]},"nuf-rapid":{g:["project"]},"ba-srg":{max:10000},"ba-mcf":{max:80000},"iuk-ktp":{f:"UKRI",co:["Innovate UK"]},"ba-srg":{f:"British Academy",fs:["British Academy","Leverhulme Trust"],sub:"Humanities and social sciences"},"ukri-flf":{status:"Upcoming: round 12 expected February 2027"}};
 SCH.forEach(s=>{const f=FIX[s.id];if(f)Object.assign(s,f);});
 {const i=SCH.findIndex(s=>s.id==="wel-disc");if(i>=0)SCH.splice(i,1);}
 const WEL=["Wellcome: prepare to apply","https://wellcome.org/research-funding/guidance/prepare-to-apply"],WELD=["Wellcome: scheme application deadlines","https://wellcome.org/research-funding/guidance/prepare-to-apply/scheme-application-deadlines"],WELR=["Wellcome: what we do and don't fund in discovery research","https://wellcome.org/research-funding/guidance/prepare-to-apply/discovery-research-schemes-remit"],WELA=["Wellcome: how Wellcome assesses applications","https://wellcome.org/research-funding/guidance/how-wellcome-makes-funding-decisions/how-wellcome-assesses-funding-applications"],WELP=["Wellcome: funding policies and grant conditions","https://wellcome.org/research-funding/guidance/policies-grant-conditions"];
@@ -857,6 +866,23 @@ const CATMAP={
 SCH.forEach(s=>{s.cats=CATMAP[s.id]?[CATMAP[s.id]]:(s.f==="UKRI"?(s.co||[]).map(c=>c==="UKRI"?"UKRI-wide":c):[]);});
 const catsOf=s=>s.cats||[];
 
+/* Subject areas: d lists the subjects a scheme is restricted to. No d means it is open to every subject. */
+const SUBMAP={
+ "ba-srg":["ah","ss"],"ba-mcf":["ah","ss"],"ba-pdf":["ah","ss"],"ba-wolf":["ah","ss"],"ba-vf":["ah","ss"],"ba-gp":["ah","ss"],
+ "lev-mrf":["ah","ss"],
+ "rs-dhf":["stem","eng","life","health"],"rs-rg":["stem","eng","life","health"],"rs-if":["stem","eng","life","health"],"rs-urf":["stem","eng","life","health"],
+ "raeng-rf":["eng","stem"],"raeng-ciet":["eng","stem"],"raeng-if":["eng","stem"],
+ "nuf-main":["ss"],"nuf-skills":["ss"],"nuf-racial":["ss"],"nuf-strat":["ss"],"nuf-bird":["ss","health"],"nuf-rapid":["ss"],"nuf-post":["ss"]
+};
+const COSUB={AHRC:["ah"],ESRC:["ss"],EPSRC:["stem","eng"],STFC:["stem"],BBSRC:["life"],NERC:["life"],MRC:["health"]};
+SCH.forEach(s=>{
+  if(SUBMAP[s.id]){s.d=SUBMAP[s.id];return;}
+  if(s.f==="UKRI"&&s.co){
+    if(s.co.some(c=>!COSUB[c])){s.d=undefined;return;}          // Innovate UK, Research England or UKRI-wide: open to all
+    s.d=[...new Set(s.co.flatMap(c=>COSUB[c]))];return;}
+  if(["NIHR","Cancer Research UK","British Heart Foundation","Academy of Medical Sciences","HSC R&D Division (Northern Ireland)"].includes(s.f))s.d=["health"];
+});
+
 const TYPES=[["fellowship","Fellowships"],["project","Research projects"],["small","Small grants (under £100k)"],["partner","Partnerships & innovation"],["infra","Equipment & infrastructure"],["intl","International collaboration"],["eu","European"]];
 const TYPE_LABEL={fellowship:"Fellowship",project:"Research project",small:"Small grant (under £100k)",partner:"Partnership",infra:"Equipment & infrastructure",intl:"International",eu:"European"};
 const PAGE=30;
@@ -892,7 +918,9 @@ const $=id=>document.getElementById(id);
 const allSch=()=>st.custom.concat(SCH);
 const getSch=id=>allSch().find(s=>s.id===id);
 const ready=()=>!!getSch(st.sch);
-const q={text:"",ty:"all",fun:"all",cat:"all",stat:"all",sort:"default",n:PAGE};
+const SUBJECTS=[["ah","Arts & humanities"],["ss","Social sciences, business & law"],["stem","Physical sciences, maths & computing"],["eng","Engineering & built environment"],["life","Life, earth & environmental sciences"],["health","Health & medicine"]];
+const fsOf=s=>s.fs||[s.f];
+const q={text:"",ty:"all",funs:[],subs:[],anySub:true,cat:"all",stat:"all",sort:"default",n:PAGE};
 let draft=null;
 
 /* ---------- Dates ---------- */
@@ -951,20 +979,21 @@ function choose(sel,set,attr){
 const linkHtml=l=>`<a href="${esc(l[1])}" ${/^https?:/.test(l[1])?'target="_blank" rel="noopener"':""}>${esc(l[0])}${/^https?:/.test(l[1])?" ↗":""}</a>`;
 
 /* ---------- Start: search ---------- */
-function haystack(s){return [s.f,s.n,s.sub,s.size,s.elig,s.status,s.commit,(s.links||[]).map(l=>l[0]).join(" ")].join(" ").toLowerCase();}
+function haystack(s){return [fsOf(s).join(" "),s.n,s.sub,s.size,s.elig,s.status,s.commit,(s.links||[]).map(l=>l[0]).join(" ")].join(" ").toLowerCase();}
 function matches(s){
   if(q.ty!=="all"&&!tagsOf(s).includes(q.ty))return false;
-  if(q.fun!=="all"&&s.f!==q.fun)return false;
+  if(q.funs.length&&!fsOf(s).some(f=>q.funs.includes(f)))return false;
+  if(q.subs.length){if(!s.d||!s.d.length){if(!q.anySub)return false;}else if(!s.d.some(x=>q.subs.includes(x)))return false;}
   if(q.cat!=="all"&&!catsOf(s).includes(q.cat))return false;
   if(q.stat!=="all"&&statusOf(s)!==q.stat)return false;
   const h=haystack(s);
   return q.text.toLowerCase().split(/\s+/).filter(Boolean).every(t=>h.includes(t));
 }
 function schemeCard(s){
-  const facts=[["How big",s.size||(s.max?"Up to £"+s.max.toLocaleString("en-GB"):"")],["Your time",s.commit],["Who can apply",s.elig],["Resubmission",s.resub],["Dates",s.dates],["Limits",s.limits],["Route",s.route]].filter(f=>f[1]);
+  const facts=[["Subjects",s.d&&s.d.length?s.d.map(k=>(SUBJECTS.find(x=>x[0]===k)||[])[1]).join(", "):"Open to all subjects"],["How big",s.size||(s.max?"Up to £"+s.max.toLocaleString("en-GB"):"")],["Your time",s.commit],["Who can apply",s.elig],["Resubmission",s.resub],["Dates",s.dates],["Limits",s.limits],["Route",s.route]].filter(f=>f[1]);
   const found=s.reqs?Object.entries(s.reqs).map(([k,v])=>`<li><b>${esc(REQ[k][0])}:</b> “${esc(v)}”</li>`).join(""):"";
   const tags=tagsOf(s).map(g=>TYPE_LABEL[g]).filter(Boolean);
-  return `<li class="scard"><div class="schead"><span class="sf">${esc(s.f||"Your upload")}${s.custom?'<em class="fitbadge">Added by you</em>':""}${s.status?`<em class="stbadge ${statusOf(s)==="closed"?"closed":""}">${esc(s.status)}</em>`:""}</span>
+  return `<li class="scard"><div class="schead"><span class="sf">${esc(fsOf(s).filter(Boolean).join(" · ")||"Your upload")}${s.custom?'<em class="fitbadge">Added by you</em>':""}${s.status?`<em class="stbadge ${statusOf(s)==="closed"?"closed":""}">${esc(s.status)}</em>`:""}</span>
     <b>${esc(s.n)}</b>${s.sub?`<span class="sub">${esc(s.sub)}</span>`:""}
     ${tags.length||catsOf(s).length?`<span class="tags">${catsOf(s).map(c=>`<i class="cat">${esc(c)}</i>`).join("")}${tags.map(t=>`<i>${esc(t)}</i>`).join("")}</span>`:""}</div>
     <details><summary>Key facts and guidance${s.links&&s.links.length?` (${s.links.length} links)`:""}</summary>
@@ -992,8 +1021,19 @@ function refreshResults(){
     st.custom=st.custom.filter(c=>c.id!==b.dataset.rm);if(st.sch===b.dataset.rm)st.sch=null;save();render();
   });
 }
+/* Tick-box dropdown: a <details> panel of checkboxes */
+function msHtml(id,label,opts,sel,extra){
+  return `<div class="msw"><span class="lbl">${label}</span><details class="ms" id="${id}"><summary>${sel.length?label+" ("+sel.length+")":"Any"}</summary><div class="mslist">${opts.map(o=>`<label><input type="checkbox" value="${esc(o[0])}" ${sel.includes(o[0])?"checked":""}> ${esc(o[1])}</label>`).join("")}${extra||""}<button type="button" class="back" data-clear>Clear</button></div></details></div>`;
+}
+function bindMs(id,label,onChange){
+  const d=$(id),sum=d.querySelector("summary"),boxes=[...d.querySelectorAll('.mslist input[value]')];
+  const apply=()=>{const v=boxes.filter(b=>b.checked).map(b=>b.value);sum.textContent=v.length?label+" ("+v.length+")":"Any";onChange(v);};
+  boxes.forEach(b=>b.onchange=apply);
+  d.querySelector("[data-clear]").onclick=()=>{boxes.forEach(b=>b.checked=false);apply();};
+}
+document.addEventListener("click",ev=>{document.querySelectorAll("details.ms[open]").forEach(d=>{if(!d.contains(ev.target))d.open=false;});});
 function renderStart(){
-  const funders=[...new Set(allSch().map(s=>s.f).filter(Boolean))].sort();
+  const funders=[...new Set(allSch().flatMap(fsOf).filter(Boolean))].sort();
   const resume=ready()&&st.dl;
   $("stage").innerHTML=`<span class="eyebrow">A choose-your-own-adventure</span>
   <h1>Plan your grant application</h1>
@@ -1004,10 +1044,9 @@ function renderStart(){
     <input type="search" id="qt" class="other" placeholder="Try fellowship, ERC, Nuffield, small grant…" value="${esc(q.text)}" autocomplete="off">
     <p class="q">Type</p>
     <div class="chips" role="group" aria-label="Grant type"><button type="button" class="chip" data-ty="all" aria-pressed="${q.ty==="all"}">All</button>${TYPES.map(t=>`<button type="button" class="chip" data-ty="${t[0]}" aria-pressed="${q.ty===t[0]}">${t[1]}</button>`).join("")}</div>
-    <div class="selrow"><div><label class="lbl" for="qf">Funder</label>
-    <select id="qf"><option value="all">All funders</option>${funders.map(f=>`<option ${q.fun===f?"selected":""}>${esc(f)}</option>`).join("")}</select></div>
-    <div id="cowrap" ${CATLABEL[q.fun]?"":"hidden"}><label class="lbl" for="qc" id="qcl">${esc(CATLABEL[q.fun]||"Category")}</label>
-    <select id="qc"></select></div>
+    <div class="selrow">${msHtml("msf","Funder",funders.map(f=>[f,f]),q.funs)}
+    <div id="cowrap" hidden><label class="lbl" for="qc" id="qcl">Category</label><select id="qc"></select></div>
+    ${msHtml("mss","Subject area",SUBJECTS,q.subs,`<label class="any"><input type="checkbox" id="anysub" ${q.anySub?"checked":""}> Include grants open to any subject</label>`)}
     <div><label class="lbl" for="qs">Status</label>
     <select id="qs">${[["all","Any status"],["open","Open now"],["upcoming","Upcoming"],["closed","Closed"]].map(o=>`<option value="${o[0]}" ${q.stat===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></div>
     <div><label class="lbl" for="qo">Sort by</label>
@@ -1019,13 +1058,15 @@ function renderStart(){
   <div class="addbox"><h3>Can't find your grant?</h3><p class="story">Upload the funder's guidance (PDF, Word, text or HTML) or paste it in. We read it in your browser, pull out the key facts and requirements, and let you check them before building your plan. Nothing is sent anywhere.</p><div class="actions"><button class="btn ghost" id="add">Add guidance for another grant</button></div></div>`;
   $("qt").oninput=e=>{q.text=e.target.value;q.n=PAGE;refreshResults();};
   const fillCats=()=>{
-    const lab=CATLABEL[q.fun],opts=lab?[...new Set(allSch().filter(s=>s.f===q.fun).flatMap(catsOf))].sort():[];
+    const lab=q.funs.length===1&&CATLABEL[q.funs[0]],opts=lab?[...new Set(allSch().filter(s=>fsOf(s).includes(q.funs[0])).flatMap(catsOf))].sort():[];
     $("cowrap").hidden=!(lab&&opts.length);$("qcl").textContent=lab||"Category";
     if(!opts.includes(q.cat))q.cat="all";
     $("qc").innerHTML=`<option value="all">All</option>`+opts.map(c=>`<option ${q.cat===c?"selected":""}>${esc(c)}</option>`).join("");
   };
   fillCats();
-  $("qf").onchange=e=>{q.fun=e.target.value;q.cat="all";q.n=PAGE;fillCats();refreshResults();};
+  bindMs("msf","Funder",v=>{q.funs=v;q.cat="all";q.n=PAGE;fillCats();refreshResults();});
+  bindMs("mss","Subject area",v=>{q.subs=v;q.n=PAGE;refreshResults();});
+  $("anysub").onchange=e=>{q.anySub=e.target.checked;q.n=PAGE;refreshResults();};
   $("qc").onchange=e=>{q.cat=e.target.value;q.n=PAGE;refreshResults();};
   $("qs").onchange=e=>{q.stat=e.target.value;q.n=PAGE;refreshResults();};
   $("more").onclick=()=>{q.n+=PAGE;refreshResults();};
@@ -1166,6 +1207,7 @@ function renderReview(){
   <label class="lbl" for="r-ty">Type</label><select id="r-ty">${tyOpts.map(o=>`<option value="${o[0]}" ${d.ty===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select>
   ${fld("r-size","Size and length of award",d.size,1)}<label class="lbl" for="r-max">Largest single award in £ <span class="mark">under £100,000 counts as a small grant</span></label><input type="number" id="r-max" class="other" min="0" step="1000" value="${d.max||""}">${fld("r-commit","Time commitment",d.commit,1)}${fld("r-elig","Who can apply",d.elig,1)}${fld("r-resub","Resubmission rules",d.resub,1)}${fld("r-limits","Length and format limits",d.limits,1)}${fld("r-dates","Dates mentioned",d.dates,1)}
   <label class="lbl" for="r-dl">Closing date</label><input type="date" id="r-dl" value="${esc(d.dl)}">
+  <p class="q">Subject areas <span class="mark">leave all unticked if it is open to every subject</span></p><ul class="reqs">${SUBJECTS.map(o=>`<li><label><input type="checkbox" data-sub="${o[0]}"> ${esc(o[1])}</label></li>`).join("")}</ul>
   <p class="q">Requirements to plan for <span class="mark">tick what applies</span></p>
   <ul class="reqs">${Object.entries(REQ).map(([k,v])=>`<li><label><input type="checkbox" data-k="${k}" ${d.reqs[k]?"checked":""}> <b>${esc(v[0])}</b></label>${d.reqs[k]?`<span class="ev">“${esc(d.reqs[k])}”</span>`:""}</li>`).join("")}</ul>
   <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="ok">Use this grant</button></div>`;
@@ -1173,7 +1215,8 @@ function renderReview(){
   $("ok").onclick=()=>{
     const v=id=>$(id).value.trim(), reqs={};
     $("stage").querySelectorAll("[data-k]").forEach(c=>{if(c.checked)reqs[c.dataset.k]=d.reqs[c.dataset.k]||"(added by you)";});
-    const c=cleanCustom({id:"c-"+Date.now().toString(36),custom:true,f:v("r-f"),n:v("r-n")||"My grant",type:$("r-ty").value,max:Math.max(0,parseInt($("r-max").value,10)||0),size:v("r-size"),commit:v("r-commit"),elig:v("r-elig"),resub:v("r-resub"),limits:v("r-limits"),dates:v("r-dates"),reqs,links:d.links,src:d.src});
+    const subs=[...$("stage").querySelectorAll("[data-sub]:checked")].map(c=>c.dataset.sub);
+    const c=cleanCustom({d:subs,id:"c-"+Date.now().toString(36),custom:true,f:v("r-f"),n:v("r-n")||"My grant",type:$("r-ty").value,max:Math.max(0,parseInt($("r-max").value,10)||0),size:v("r-size"),commit:v("r-commit"),elig:v("r-elig"),resub:v("r-resub"),limits:v("r-limits"),dates:v("r-dates"),reqs,links:d.links,src:d.src});
     st.custom.unshift(c);st.sch=c.id;st.dl=$("r-dl").value||"";draft=null;go("deadline");
   };
 }
@@ -1182,7 +1225,7 @@ function cleanCustom(c){
   const type=["fellowship","project","partner"].includes(c.type)?c.type:"project";
   const reqs={};Object.entries(c.reqs||{}).forEach(([k,v])=>{if(REQ[k]&&typeof v==="string")reqs[k]=v.slice(0,300);});
   const links=(Array.isArray(c.links)?c.links:[]).filter(l=>Array.isArray(l)&&/^https?:\/\//.test(l[1]||"")).slice(0,8).map(l=>[s(l[0],80),s(l[1],300)]);
-  return {id:s(c.id,40)||("c-"+Date.now().toString(36)),custom:true,max:Math.max(0,Math.min(1e9,+c.max||0)),f:s(c.f,140),n:s(c.n,140)||"My grant",sub:"Added from "+(s(c.src,120)||"your guidance"),g:[type],type,size:s(c.size),commit:s(c.commit),elig:s(c.elig),resub:s(c.resub),limits:s(c.limits),dates:s(c.dates),route:"",reqs,interview:!!reqs.interview,links,src:s(c.src,120)};
+  return {id:s(c.id,40)||("c-"+Date.now().toString(36)),custom:true,d:(Array.isArray(c.d)?c.d:[]).filter(k=>SUBJECTS.some(x=>x[0]===k)),max:Math.max(0,Math.min(1e9,+c.max||0)),f:s(c.f,140),n:s(c.n,140)||"My grant",sub:"Added from "+(s(c.src,120)||"your guidance"),g:[type],type,size:s(c.size),commit:s(c.commit),elig:s(c.elig),resub:s(c.resub),limits:s(c.limits),dates:s(c.dates),route:"",reqs,interview:!!reqs.interview,links,src:s(c.src,120)};
 }
 
 /* ---------- Deadline ---------- */
@@ -1258,7 +1301,7 @@ function items(){
 }
 const BOX={"Decided":"[x]","Still deciding":"[~]","Not relevant to me":"[-]"};
 const relTxt=i=>i.due?fmt(i.due):(i.wk>0?i.wk+" wks before":(-i.wk)+" wks after");
-function profileLine(){const s=getSch(st.sch),d=parseD(st.dl);return `${s.f?s.f+": ":""}${s.n}`+(d?` · Deadline ${fmt(d)}`:"");}
+function profileLine(){const s=getSch(st.sch),d=parseD(st.dl);return `${fsOf(s).filter(Boolean).join(" and ")?fsOf(s).filter(Boolean).join(" and ")+": ":""}${s.n}`+(d?` · Deadline ${fmt(d)}`:"");}
 function planText(md){
   const L=[md?"# My grant application decisions":"My grant application decisions",profileLine(),"","Prepared: "+fmt(new Date()),""];
   CH.forEach(c=>{
