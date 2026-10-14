@@ -347,6 +347,7 @@ dialog#impdlg::backdrop{background:rgba(10,20,40,.55)}
 
   <footer>
     <p class="dis"><b>Prototype.</b> Charts are stored only in this browser until you export them. Use the Export menu to keep a copy.</p>
+    <p class="note" id="build">Gantt maker build 3 (14 Oct 2026). If you do not see “build 3”, your browser is showing an old copy: refresh the page (Ctrl or Cmd + Shift + R).</p>
   </footer>
 </main>
 
@@ -444,18 +445,29 @@ function sanitize(o){
     starts:(Array.isArray(o.starts)&&o.starts.length?o.starts:["2026-01"]).slice(0,5).map(x=>/^\d{4}-\d{2}$/.test(x)?x:"2026-01"),cats,rows,
     team:(Array.isArray(o.team)?o.team:[]).slice(0,100).map(p=>({id:s(p.id,12)||uid(),inst:s(p.inst,100),name:s(p.name,100),role:s(p.role,80),wps:(Array.isArray(p.wps)?p.wps:[]).filter(x=>typeof x==="string").slice(0,50)}))};
 }
-function refreshOldDefault(lib){
+const LIBV=3,OLDTITLE="Language comprehension project (example)",SIMPLETITLE="Speech technology project (example)";
+function refreshOldDefault(lib){   // an unedited copy of the old complex example is replaced by the simple one
   let old=null;try{old=hashOf(sanitize(TEMPLATES[4][2]()));}catch(e){}
-  lib.charts.forEach(c=>{if(old&&c.p.title==="Language comprehension project (example)"&&hashOf(c.p)===old)c.p=sanitize(TEMPLATES[3][2]());});
+  lib.charts.forEach(c=>{if(old&&c.p.title===OLDTITLE&&hashOf(c.p)===old)c.p=sanitize(TEMPLATES[3][2]());});
+  return lib;
+}
+function migrate(lib,v){   // one-off: make sure the simple example is in the list, and open it if the old complex one was showing
+  if(v>=LIBV)return lib;
+  let simple=lib.charts.find(c=>c.p.title===SIMPLETITLE);
+  if(!simple){simple={id:uid(),p:sanitize(TEMPLATES[3][2]())};lib.charts.unshift(simple);}
+  const cur=lib.charts.find(c=>c.id===lib.cur);
+  if(cur&&cur.p.title===OLDTITLE)lib.cur=simple.id;
   return lib;
 }
 function loadLib(){
-  try{const v=localStorage.getItem(KEY2);if(v){const o=JSON.parse(v),charts=(o.charts||[]).slice(0,80).map(c=>({id:String(c.id||uid()).slice(0,12),p:sanitize(c.p||{})}));
-    if(charts.length)return refreshOldDefault({cur:charts.some(c=>c.id===o.cur)?o.cur:charts[0].id,charts});}}catch(e){}
-  try{const v=localStorage.getItem(KEY);if(v){const c={id:uid(),p:sanitize(JSON.parse(v))};return refreshOldDefault({cur:c.id,charts:[c]});}}catch(e){}
-  const c={id:uid(),p:sanitize(TEMPLATES[3][2]())};return {cur:c.id,charts:[c]};
+  let lib=null,v=0;
+  try{const s=localStorage.getItem(KEY2);if(s){const o=JSON.parse(s),charts=(o.charts||[]).slice(0,80).map(c=>({id:String(c.id||uid()).slice(0,12),p:sanitize(c.p||{})}));
+    if(charts.length){lib={cur:charts.some(c=>c.id===o.cur)?o.cur:charts[0].id,charts};v=+o.v||0;}}}catch(e){}
+  if(!lib){try{const s=localStorage.getItem(KEY);if(s){const c={id:uid(),p:sanitize(JSON.parse(s))};lib={cur:c.id,charts:[c]};}}catch(e){}}
+  if(!lib){const c={id:uid(),p:sanitize(TEMPLATES[3][2]())};return {v:LIBV,cur:c.id,charts:[c]};}
+  lib=migrate(refreshOldDefault(lib),v);lib.v=LIBV;return lib;
 }
-function persist(){const e=LIB.charts.find(c=>c.id===LIB.cur);if(e)e.p=P;try{localStorage.setItem(KEY2,JSON.stringify(LIB));}catch(x){}}
+function persist(){const e=LIB.charts.find(c=>c.id===LIB.cur);if(e)e.p=P;LIB.v=LIBV;try{localStorage.setItem(KEY2,JSON.stringify(LIB));}catch(x){}}
 function addChart(p){const c={id:uid(),p:sanitize(p)};LIB.charts.push(c);return c;}
 function switchTo(id){const c=LIB.charts.find(x=>x.id===id);if(!c)return;P=c.p;LIB.cur=id;sel=null;undo=[];redo=[];persist();render();}
 function commit(fn){undo.push(JSON.stringify(P));if(undo.length>100)undo.shift();redo=[];fn();persist();render();}
