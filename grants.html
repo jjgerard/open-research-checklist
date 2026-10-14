@@ -661,7 +661,7 @@ const UKFUT=["UKRI future opportunities","https://www.ukri.org/apply-for-funding
  ["UKRI Translation: MRC Impact Acceleration Awards and Proof of Concept (next round)","MRC","Expected March 2027","partner"],
  ["Sustainable efficiencies in urban environments","NERC","Expected September 2026","project"]
 ].forEach(([n,co,st,ty,ln,lu],i)=>SCH.push({id:"ukf-"+i,f:"UKRI",co:[co],n,sub:co+" · "+st,g:[ty],type:ty,status:/^Expected/.test(st)?"Upcoming: "+st.toLowerCase().replace("expected ","expected "):"",
-  small:/small awards|Public Engagement/i.test(n),
+  small:/small awards/i.test(n),
   elig:"Not yet open for applications, or listed only as an upcoming launch. Dates may change, and full details appear in the funding finder when the call launches.",route:"See the call page when it opens",
   links:(lu?[[ln,lu]]:[]).concat([UKFUT,UKFIND])}));
 
@@ -673,7 +673,7 @@ SCH.unshift({id:"ukri-resp",f:"UKRI",co:["AHRC","BBSRC","EPSRC","ESRC","MRC","NE
 {const i=SCH.findIndex((s,k)=>k>0&&s.id==="ukri-resp");if(i>0)SCH.splice(i,1);}
 
 /* Size facts for existing entries, and corrections to the small-grant tagging */
-const FIX={"lev-rpg":{small:false,g:["project"]},"nuf-main":{small:true,g:["project"]},"erc-poc":{g:["eu","partner"]},"nuf-rapid":{g:["project"]},"ba-srg":{max:10000},"ba-mcf":{max:80000},"iuk-ktp":{f:"UKRI",co:["Innovate UK"]},"ukri-flf":{status:"Upcoming: round 12 expected February 2027"}};
+const FIX={"lev-rpg":{small:false,g:["project"]},"nuf-main":{small:false,g:["project"]},"erc-poc":{g:["eu","partner"]},"nuf-rapid":{g:["project"]},"ba-srg":{max:10000},"ba-mcf":{max:80000},"iuk-ktp":{f:"UKRI",co:["Innovate UK"]},"ukri-flf":{status:"Upcoming: round 12 expected February 2027"}};
 SCH.forEach(s=>{const f=FIX[s.id];if(f)Object.assign(s,f);});
 {const i=SCH.findIndex(s=>s.id==="wel-disc");if(i>=0)SCH.splice(i,1);}
 const WEL=["Wellcome: prepare to apply","https://wellcome.org/research-funding/guidance/prepare-to-apply"],WELD=["Wellcome: scheme application deadlines","https://wellcome.org/research-funding/guidance/prepare-to-apply/scheme-application-deadlines"],WELR=["Wellcome: what we do and don't fund in discovery research","https://wellcome.org/research-funding/guidance/prepare-to-apply/discovery-research-schemes-remit"],WELA=["Wellcome: how Wellcome assesses applications","https://wellcome.org/research-funding/guidance/how-wellcome-makes-funding-decisions/how-wellcome-assesses-funding-applications"],WELP=["Wellcome: funding policies and grant conditions","https://wellcome.org/research-funding/guidance/policies-grant-conditions"];
@@ -838,7 +838,7 @@ mk("wolf","Wolfson Foundation","Wolfson Foundation grants","Science, medicine, h
 
 /* Tags: type labels plus size-based small grants (under £100,000) */
 const tagsOf=s=>{const t=new Set((s.g||[]).filter(x=>x!=="small"));
-  if((s.max&&s.max<100000)||s.small)t.add("small");if(s.intl)t.add("intl");if(s.infra)t.add("infra");return [...t];};
+  if(s.small||(s.max&&s.max<100000&&!(s.g||[]).includes("fellowship")))t.add("small");if(s.intl)t.add("intl");if(s.infra)t.add("infra");return [...t];};
 const statusOf=s=>/^open/i.test(s.status||"")?"open":/^upcoming/i.test(s.status||"")?"upcoming":/^closed/i.test(s.status||"")?"closed":"";
 
 const TYPES=[["fellowship","Fellowships"],["project","Research projects"],["small","Small grants (under £100k)"],["partner","Partnerships & innovation"],["infra","Equipment & infrastructure"],["intl","International collaboration"],["eu","European"]];
