@@ -9,6 +9,10 @@ It is an interactive version of *From Closed to Open: Practices and Guidelines f
 - tick actions off (progress is saved in their own browser)
 - copy their checklist as text, or download a tailored, fillable PDF form
 
+## Guided adventure
+
+`adventure.html` is a choose-your-own-adventure route through the same checklist. Readers pick a discipline, career stage and project scope, then move through Plan, Ethics & governance, Conduct, Publish, Share and Teach chapters. Fork questions add or remove steps, and each step has discipline and career-stage tips plus Ulster resource links. See `PLAN.md` for the design. The Ulster site blocked automated access while this was built, so **all links need a manual click-through before publishing**.
+
 ## Credits
 
 Content: Hanna, L., Evans, E., Bond, R., Butter, S., Cahoon, A., Casey, F., McChesney, I. and Shukla, P. (2026) *From Closed to Open: Practices and Guidelines for Open Research at Ulster*. Ulster University. Licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

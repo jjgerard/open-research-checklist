@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Unofficial prototype: a choose-your-own-adventure route through Ulster University's open research checklist, tailored to your discipline, career stage and project.">
+<title>Open Research Adventure</title>
+<style>
+:root{
+  /* Approximate Ulster palette (same as index.html): swap in official brand values */
+  --band:#10203f; --band-ink:#fff; --band-muted:#b8c4dc;
+  --bg:#f3f5f8; --surface:#fff; --ink:#10203f; --muted:#56627a; --line:#d9dfe8;
+  --accent:#0072ce; --accent-soft:#e2eefb; --accent-ink:#00508f;
+  --exp:#10203f; --exp-soft:#dfe5f0; --rec:#2f7a4f; --rec-soft:#e2f2e8; --go:#6b4fa3; --go-soft:#eee8f7;
+  --warn:#8a4b00; --warn-soft:#fdf0dc;
+  --font:"Source Sans 3","Segoe UI",system-ui,Arial,sans-serif;
+  --mono:ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1426; --surface:#16213a; --ink:#e8edf6; --muted:#9ba8c0; --line:#283654;
+  --accent:#5fa8ff; --accent-soft:#132a4c; --accent-ink:#a9cdff;
+  --exp:#c4d3f0; --exp-soft:#22325a; --rec:#7fcf9e; --rec-soft:#183126; --go:#b9a2ea; --go-soft:#2a2340;
+  --warn:#f0c27a; --warn-soft:#3a2d14; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 var(--font);padding-inline:16px;padding-block-end:48px;-webkit-text-size-adjust:100%}
+a{color:var(--accent-ink);text-underline-offset:3px}
+a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.15}
+.wrap{max-width:820px;margin:0 auto}
+.proto{font:500 12px/1.4 var(--mono);color:#fff;background:var(--accent);padding:6px 16px;text-align:center;margin-inline:-16px}
+.band{background:var(--band);color:var(--band-ink);margin-inline:-16px;padding:14px 16px}
+.band .wrap{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between;align-items:center}
+.wordmark{font-weight:800;font-size:20px}
+.wordmark span{font-weight:400;color:var(--band-muted);margin-left:10px;padding-left:10px;border-left:1px solid var(--band-muted);font-size:16px}
+.band nav a{color:var(--band-muted);font-size:14px;margin-left:14px}
+.band button{all:unset;cursor:pointer;color:var(--band-muted);font-size:14px;text-decoration:underline;text-underline-offset:3px;margin-left:14px}
+
+/* chapter map */
+.map{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:20px 0 6px;padding:0;list-style:none}
+.map button{width:100%;text-align:left;font:inherit;appearance:none;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:8px 10px;cursor:pointer;display:grid;gap:5px;min-width:0}
+.map button[aria-current="step"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.map button:disabled{opacity:.5;cursor:not-allowed}
+.map .nm{font-weight:600;font-size:13.5px;line-height:1.2}
+.map .ct{font:500 11px var(--mono);opacity:.8}
+.bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+@media (max-width:640px){.map{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* scene */
+.scene{background:var(--surface);border:1px solid var(--line);border-top:5px solid var(--accent);border-radius:6px;padding:clamp(18px,4vw,34px);margin-top:16px;display:grid;gap:16px}
+.scene:focus{outline:none}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(30px,6vw,46px);font-weight:800;letter-spacing:-.015em}
+h2{font-size:clamp(24px,4.5vw,32px);font-weight:800}
+.story{margin:0;max-width:62ch}
+.story.lead{font-size:19px}
+.choices{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.choices.two{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.choice{width:100%;text-align:left;font:inherit;appearance:none;background:var(--bg);color:var(--ink);border:2px solid var(--line);border-radius:6px;padding:14px 16px;cursor:pointer;display:grid;gap:3px;min-height:56px}
+.choice:hover{border-color:var(--accent)}
+.choice[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.choice b{font-size:18px}
+.choice span{font-size:14.5px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{appearance:none;font:inherit;font-size:15px;background:var(--bg);color:var(--ink);border:2px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip[aria-pressed="true"]::before{content:"✓ "}
+.q{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:8px 0 0}
+
+.badges{display:flex;flex-wrap:wrap;gap:6px}
+.b{font:500 12px/1 var(--mono);padding:5px 8px;border-radius:5px;white-space:nowrap}
+.b.exp{background:var(--exp-soft);color:var(--exp)}
+.b.rec{background:var(--rec-soft);color:var(--rec)}
+.b.go{background:var(--go-soft);color:var(--go)}
+.b.eff{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.why{margin:0}
+.tip{background:var(--accent-soft);border-left:4px solid var(--accent);border-radius:4px;padding:10px 14px;margin:0;font-size:16px}
+.tip b{display:block;font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:2px}
+.res h3{font:600 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.res ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.res a{font-weight:600}
+.res .note{font-size:14px;color:var(--muted);font-weight:400}
+.help{margin:0;font-size:15px;color:var(--muted)}
+.help b{color:var(--ink)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:4px}
+.btn{appearance:none;font:600 16px var(--font);border:2px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:4px;padding:11px 18px;cursor:pointer;min-height:46px}
+.btn:hover{border-color:var(--accent)}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.ok{background:var(--rec);border-color:var(--rec);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.status{font-size:14px;color:var(--rec);min-height:1.3em}
+.back{all:unset;cursor:pointer;color:var(--accent-ink);font-size:15px;text-decoration:underline;text-underline-offset:3px;margin-right:auto}
+.back:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.mark{font-size:14px;color:var(--muted)}
+
+/* summary */
+.sum h3{font-size:19px;margin-top:6px}
+.sum ul{margin:6px 0 0;padding-left:20px;display:grid;gap:4px}
+.sum .count{font:500 13px var(--mono);color:var(--muted);margin-left:6px}
+textarea{width:100%;min-height:140px;font:13px/1.4 var(--mono);background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px}
+footer{margin-top:28px;border-top:1px solid var(--line);padding-top:18px;font-size:14px;color:var(--muted);display:grid;gap:10px}
+footer p{margin:0}
+.dis{background:var(--warn-soft);color:var(--warn);border-radius:4px;padding:10px 14px;font-size:14px;margin:0}
+@media print{.proto,.band,.map,.actions,footer{display:none}.scene{border:0}body{background:#fff}}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="proto">UNOFFICIAL PROTOTYPE · a format proposal, not a published University resource</div>
+<div class="band"><div class="wrap">
+  <span class="wordmark">Ulster University<span>Open Research Adventure</span></span>
+  <nav aria-label="Site"><a href="index.html">Full checklist</a><button type="button" id="restart">Start again</button></nav>
+</div></div>
+
+<main class="wrap">
+  <ol class="map" id="map" aria-label="Chapters" hidden></ol>
+  <div id="stage" class="scene" tabindex="-1" aria-live="polite"></div>
+
+  <footer>
+    <p class="dis"><b>Check before relying on it.</b> The Expected / Recommended / Going further labels, effort estimates and discipline tips are draft tagging for illustration. They are not confirmed by the Open &amp; Responsible Research Workstream. Always follow current University policy, your funder's terms and the advice of Research Governance and Ethics.</p>
+    <p>Checklist content is based on <em>From Closed to Open: Practices and Guidelines for Open Research at Ulster University</em> (Hanna, L., Evans, E., Bond, R., Butter, S., Cahoon, A., Casey, F., McChesney, I. and Shukla, P., 2026), licensed <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Resource links point to <a href="https://www.ulster.ac.uk/research/resources/open-research">Ulster's open research pages</a>, <a href="https://www.ulster.ac.uk/research/resources/governance-and-ethics">governance and ethics</a> and <a href="https://www.ulster.ac.uk/research">the research hub</a>.</p>
+    <p>Your choices and progress are stored only in this browser.</p>
+  </footer>
+</main>
+
+<script>
+const U="https://www.ulster.ac.uk/research/resources/";
+const L="https://guides.library.ulster.ac.uk/openaccess/";
+const HUB=["Ulster research hub","https://www.ulster.ac.uk/research"];
+const OR=["Open research at Ulster",U+"open-research"];
+const GE=["Governance and ethics",U+"governance-and-ethics"];
+
+/* ---------- Profile options ---------- */
+const DISC=[
+ {id:"sci",  n:"Science, engineering & technology", d:"Lab, field, modelling and built-environment research"},
+ {id:"health",n:"Health & life sciences",           d:"Clinical, biomedical, nursing, psychology, sport and biological research"},
+ {id:"soc",  n:"Social sciences, business & law",   d:"Surveys, interviews, policy, economics, organisations"},
+ {id:"hum",  n:"Humanities",                        d:"History, languages, literature, archives, philosophy, media"},
+ {id:"art",  n:"Arts, design & creative practice",  d:"Practice-based research, exhibitions, performances, built works"},
+ {id:"comp", n:"Computing & data science",          d:"Software, AI, data analytics, simulation"}
+];
+const STAGE=[
+ {id:"pgr",n:"Postgraduate researcher",d:"Working towards a PhD or research degree"},
+ {id:"ecr",n:"Early career researcher",d:"Postdoc, research fellow, or new lecturer"},
+ {id:"est",n:"Established researcher / PI / supervisor",d:"Leading projects, supervising, mentoring"},
+ {id:"sup",n:"Research support / technical",d:"Technicians, research managers, data stewards"}
+];
+const SCOPE=[
+ {id:"small", n:"A small or single-author study",d:"One researcher, one question, no external contracts"},
+ {id:"thesis",n:"A thesis project",d:"Master's or PhD research, ending in a thesis"},
+ {id:"funded",n:"An externally funded project",d:"UKRI, charity, EU or other funder terms apply"},
+ {id:"collab",n:"A collaborative or commercial project",d:"Industry, NHS, community or multi-institution partners"}
+];
+const INV=[
+ {id:"people",n:"People or personal data"},
+ {id:"code",n:"Code or software"},
+ {id:"partners",n:"External or commercial partners"},
+ {id:"funded",n:"External funding"},
+ {id:"indig",n:"Indigenous data"},
+ {id:"teach",n:"Teaching or supervising"}
+];
+const CH=[
+ {id:"plan",n:"Plan"},{id:"ethics",n:"Ethics & governance"},{id:"conduct",n:"Conduct"},
+ {id:"publish",n:"Publish"},{id:"share",n:"Share data & code"},{id:"teach",n:"Teach"}
+];
+const EFF={quick:"~ 10 min",some:"~ a few hours",big:"ongoing"};
+const LVL={exp:["exp","Expected"],rec:["rec","Recommended"],go:["go","Going further"]};
+
+/* ---------- Scenes ----------
+ f: fork (yes/no question that sets a flag)  a: action
+ w(p): include if true; p = {d, st, sc, F:Set of flags}
+ tips: {discipline id or stage id: text}  */
+const S=[
+/* PLAN */
+{id:"p-data",ch:"plan",t:"a",title:"Work out what counts as data in your project",lvl:"rec",eff:"quick",
+ story:"Your journey starts with one question: what will you actually collect, make or reuse?",
+ why:"Data isn't just numbers. Interviews, images, archives, scripts and artworks all need managing, and you can't plan for what you haven't named.",
+ tips:{sci:"Instrument output, sensor streams, simulation runs, lab notebooks and calibration files all count.",health:"Include clinical measures, survey responses, imaging, samples metadata and anything linked to a participant.",soc:"Transcripts, survey responses, field notes, administrative datasets and coding frames are all data.",hum:"Archives, transcriptions, corpora, images, annotations and digitised sources are your data.",art:"Documentation of practice (recordings, images, scores, drawings, process notes) is research data, even when the work itself is the output.",comp:"Datasets, trained models, configuration and logs count, not just the code."},
+ links:[["What is research data?",U+"rdm/intro-to-rdm"],OR]},
+{id:"p-stat",ch:"plan",t:"a",title:"Bring in a statistician or data scientist early",lvl:"rec",eff:"some",
+ w:p=>p.F.has("quant"),
+ why:"Analysis choices made at design stage are hard to undo later.",
+ tips:{pgr:"Raise it with your supervisory team now; they can often point you to the right colleague.",ecr:"A short early conversation can save a failed analysis later."},
+ links:[["Open research practices",U+"open-research/openess"]]},
+{id:"p-dmp",ch:"plan",t:"a",title:"Write a Data Management Plan (DMP)",lvl:"exp",eff:"some",
+ story:"Everything else in this adventure gets recorded in one place: your DMP.",
+ why:"Most funders require one, and it becomes the place to record every decision that follows.",
+ tips:{pgr:"Ask whether your school expects a DMP at confirmation or progression review.",ecr:"Reuse the DMP for your next grant application and keep it up to date.",est:"Check the DMP template your funder prefers, and model it for your team.",health:"Include how identifiable data will be handled, stored and eventually destroyed or archived.",art:"Say how you will document practice outputs and what, if anything, can be shared."},
+ links:[["DMP guidance",U+"rdm/rdm-planning-before-commencing-a-funding-application"],["Research data management",U+"rdm"]],
+ help:"Research Data Management team"},
+{id:"p-reuse",ch:"plan",t:"a",title:"Look for existing open data, code and outputs to reuse",lvl:"rec",eff:"some",
+ why:"Reuse saves time and credits other researchers.",
+ tips:{sci:"Check discipline repositories and standard reference datasets before generating new data.",hum:"Check digitised collections and existing open corpora; many are free to reuse.",comp:"Look for existing benchmark datasets and well-maintained open-source libraries.",soc:"The UK Data Service and national survey archives hold many reusable datasets."},
+ links:[["Open research practices",U+"open-research/openess"]]},
+{id:"p-limits",ch:"plan",t:"a",title:"Note anything that limits how open you can be",lvl:"rec",eff:"quick",
+ why:"Commercial, security or ethical limits are easier to plan around than to discover late. The guide's principle is: as open as possible, as closed as necessary.",
+ links:[OR,GE]},
+{id:"p-fq",ch:"plan",t:"f",flag:"quant",title:"Will your study test a hypothesis or run confirmatory analysis?",
+ story:"This opens a different path: preregistration and registered reports.",
+ hint:{sci:"Often yes for experimental work.",health:"Often yes for trials and cohort studies.",comp:"Often yes if you are benchmarking models.",hum:"Usually no.",art:"Usually no.",soc:"Depends on your design."}},
+{id:"p-prereg",ch:"plan",t:"a",title:"Preregister your study",lvl:"go",eff:"some",w:p=>p.F.has("quant"),
+ why:"A public, timestamped plan shows which analyses were planned in advance and which were exploratory.",
+ tips:{health:"Clinical trials usually have their own registries; check what your design needs.",soc:"The Open Science Framework is a common home for preregistrations."},
+ links:[["Preregistration",U+"open-research/openess/preregistration"]]},
+{id:"p-rr",ch:"plan",t:"a",title:"Consider a Registered Report",lvl:"go",eff:"big",w:p=>p.F.has("quant"),
+ why:"Peer review happens before results exist, so publication doesn't depend on the findings.",
+ tips:{pgr:"This can de-risk a thesis chapter, because acceptance doesn't hinge on the result.",ecr:"A strong route to a publication that does not depend on a significant result."},
+ links:[["Preregistration and registered reports",U+"open-research/openess/preregistration"]]},
+{id:"p-ip",ch:"plan",t:"a",title:"Agree IP and data sharing in collaboration contracts",lvl:"exp",eff:"some",w:p=>p.F.has("partners"),
+ story:"Partners change the path. Settle ownership before you sign anything.",
+ why:"Ownership disputes at publication stage are avoidable if settled up front.",
+ links:[["Research Development","https://www.ulster.ac.uk/departments/research/research-development"],GE],
+ help:"University IP Manager: <span class='sel'>ipmanagement@ulster.ac.uk</span>"},
+{id:"p-cost",ch:"plan",t:"a",title:"Cost data preparation and storage into your bid",lvl:"exp",eff:"quick",w:p=>p.F.has("funded"),
+ why:"Preparing data for sharing takes time. Most funders will pay for it if you ask.",
+ links:[["Costing RDM",U+"rdm/rdm-planning-before-commencing-a-funding-application"]]},
+{id:"p-coprod",ch:"plan",t:"a",title:"Consider co-production or participatory design",lvl:"go",eff:"big",
+ why:"Involving the people affected can improve relevance and trust.",
+ tips:{art:"Co-creation with communities is well established in practice-led research.",soc:"Participatory methods can strengthen both ethics and impact.",hum:"Community archives and citizen transcription are good fits."},
+ links:[["Collaborative platforms",U+"open-research/openess/collaborative-platforms"]]},
+
+/* ETHICS & GOVERNANCE */
+{id:"e-intro",ch:"ethics",t:"a",title:"Check which ethics and governance route applies",lvl:"exp",eff:"quick",
+ story:"Before you collect anything, find out what approval you need. This chapter follows the University's Governance and ethics guidance.",
+ why:"Ethics and governance approval has to come first, and it shapes what you can later share.",
+ tips:{health:"Studies involving patients, NHS sites, tissue or clinical data usually need additional governance approvals; ask early.",soc:"Interviews, surveys and observation typically need ethics approval even when risk is low.",hum:"Oral history, living subjects and sensitive archives can still need review.",sci:"Even non-human-participant work can need approval, e.g. animal, environmental or data-protection aspects.",art:"Performance, installation and community work involving the public may need review.",comp:"Scraped data, social media content and user studies can all raise ethics questions."},
+ links:[["Ethics",U+"governance-and-ethics/ethics"],["Low-risk ethics review",U+"governance-and-ethics/ethics/low"],GE,["Research Governance","https://www.ulster.ac.uk/departments/research/research-governance"]],
+ help:"Your Faculty/School ethics contact and Research Governance"},
+{id:"e-consent",ch:"ethics",t:"a",title:"Ask for permission to share data in your consent forms",lvl:"rec",eff:"quick",w:p=>p.F.has("people"),
+ story:"Working with people changes the route: consent is where openness is won or lost.",
+ why:"If consent doesn't cover sharing, you usually can't share later.",
+ tips:{health:"Spell out whether de-identified data may go into a repository and under what access conditions.",soc:"Consider tiered consent: quotes, anonymised data, and archiving are separate asks.",hum:"Oral history consent should cover archiving and future research reuse explicitly.",art:"Cover whether participants can be named, recorded, or shown in outputs."},
+ links:[["Consent and personal data",U+"open-research/sensitive-or-personal"],["Ethics and governance approval",U+"governance-and-ethics/ethics"]]},
+{id:"e-gdpr",ch:"ethics",t:"a",title:"Get advice on personal data and GDPR",lvl:"rec",eff:"some",w:p=>p.F.has("people"),
+ why:"Ethics, Governance and the GDPR team can tell you what's shareable before you collect anything.",
+ links:[["Sharing sensitive data",U+"rdm/archiving-and-sharing-completed-research-data/archiving-and-sharing-sensitive-data"],["GDPR","https://www.ulster.ac.uk/about/ous/data-protection-and-information-compliance/gdpr"],["Research Governance","https://www.ulster.ac.uk/departments/research/research-governance"]],
+ help:"University GDPR team"},
+{id:"e-fsens",ch:"ethics",t:"f",flag:"sens",title:"Could any of your data be confidential, commercial, security-sensitive or culturally sensitive?",
+ story:"Not everything can be open. This fork helps you plan for 'as closed as necessary'.",
+ w:p=>!p.F.has("people")},
+{id:"e-sens",ch:"ethics",t:"a",title:"Plan controlled access for sensitive data",lvl:"rec",eff:"some",w:p=>p.F.has("sens")||p.F.has("people"),
+ why:"Sensitive data can often still be shared, with access controls, in a trusted repository, and the decision belongs in your DMP.",
+ tips:{health:"Look at controlled-access or safe-haven options rather than public deposit.",soc:"Anonymisation and restricted-access deposit are the usual options.",hum:"Embargoes and access conditions can protect living individuals while preserving the record."},
+ links:[["Sharing sensitive data",U+"rdm/archiving-and-sharing-completed-research-data/archiving-and-sharing-sensitive-data"],["Sensitive or personal data",U+"open-research/sensitive-or-personal"]]},
+{id:"e-care",ch:"ethics",t:"a",title:"Follow the CARE principles for Indigenous data",lvl:"exp",eff:"some",w:p=>p.F.has("indig"),
+ why:"Indigenous communities have rights over how their data is used.",
+ links:[["CARE principles","https://www.gida-global.org/care"],GE]},
+{id:"e-agree",ch:"ethics",t:"a",title:"Have Research Development review data sharing agreements",lvl:"rec",eff:"quick",w:p=>p.F.has("partners")||p.F.has("funded"),
+ why:"They spot restrictive terms before you sign.",
+ links:[["Research Development","https://www.ulster.ac.uk/departments/research/research-development"]],help:"Research Development Team"},
+{id:"e-lic",ch:"ethics",t:"a",title:"Choose licences for your planned outputs",lvl:"rec",eff:"quick",
+ why:"Deciding now avoids conflicts with publishers and partners later. Record licensing decisions in your DMP.",
+ tips:{art:"Creative Commons licences exist for images, text and audio, but check the rights in any third-party material.",comp:"Pick an open-source licence (e.g. MIT, Apache-2.0) for code and CC BY for documentation."},
+ links:[["Licensing and copyright",U+"open-research/licensing-and-copyright"]]},
+
+/* CONDUCT */
+{id:"c-dmp",ch:"conduct",t:"a",title:"Review and update your DMP",lvl:"exp",eff:"quick",
+ story:"Your project is under way. The main job now is keeping your plan alive.",
+ why:"A DMP written once and forgotten doesn't help at the deposit stage.",
+ links:[["DMP guidance",U+"rdm/rdm-planning-before-commencing-a-funding-application"]]},
+{id:"c-note",ch:"conduct",t:"a",title:"Log key decisions in a timestamped notebook",lvl:"rec",eff:"some",
+ why:"Makes changes to your plan transparent and defensible.",
+ tips:{sci:"An electronic lab notebook gives you a dated trail that is easy to share.",art:"A dated process journal doubles as documentation of practice.",hum:"Record source selection and transcription choices as you make them."},
+ links:[["Open research practices",U+"open-research/openess"]]},
+{id:"c-meta",ch:"conduct",t:"a",title:"Create metadata as you go",lvl:"rec",eff:"some",
+ why:"Reconstructing it at the end is far slower than recording it now.",
+ links:[["Types of metadata",U+"rdm/types-of-metadata"]]},
+{id:"c-name",ch:"conduct",t:"a",title:"Use your field's naming conventions and structures",lvl:"rec",eff:"quick",
+ why:"Others in your discipline will understand your files without asking you.",
+ tips:{sci:"Use community formats and ontologies where they exist.",hum:"Follow established standards such as TEI or the metadata schemes of your archive.",comp:"Adopt a consistent project layout and file-naming scheme from day one."},
+ links:[["Types of metadata",U+"rdm/types-of-metadata"]]},
+{id:"c-readme",ch:"conduct",t:"a",title:"Write a README, codebook or data dictionary",lvl:"rec",eff:"some",
+ why:"Without documentation, shared data is close to unusable.",
+ tips:{soc:"A codebook describing every variable and value is the standard expectation.",comp:"A README should say how to install, run and cite."},
+ links:[["Documentation guidance",U+"rdm/types-of-metadata"]]},
+{id:"c-repo",ch:"conduct",t:"a",title:"Keep code in a version-controlled repository",lvl:"rec",eff:"quick",w:p=>p.F.has("code"),
+ story:"Code in the mix opens a software branch.",
+ why:"Gives you history, backup and an easy route to sharing.",
+ tips:{comp:"Tag releases so the version used in a paper can be cited and rerun.",sci:"Even short analysis scripts belong in version control."},
+ links:[["Open research software",U+"open-research/openess/open-research-software"]]},
+{id:"c-repro",ch:"conduct",t:"a",title:"Make your analysis reproducible from raw data",lvl:"rec",eff:"big",w:p=>p.F.has("code")||p.F.has("quant"),
+ why:"Anyone, including future you, can rerun and check the results.",
+ tips:{pgr:"Build the pipeline as you go; retrofitting it before your viva is much harder.",comp:"Pin dependencies and record random seeds."},
+ links:[["Open research software",U+"open-research/openess/open-research-software"]]},
+{id:"c-space",ch:"conduct",t:"a",title:"Use an open project space",lvl:"go",eff:"quick",
+ why:"Keeps related outputs together and discoverable.",
+ links:[["Zenodo Communities","https://zenodo.org/communities"],["Figshare Projects","https://info.figshare.com/user-guide/projects/"]]},
+{id:"c-onb",ch:"conduct",t:"a",title:"Work in open notebooks",lvl:"go",eff:"some",w:p=>p.F.has("code"),
+ why:"Shares the process as well as the result.",
+ links:[["Open research software",U+"open-research/openess/open-research-software"]]},
+{id:"c-colab",ch:"conduct",t:"a",title:"Co-deliver research with collaborators or communities",lvl:"go",eff:"big",w:p=>p.F.has("partners")||p.d==="art"||p.d==="soc",
+ why:"Shared ownership of findings can widen reach and impact.",
+ links:[["Example: five films","https://www.ulster.ac.uk/insight/in-focus/open-research-july-2026/they-said-they-didnt-know-enough.-then-they-made-five-films"],["Open research case studies","https://www.ulster.ac.uk/research/resources/open-research/get-inspired-by-open-research-at-ulster"]]},
+
+/* PUBLISH */
+{id:"u-orcid",ch:"publish",t:"a",title:"Connect your ORCID to Pure",lvl:"rec",eff:"quick",
+ story:"Time to share. First, make sure your work will be found, credited and counted.",
+ why:"Your outputs follow you, and funders increasingly ask for an ORCID.",
+ tips:{pgr:"Get one now. It will follow you through your career.",ecr:"An ORCID makes every future application and CV easier."},
+ links:[["Pure and ORCID",U+"outputs/puresupport/pure-and-orcid"]]},
+{id:"u-pure",ch:"publish",t:"a",title:"Keep your Pure profile up to date",lvl:"exp",eff:"quick",
+ why:"Pure feeds REF, reporting and your public profile.",
+ tips:{est:"Encourage your team to do the same so group outputs are captured."},
+ links:[["Pure support",U+"outputs/puresupport/resources"]]},
+{id:"u-kw",ch:"publish",t:"a",title:"Add keywords to your Pure outputs",lvl:"rec",eff:"quick",
+ why:"Helps search engines and colleagues find your work.",links:[["Pure support",U+"outputs/puresupport/resources"]]},
+{id:"u-fart",ch:"publish",t:"f",flag:"articles",title:"Will you publish journal articles or conference papers?",
+ story:"Another fork. Articles have the clearest open access rules.",
+ hint:{sci:"Usually yes.",health:"Usually yes.",comp:"Usually yes.",soc:"Usually yes.",hum:"Often, alongside books.",art:"Sometimes; practice outputs may be the main route."}},
+{id:"u-pre",ch:"publish",t:"a",title:"Post a preprint",lvl:"rec",eff:"quick",w:p=>p.F.has("articles"),
+ why:"Gets your findings out months before formal publication.",
+ tips:{sci:"Preprint servers such as arXiv are standard in many fields.",health:"medRxiv and bioRxiv are common; check your target journal's policy.",hum:"Several humanities preprint and working-paper servers exist; check journal policy first."},
+ links:[["Publishing open access",U+"open-research/openess/publish-open-access"]]},
+{id:"u-oa",ch:"publish",t:"a",title:"Publish open access, using Ulster's agreements",lvl:"exp",eff:"quick",w:p=>p.F.has("articles"),
+ why:"Many journals are already covered at no cost to you.",
+ tips:{pgr:"Ask your supervisor which journals are covered before you pick where to submit."},
+ links:[["Publisher agreements",L+"publishers"],["UKRI OA funding",L+"funder_requirements/journals"],["Think. Check. Submit.","https://thinkchecksubmit.org/"],["Publishing open access",U+"open-research/openess/publish-open-access"]],
+ help:"Library Open Access team"},
+{id:"u-rrs",ch:"publish",t:"a",title:"Add a rights retention statement on submission",lvl:"exp",eff:"quick",w:p=>p.F.has("articles"),
+ why:"Lets you share your accepted manuscript regardless of publisher terms.",
+ links:[["Rights retention",L+"rightsretention"]]},
+{id:"u-das",ch:"publish",t:"a",title:"Include a data access statement",lvl:"exp",eff:"quick",w:p=>p.F.has("articles"),
+ why:"Required even when there's no data. Say so explicitly.",
+ tips:{hum:"Even if your sources are archival, say where they can be found.",art:"Say where documentation of practice is held and under what conditions."},
+ links:[["Data access statements",U+"rdm/rdm-support"]]},
+{id:"u-lic",ch:"publish",t:"a",title:"Choose a reuse-friendly licence (e.g. CC BY)",lvl:"rec",eff:"quick",
+ why:"Determines whether others can legally reuse your work.",
+ links:[["Copyright and licences",L+"copyright_and_licences"],["Licensing and copyright",U+"open-research/licensing-and-copyright"]]},
+{id:"u-peer",ch:"publish",t:"a",title:"Take part in open peer review",lvl:"go",eff:"some",w:p=>p.F.has("articles"),
+ why:"Makes the review process visible and credits reviewers.",links:[["Open research practices",U+"open-research/openess"]]},
+{id:"u-badge",ch:"publish",t:"a",title:"Apply for Open Science Badges",lvl:"go",eff:"quick",w:p=>p.F.has("articles")&&(p.F.has("quant")||p.F.has("code")),
+ why:"A visible signal that your data or materials are open.",links:[["Open Science Badges","https://www.cos.io/initiatives/badges"]]},
+{id:"u-fbook",ch:"publish",t:"f",flag:"books",title:"Will you publish a book or book chapter?",
+ hint:{hum:"Often yes.",soc:"Sometimes.",art:"Sometimes.",sci:"Rarely.",health:"Rarely.",comp:"Rarely."}},
+{id:"u-bukri",ch:"publish",t:"a",title:"Make UKRI-funded books and chapters open access",lvl:"exp",eff:"some",w:p=>p.F.has("books")&&p.F.has("funded"),
+ why:"A UKRI condition of funding.",links:[["UKRI book requirements",L+"funder_requirements#s-lg-box-wrapper-19656826"]]},
+{id:"u-boa",ch:"publish",t:"a",title:"Consider open access for other books and chapters",lvl:"rec",eff:"some",w:p=>p.F.has("books"),
+ why:"Reaches readers who can't access expensive monographs.",links:[["Publishing OA books",L+"publishingOA/books"]]},
+{id:"u-thesis",ch:"publish",t:"a",title:"Make your thesis openly available",lvl:"exp",eff:"quick",w:p=>p.F.has("thesis"),
+ story:"Because you are writing a thesis, there's a stop here just for you.",
+ why:"Early access builds your profile while you job-hunt.",
+ tips:{pgr:"Plan third-party copyright and any embargo needs well before submission."},
+ links:[["Depositing your thesis",U+"open-research/openess/depositing-and-sharing-your-thesis"]]},
+{id:"u-doi",ch:"publish",t:"a",title:"Get a DOI for every citeable digital output",lvl:"rec",eff:"quick",
+ why:"Makes posters, slides, software and data citeable.",
+ tips:{art:"A DOI for documented practice outputs makes them citeable in REF and CVs.",comp:"Archive releases of your software to get a DOI."},
+ links:[["Scholarly identifiers",U+"open-research/openess/scholarly-identifiers"]]},
+{id:"u-rec",ch:"publish",t:"a",title:"Keep a record of your open research activity",lvl:"rec",eff:"quick",
+ why:"Useful evidence for promotion, PDR and narrative CVs.",
+ tips:{ecr:"Narrative CVs increasingly ask for exactly this.",est:"Helps in promotion cases and when mentoring others."}},
+{id:"u-plain",ch:"publish",t:"a",title:"Share plain-language summaries",lvl:"rec",eff:"some",
+ why:"Reaches people outside your field.",
+ links:[["UCommunicate training",U+"impact/training/ucommunicate"]]},
+{id:"u-alt",ch:"publish",t:"a",title:"Check altmetrics and citations in Pure",lvl:"go",eff:"quick",
+ why:"See where your work is being discussed.",
+ links:[["Citations and altmetrics (PDF)","https://www.ulster.ac.uk/__data/assets/pdf_file/0006/1898781/citations-and-altmetrics-in-pure.pdf"]]},
+
+/* SHARE DATA & CODE */
+{id:"s-dep",ch:"share",t:"a",title:"Deposit data behind your publications in a trusted repository",lvl:"exp",eff:"some",
+ story:"The last big step: giving your data and code a long-term home.",
+ why:"Repositories give long-term access and a DOI.",
+ tips:{sci:"Check whether a discipline-specific repository exists before falling back to a general one.",health:"Use controlled access where participants could be identified.",soc:"Anonymise, check consent, then consider a social-science archive.",hum:"Consider a humanities data service or archive; digitised material may also be shareable.",art:"Deposit documentation of the practice in a repository where permitted, and link it from Pure.",comp:"Archive datasets and models alongside the code that produced them."},
+ links:[["Publish and preserve data",U+"rdm/archiving-and-sharing-completed-research-data/publish-and-preserve-your-research-data"],["Archiving and sharing data",U+"rdm/archiving-and-sharing-completed-research-data"]],
+ help:"Research Data Management team"},
+{id:"s-pureds",ch:"share",t:"a",title:"Create a Pure Datasets record for published data",lvl:"exp",eff:"quick",
+ why:"Counts toward reporting and links your data to your papers.",
+ links:[["Pure Datasets","https://pure.ulster.ac.uk/en/datasets/"]]},
+{id:"s-funder",ch:"share",t:"a",title:"Check and meet your funder's data requirements",lvl:"exp",eff:"quick",w:p=>p.F.has("funded"),
+ why:"Funders differ on what to share, where and when.",
+ links:[["Funder requirements",U+"rdm/archiving-and-sharing-completed-research-data"]]},
+{id:"s-lic",ch:"share",t:"a",title:"Apply a reuse licence to data and code",lvl:"rec",eff:"quick",
+ why:"Unlicensed data and code can't legally be reused.",
+ links:[["Licensing and copyright",U+"open-research/licensing-and-copyright"]]},
+{id:"s-code",ch:"share",t:"a",title:"Share the code needed to interpret your data",lvl:"rec",eff:"some",w:p=>p.F.has("code"),
+ why:"Data without the analysis code is often hard to verify.",
+ links:[["Open research software",U+"open-research/openess/open-research-software"]]},
+{id:"s-cite",ch:"share",t:"a",title:"Cite datasets in your publications",lvl:"rec",eff:"quick",
+ why:"Gives credit and links papers to evidence.",
+ links:[["Archiving and sharing data",U+"rdm/archiving-and-sharing-completed-research-data"]]},
+
+/* TEACH */
+{id:"t-f",ch:"teach",t:"f",flag:"teach",title:"Do you teach, supervise or train others?",
+ story:"One more branch, for the next generation of researchers.",
+ w:p=>!p.F.has("teachInv")},
+{id:"t-oer",ch:"teach",t:"a",title:"Use and share open educational resources",lvl:"rec",eff:"some",w:p=>p.F.has("teach"),
+ why:"Saves preparation time and benefits other educators.",links:[["Open research practices",U+"open-research/openess"]]},
+{id:"t-open",ch:"teach",t:"a",title:"Use open publications and data in teaching",lvl:"rec",eff:"quick",w:p=>p.F.has("teach"),
+ why:"Students can access the materials after the module ends.",links:[["Open research resources",U+"open-research/resources"]]},
+{id:"t-meth",ch:"teach",t:"a",title:"Embed open research in methods modules",lvl:"go",eff:"big",w:p=>p.F.has("teach"),
+ why:"The next generation of researchers starts with good habits.",
+ tips:{est:"Supervisors set the norms: model open practice with your students."},
+ links:[["Open research resources",U+"open-research/resources"]]}
+];
+const byId=Object.fromEntries(S.map(s=>[s.id,s]));
+
+/* ---------- State ---------- */
+const store={
+  get(k,d){try{const v=localStorage.getItem("adv:"+k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem("adv:"+k,JSON.stringify(v))}catch(e){}}
+};
+let st=store.get("st",null)||{};
+st.prof=st.prof||{d:null,st:null,sc:null,inv:[]};
+st.ans=st.ans||{};      // fork answers: yes/no
+st.mark=st.mark||{};    // action marks: done/later/skip
+st.at=st.at||"start";   // current screen: start | profile step | scene id | summary
+const save=()=>store.set("st",st);
+
+function flags(){
+  const F=new Set(st.prof.inv);
+  if(st.prof.inv.includes("teach")) F.add("teachInv");
+  if(st.prof.sc==="funded")F.add("funded");
+  if(st.prof.sc==="collab")F.add("partners");
+  if(st.prof.sc==="thesis"||st.prof.st==="pgr")F.add("thesis");
+  Object.entries(st.ans).forEach(([id,v])=>{const s=byId[id]; if(s&&v==="yes")F.add(s.flag);});
+  return F;
+}
+function path(){
+  const p={d:st.prof.d,st:st.prof.st,sc:st.prof.sc,F:flags()};
+  return S.filter(s=>!s.w||s.w(p));
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const name=(list,id)=>(list.find(x=>x.id===id)||{}).n||"";
+const $=id=>document.getElementById(id);
+
+/* ---------- Rendering ---------- */
+function go(at){st.at=at;save();render();const s=$("stage");s.focus({preventScroll:true});window.scrollTo({top:0,behavior:"auto"});}
+function profileDone(){return st.prof.d&&st.prof.st&&st.prof.sc;}
+
+function renderMap(){
+  const m=$("map");
+  if(!profileDone()||st.at==="start"||["d","s","sc","inv"].includes(st.at)){m.hidden=true;return;}
+  m.hidden=false;
+  const pa=path(), cur=byId[st.at];
+  m.innerHTML=CH.map(c=>{
+    const acts=pa.filter(s=>s.ch===c.id&&s.t==="a");
+    const d=acts.filter(s=>st.mark[s.id]==="done").length;
+    const first=pa.find(s=>s.ch===c.id);
+    const pct=acts.length?Math.round(d/acts.length*100):0;
+    return `<li><button type="button" data-ch="${c.id}" ${first?"":"disabled"} ${cur&&cur.ch===c.id?'aria-current="step"':""}><span class="nm">${c.n}</span><span class="ct">${d} / ${acts.length}</span><span class="bar"><i style="width:${pct}%"></i></span></button></li>`;
+  }).join("");
+  m.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    const first=path().find(s=>s.ch===b.dataset.ch); if(first)go(first.id);
+  }));
+}
+
+function picker(list,key,onPick,q){
+  return `<p class="q">${q}</p><ul class="choices ${list.length>3?"two":""}">${list.map(o=>`<li><button type="button" class="choice" data-v="${o.id}" aria-pressed="${st.prof[key]===o.id}"><b>${esc(o.n)}</b><span>${esc(o.d)}</span></button></li>`).join("")}</ul>`;
+}
+
+function renderStart(){
+  $("stage").innerHTML=`<span class="eyebrow">A choose-your-own-adventure</span>
+  <h1>Your open research journey</h1>
+  <p class="story lead"><strong>As open as possible, as closed as necessary.</strong> Tell us who you are and what you are working on. We will walk you through only the open research actions that matter for you, with Ulster resources at each step and tips for your discipline and career stage.</p>
+  <p class="story">It takes about 3 minutes to set up, and you can leave and return any time: your choices stay in this browser. Prefer a flat list? Use the <a href="index.html">full checklist</a>.</p>
+  <div class="actions">${profileDone()?`<button class="btn" id="resume">Continue my journey</button>`:""}<button class="btn ${profileDone()?"ghost":""}" id="begin">${profileDone()?"Change my choices":"Begin"}</button></div>`;
+  $("begin").onclick=()=>go("d");
+  if($("resume"))$("resume").onclick=()=>go(path().find(s=>!(s.id in st.mark)&&!(s.id in st.ans))?.id||"summary");
+}
+
+function renderProfile(step){
+  const cfg={
+    d:{eye:"Step 1 of 4",h:"Choose your discipline",list:DISC,key:"d",q:"Which is closest to your field?",next:"s"},
+    s:{eye:"Step 2 of 4",h:"Where are you in your career?",list:STAGE,key:"st",q:"Choose your career stage",next:"sc"},
+    sc:{eye:"Step 3 of 4",h:"What is the scope of your project?",list:SCOPE,key:"sc",q:"Choose the best fit",next:"inv"}
+  };
+  if(step==="inv"){
+    $("stage").innerHTML=`<span class="eyebrow">Step 4 of 4</span><h2>What does your project involve?</h2>
+    <p class="story">Pick everything that applies. This unlocks extra scenes on your path. You can skip it if none apply.</p>
+    <div class="chips" role="group" aria-label="Project involves">${INV.map(o=>`<button type="button" class="chip" data-v="${o.id}" aria-pressed="${st.prof.inv.includes(o.id)}">${o.n}</button>`).join("")}</div>
+    <div class="actions"><button class="back" id="bk">Back</button><button class="btn" id="go">Start my journey</button></div>`;
+    $("stage").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
+      const v=b.dataset.v,i=st.prof.inv.indexOf(v);
+      i<0?st.prof.inv.push(v):st.prof.inv.splice(i,1);
+      b.setAttribute("aria-pressed",String(i<0));save();
+    });
+    $("bk").onclick=()=>go("sc");
+    $("go").onclick=()=>go(path()[0].id);
+    return;
+  }
+  const c=cfg[step];
+  $("stage").innerHTML=`<span class="eyebrow">${c.eye}</span><h2>${c.h}</h2>${picker(c.list,c.key,null,c.q)}
+  <div class="actions"><button class="back" id="bk">Back</button></div>`;
+  $("stage").querySelectorAll(".choice").forEach(b=>b.onclick=()=>{st.prof[c.key]=b.dataset.v;go(c.next);});
+  $("bk").onclick=()=>go(step==="d"?"start":step==="s"?"d":"s");
+}
+
+function nextFrom(id){
+  const pa=path(), i=pa.findIndex(s=>s.id===id);
+  return (pa[i+1]||{id:"summary"}).id;
+}
+function prevFrom(id){
+  const pa=path(), i=pa.findIndex(s=>s.id===id);
+  return i>0?pa[i-1].id:"inv";
+}
+
+function renderScene(s){
+  const chap=CH.find(c=>c.id===s.ch);
+  const stageLabel=name(STAGE,st.prof.st), discLabel=name(DISC,st.prof.d);
+  let h=`<span class="eyebrow">Chapter · ${chap.n}</span>`;
+  if(s.story)h+=`<p class="story lead">${esc(s.story)}</p>`;
+  if(s.t==="f"){
+    const hint=s.hint&&s.hint[st.prof.d];
+    const a=st.ans[s.id];
+    h+=`<h2>${esc(s.title)}</h2>${hint?`<p class="story"><em>For ${esc(discLabel)}: ${esc(hint)}</em></p>`:""}
+    <ul class="choices two"><li><button type="button" class="choice" data-a="yes" aria-pressed="${a==="yes"}"><b>Yes, or probably</b><span>Show me the related steps</span></button></li>
+    <li><button type="button" class="choice" data-a="no" aria-pressed="${a==="no"}"><b>No, or not sure yet</b><span>Skip these; I can come back</span></button></li></ul>
+    <div class="actions"><button class="back" id="bk">Back</button></div>`;
+    $("stage").innerHTML=h;
+    $("stage").querySelectorAll(".choice").forEach(b=>b.onclick=()=>{st.ans[s.id]=b.dataset.a;save();go(nextFrom(s.id));});
+  }else{
+    const [cls,lab]=LVL[s.lvl], m=st.mark[s.id];
+    const tip=[s.tips&&s.tips[st.prof.d]&&["For "+discLabel,s.tips[st.prof.d]],s.tips&&s.tips[st.prof.st]&&["For "+stageLabel,s.tips[st.prof.st]]].filter(Boolean);
+    const links=(s.links||[]).map(l=>`<li><a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])} ↗</a></li>`).join("");
+    h+=`<h2>${esc(s.title)}</h2>
+    <div class="badges"><span class="b ${cls}">${lab}</span><span class="b eff">${EFF[s.eff]}</span></div>
+    <p class="why"><strong>Why it matters:</strong> ${esc(s.why)}</p>
+    ${tip.map(t=>`<p class="tip"><b>${esc(t[0])}</b>${esc(t[1])}</p>`).join("")}
+    ${links?`<div class="res"><h3>Resources</h3><ul>${links}</ul></div>`:""}
+    ${s.help?`<p class="help"><b>Who can help:</b> ${s.help}</p>`:""}
+    <p class="mark">${m?"You marked this: <b>"+({done:"Done",later:"Do later",skip:"Not for me"}[m])+"</b>":"What would you like to do with this step?"}</p>
+    <div class="actions"><button class="back" id="bk">Back</button>
+      <button class="btn ghost" data-m="skip">Not for me</button>
+      <button class="btn ghost" data-m="later">Do later</button>
+      <button class="btn ok" data-m="done">Done ✓</button></div>`;
+    $("stage").innerHTML=h;
+    $("stage").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{st.mark[s.id]=b.dataset.m;save();go(nextFrom(s.id));});
+  }
+  $("bk").onclick=()=>go(prevFrom(s.id));
+}
+
+function summaryText(){
+  const pa=path().filter(s=>s.t==="a");
+  const lines=["My open research checklist (Ulster University)",
+    `${name(DISC,st.prof.d)} · ${name(STAGE,st.prof.st)} · ${name(SCOPE,st.prof.sc)}`,""];
+  [["done","Done"],["later","To do"],[null,"Not yet reviewed"]].forEach(([k,lab])=>{
+    const items=pa.filter(s=>(st.mark[s.id]||null)===k);
+    if(!items.length)return;
+    lines.push(lab+":");items.forEach(s=>lines.push(`${k==="done"?"[x]":"[ ]"} ${s.title} (${LVL[s.lvl][1]})`));lines.push("");
+  });
+  return lines.join("\n");
+}
+function renderSummary(){
+  const pa=path().filter(s=>s.t==="a");
+  const g=k=>pa.filter(s=>(st.mark[s.id]||null)===k);
+  const sec=(k,label)=>{const it=g(k);return it.length?`<h3>${label}<span class="count">${it.length}</span></h3><ul>${it.map(s=>`<li><a href="#" data-j="${s.id}">${esc(s.title)}</a> <span class="mark">· ${LVL[s.lvl][1]}</span></li>`).join("")}</ul>`:"";};
+  const done=g("done").length;
+  $("stage").innerHTML=`<span class="eyebrow">Journey map</span><h1>Your open research map</h1>
+  <p class="story lead">${done} of ${pa.length} steps done for <strong>${esc(name(DISC,st.prof.d))}</strong>, ${esc(name(STAGE,st.prof.st).toLowerCase())}, working on ${esc(name(SCOPE,st.prof.sc).toLowerCase())}.</p>
+  <div class="sum">${sec("later","To do later")}${sec(null,"Not yet reviewed")}${sec("done","Done")}${sec("skip","Not for me")}</div>
+  <div class="actions"><button class="btn" id="copy">Copy my checklist</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="again">Revisit from the start</button></div>
+  <span class="status" id="cs" role="status"></span><textarea id="fb" hidden readonly aria-label="Checklist text"></textarea>
+  <p class="story">Paste it into a DMP, PDR or supervision record. For help, start at <a href="${U}open-research" target="_blank" rel="noopener">Open research at Ulster ↗</a> or the <a href="${U}governance-and-ethics" target="_blank" rel="noopener">Governance and ethics ↗</a> pages.</p>`;
+  $("stage").querySelectorAll("[data-j]").forEach(a=>a.onclick=e=>{e.preventDefault();go(a.dataset.j);});
+  $("again").onclick=()=>go(path()[0].id);
+  $("print").onclick=()=>window.print();
+  $("copy").onclick=async()=>{
+    const t=summaryText();
+    try{await navigator.clipboard.writeText(t);$("cs").textContent="Copied to clipboard.";}
+    catch(e){const f=$("fb");f.value=t;f.hidden=false;f.select();$("cs").textContent="Select and copy the text below.";}
+  };
+}
+
+function render(){
+  renderMap();
+  const at=st.at;
+  if(at==="start")return renderStart();
+  if(["d","s","sc","inv"].includes(at))return renderProfile(at);
+  if(!profileDone())return go("start");
+  if(at==="summary")return renderSummary();
+  const s=byId[at];
+  if(!s||!path().includes(s))return go(path()[0].id);
+  renderScene(s);
+}
+
+$("restart").onclick=()=>{
+  if(!confirm("Start again? This clears your choices and progress in this browser."))return;
+  st={prof:{d:null,st:null,sc:null,inv:[]},ans:{},mark:{},at:"start"};save();render();
+};
+render();
+</script>
+</body>
+</html>
