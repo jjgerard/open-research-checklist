@@ -83,11 +83,19 @@ h1{font-size:clamp(32px,5.5vw,52px);font-weight:800;line-height:1.02;letter-spac
 .group h2 small{font:500 12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
 .sub{font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:8px}
 
-.item{background:var(--surface);border:1px solid var(--line);border-radius:10px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 12px;padding:12px 14px;border-radius:4px;border-left:4px solid var(--line)}
+.item{background:var(--surface);border:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr);gap:0;padding:12px 14px;border-radius:4px;border-left:4px solid var(--line)}
 .item:has(.b.exp){border-left-color:var(--ink)}
-.item.done{opacity:.62}
-.item.done .t{text-decoration:line-through;text-decoration-color:var(--muted)}
-.cb{width:22px;height:22px;margin-top:2px;accent-color:var(--accent);cursor:pointer}
+.item.s-yes{border-left-color:var(--rec)}
+.item.s-yes .t{text-decoration:line-through;text-decoration-color:var(--muted)}
+.item.s-wip{border-left-color:var(--accent)}
+.item.s-na{opacity:.6}
+.status{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.st{appearance:none;font:inherit;font-size:14px;line-height:1.2;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;min-height:34px}
+.st:hover{border-color:var(--accent)}
+.st[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.st[aria-pressed="true"]::before{content:"✓ "}
+.breakdown{display:grid;gap:4px;font-size:14px;color:var(--muted);margin:0;padding:0;list-style:none}
+.breakdown b{color:var(--ink);font-variant-numeric:tabular-nums}
 .item details{min-width:0}
 .item summary{cursor:pointer;list-style:none;display:grid;gap:6px}
 .item summary::-webkit-details-marker{display:none}
@@ -162,6 +170,8 @@ footer p{margin:0}
   .stage{padding:8px 10px}
   .stage .nm{font-size:13px}
   .item{padding:12px}
+  .status{display:grid;grid-template-columns:1fr 1fr}
+  .st{border-radius:6px;padding:9px 8px;text-align:left}
   .group h2{font-size:21px}
   .chip label{padding:7px 12px}
 }
@@ -181,7 +191,7 @@ footer p{margin:0}
       <svg width="34" height="44" viewBox="0 0 34 44" aria-hidden="true"><path d="M9 20V12a8 8 0 0 1 16 0v1" fill="none" stroke="var(--band-ink)" stroke-width="4" stroke-linecap="round"/><circle cx="17" cy="30" r="12" fill="none" stroke="var(--band-ink)" stroke-width="4"/><circle cx="17" cy="30" r="3.5" fill="var(--band-ink)"/></svg>
       <h1>From Closed to Open</h1>
     </div>
-    <p class="lede"><strong>As open as possible, as closed as necessary.</strong> Pick where you are in your project and what it involves. You'll see the open research actions that apply to you, what's expected versus optional, and who can help. Tick things off as you go; your progress stays in this browser.</p>
+    <p class="lede"><strong>As open as possible, as closed as necessary.</strong> Pick where you are in your project and what it involves. You'll see the open research actions that apply to you, what's expected versus optional, and who can help. Mark each action as you go; your answers stay in this browser.</p>
   </header>
 </div>
 <div class="wrap">
@@ -199,7 +209,7 @@ footer p{margin:0}
         <button type="button" data-v="all" aria-pressed="true">Everything</button>
         <button type="button" data-v="exp" aria-pressed="false">Expected only</button>
         <button type="button" data-v="quick" aria-pressed="false">Quick wins</button>
-        <button type="button" data-v="todo" aria-pressed="false">Not done yet</button>
+        <button type="button" data-v="todo" aria-pressed="false">Not addressed yet</button>
       </div>
     </div>
   </section>
@@ -212,24 +222,25 @@ footer p{margin:0}
         <h3>Your progress</h3>
         <div class="big" id="pct">0<span> of 0</span></div>
         <p id="pctNote">actions that apply to your project</p>
+        <ul class="breakdown" id="breakdown"></ul>
         <button type="button" class="btn" id="copyBtn">Copy my checklist</button>
         <p>Paste into a DMP, PDR or supervision record.</p>
         <span id="copyStatus" role="status"></span>
         <textarea id="copyFallback" hidden readonly aria-label="Checklist text to copy"></textarea>
-        <button type="button" class="btn ghost" id="resetBtn">Clear my ticks</button>
+        <button type="button" class="btn ghost" id="resetBtn">Clear my answers</button>
         <span id="resetConfirm" hidden>
           <button type="button" class="btn" id="resetYes">Yes, clear all</button>
         </span>
       </div>
       <div class="card">
         <h3>Download as a PDF form</h3>
-        <p>A fillable PDF built from your selections, with tick boxes and notes fields for Adobe Acrobat Reader.</p>
+        <p>A fillable PDF built from your selections, with a status drop-down for each action and notes fields, for Adobe Acrobat Reader.</p>
         <label class="fl" for="pdfScope">Include</label>
         <select id="pdfScope">
           <option value="project">All stages for my project</option>
           <option value="screen">Only what's on screen now</option>
         </select>
-        <span class="chk"><input type="checkbox" id="pdfTicks" checked><label for="pdfTicks">Pre-tick what I've done</label></span>
+        <span class="chk"><input type="checkbox" id="pdfTicks" checked><label for="pdfTicks">Pre-fill my answers</label></span>
         <button type="button" class="btn" id="pdfBtn">Download PDF form</button>
         <span id="pdfCount" class="small"></span>
         <span id="pdfStatus" role="status" class="small"></span>
@@ -244,7 +255,7 @@ footer p{margin:0}
     </aside>
   </div>
 
-  <div class="mbar"><span><b id="mDone">0</b> of <span id="mTotal">0</span> done</span><a href="#rail">Progress &amp; PDF</a></div>
+  <div class="mbar"><span><b id="mDone">0</b> of <span id="mTotal">0</span> addressed</span><a href="#rail">Progress &amp; PDF</a></div>
   <footer>
     <h2>About this prototype</h2>
     <p>The content comes from <em>From Closed to Open: Practices and Guidelines for Open Research at Ulster University</em> by Hanna, L., Evans, E., Bond, R., Butter, S., Cahoon, A., Casey, F., McChesney, I. and Shukla, P. (2026), developed by the Open &amp; Responsible Research Workstream and licensed <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. It was inspired by the <a href="https://www.surrey.ac.uk/sites/default/files/2023-10/open-research-checklist.pdf">University of Surrey Open Research Checklist</a> and CONUL's <a href="https://zenodo.org/records/17021307">Navigating open research</a>.</p>
@@ -276,6 +287,7 @@ const CTX = [
   {id:"teach",   name:"I teach"}
 ];
 const EFF = {quick:"~ 10 min", some:"~ a few hours", big:"ongoing"};
+const MARK = {yes:"Yes: addressed", no:"No: yet to be considered", wip:"Work in progress", na:"Not applicable to my research"};
 const LVL = {exp:["exp","Expected"], rec:["rec","Recommended"], go:["go","Going further"]};
 
 // stage, group, title, why, detail, level, effort, tags, links, help
@@ -345,8 +357,13 @@ let state = {
   stage: store.get("stage","plan"),
   ctx: new Set(store.get("ctx",[])),
   lvl: "all",
-  done: new Set(store.get("done",[]))
+  mark: store.get("mark",null),
+  open: new Set()
 };
+if(!state.mark){ // migrate older ticks: ticked becomes "Yes: addressed"
+  state.mark={}; store.get("done",[]).forEach(id=>{state.mark[id]="yes";}); store.set("mark",state.mark);
+}
+const isYes = x => state.mark[x.id]==="yes";
 if(!STAGES.some(s=>s.id===state.stage)) state.stage="plan";
 
 const applies = x => x.tags.length===0 || x.tags.some(t=>state.ctx.has(t)) || state.ctx.size===0;
@@ -365,7 +382,7 @@ function renderTrack(){
   const el=document.getElementById("track");
   el.innerHTML = STAGES.map(s=>{
     const items=I.filter(x=>(s.id==="all"||x.stage===s.id)&&applies(x));
-    const d=items.filter(x=>state.done.has(x.id)).length;
+    const d=items.filter(isYes).length;
     const p=items.length?Math.round(d/items.length*100):0;
     return `<button type="button" class="stage" data-s="${s.id}" aria-pressed="${state.stage===s.id}"><span class="nm">${s.name}</span><span class="ct">${d} / ${items.length}</span><span class="bar"><i style="width:${p}%"></i></span></button>`;
   }).join("");
@@ -376,10 +393,11 @@ function itemHTML(x){
   const tags=x.tags.map(t=>`<span class="b tag">if: ${ctxName(t).split(" (")[0].split(" /")[0]}</span>`).join("");
   const links=x.links.length?`<ul class="links">${x.links.map(l=>`<li><a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])} ↗</a></li>`).join("")}</ul>`:"";
   const help=x.help?`<p class="help"><b>Who can help:</b> ${x.help}</p>`:"";
-  return `<div class="item ${state.done.has(x.id)?"done":""}">
-    <input type="checkbox" class="cb" id="cb-${x.id}" data-id="${x.id}" ${state.done.has(x.id)?"checked":""} aria-label="Mark done: ${esc(x.title)}">
-    <details><summary><span class="t">${esc(x.title)}</span><span class="meta"><span class="b ${cls}">${lab}</span><span class="b eff">${EFF[x.eff]}</span>${tags}</span></summary>
-    <div class="body"><p class="why"><b>Why:</b> ${esc(x.why)}</p><p class="detail">${esc(x.detail)}</p>${links}${help}</div></details></div>`;
+  const m=state.mark[x.id]||"";
+  return `<div class="item ${m?"s-"+m:""}">
+    <details data-id="${x.id}" ${state.open.has(x.id)?"open":""}><summary><span class="t">${esc(x.title)}</span><span class="meta"><span class="b ${cls}">${lab}</span><span class="b eff">${EFF[x.eff]}</span>${tags}</span></summary>
+    <div class="body"><p class="why"><b>Why:</b> ${esc(x.why)}</p><p class="detail">${esc(x.detail)}</p>${links}${help}</div></details>
+    <div class="status" role="group" aria-label="Status: ${esc(x.title)}">${Object.entries(MARK).map(([k,v])=>`<button type="button" class="st" data-id="${x.id}" data-m="${k}" aria-pressed="${m===k}">${v}</button>`).join("")}</div></div>`;
 }
 function visible(){
   return I.filter(x=>{
@@ -387,7 +405,7 @@ function visible(){
     if(!applies(x)) return false;
     if(state.lvl==="exp"&&x.lvl!=="exp") return false;
     if(state.lvl==="quick"&&x.eff!=="quick") return false;
-    if(state.lvl==="todo"&&state.done.has(x.id)) return false;
+    if(state.lvl==="todo"&&(state.mark[x.id]==="yes"||state.mark[x.id]==="na")) return false;
     return true;
   });
 }
@@ -397,21 +415,26 @@ function renderList(){
   const stages=state.stage==="all"?STAGES.filter(s=>s.id!=="all"):STAGES.filter(s=>s.id===state.stage);
   el.innerHTML=stages.map(s=>{
     const its=v.filter(x=>x.stage===s.id); if(!its.length) return "";
-    const d=its.filter(x=>state.done.has(x.id)).length;
-    let html=`<section class="group"><h2>${s.name}<small>${d} of ${its.length} done</small></h2>`, g=null;
+    const d=its.filter(isYes).length;
+    let html=`<section class="group"><h2>${s.name}<small>${d} of ${its.length} addressed</small></h2>`, g=null;
     its.forEach(x=>{ if(x.group&&x.group!==g){g=x.group;html+=`<div class="sub">${esc(g)}</div>`;} html+=itemHTML(x); });
     return html+`</section>`;
   }).join("");
-  el.querySelectorAll(".cb").forEach(cb=>cb.addEventListener("change",()=>{
-    cb.checked?state.done.add(cb.dataset.id):state.done.delete(cb.dataset.id);
-    store.set("done",[...state.done]); render();
+  el.querySelectorAll("details[data-id]").forEach(d=>d.addEventListener("toggle",()=>{d.open?state.open.add(d.dataset.id):state.open.delete(d.dataset.id);}));
+  el.querySelectorAll(".st").forEach(b=>b.addEventListener("click",()=>{
+    const id=b.dataset.id, k=b.dataset.m;
+    if(state.mark[id]===k) delete state.mark[id]; else state.mark[id]=k;  // click again to clear
+    store.set("mark",state.mark); render();
+    const again=document.querySelector(`.st[data-id="${id}"][data-m="${k}"]`); if(again) again.focus({preventScroll:true});
   }));
 }
 function renderRail(){
-  const items=I.filter(applies), d=items.filter(x=>state.done.has(x.id)).length;
+  const items=I.filter(applies), d=items.filter(isYes).length;
+  const cnt=k=>items.filter(x=>state.mark[x.id]===k).length;
   document.getElementById("pct").innerHTML=`${d}<span> of ${items.length}</span>`;
   const md=document.getElementById("mDone"); if(md){md.textContent=d;document.getElementById("mTotal").textContent=items.length;}
-  document.getElementById("pctNote").textContent = state.ctx.size? "actions that apply to your project" : "actions in total (pick what your project involves to narrow this)";
+  document.getElementById("breakdown").innerHTML=`<li><b>${cnt("wip")}</b> work in progress</li><li><b>${cnt("no")}</b> yet to be considered</li><li><b>${cnt("na")}</b> not applicable</li><li><b>${items.filter(x=>!state.mark[x.id]).length}</b> not yet reviewed</li>`;
+  document.getElementById("pctNote").textContent = state.ctx.size? "actions addressed that apply to your project" : "actions addressed in total (pick what your project involves to narrow this)";
 }
 function render(){renderTrack();renderList();renderRail();if(document.getElementById("pdfScope"))updatePdfCount();
   document.querySelectorAll("#lvl button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===state.lvl));}
@@ -423,7 +446,7 @@ document.getElementById("copyBtn").addEventListener("click",()=>{
   STAGES.filter(s=>s.id!=="all").forEach(s=>{
     const its=I.filter(x=>x.stage===s.id&&applies(x)); if(!its.length) return;
     lines.push(s.name.toUpperCase());
-    its.forEach(x=>lines.push(`[${state.done.has(x.id)?"x":" "}] ${x.title} (${LVL[x.lvl][1]})`));
+    its.forEach(x=>{const m=state.mark[x.id];lines.push(`${{yes:"[x]",wip:"[~]",na:"[-]"}[m]||"[ ]"} ${x.title} (${LVL[x.lvl][1]}) - ${m?MARK[m]:"Not yet reviewed"}`);});
     lines.push("");
   });
   const text=lines.join("\n"), st=document.getElementById("copyStatus"), fb=document.getElementById("copyFallback");
@@ -431,7 +454,7 @@ document.getElementById("copyBtn").addEventListener("click",()=>{
   try{navigator.clipboard.writeText(text).then(()=>{st.textContent="Copied to clipboard.";fb.hidden=true;},fallback);}catch(e){fallback();}
 });
 document.getElementById("resetBtn").addEventListener("click",()=>{document.getElementById("resetConfirm").hidden=false;});
-document.getElementById("resetYes").addEventListener("click",()=>{state.done.clear();store.set("done",[]);document.getElementById("resetConfirm").hidden=true;render();});
+document.getElementById("resetYes").addEventListener("click",()=>{state.mark={};store.set("mark",{});document.getElementById("resetConfirm").hidden=true;render();});
 
 // ---------- PDF form export ----------
 let dlPromise = null;
@@ -476,10 +499,11 @@ async function buildPdf(opts){
   };
   const label=(s,x,yy)=>text(s.toUpperCase(),x,yy,FB,8,MUTED);
   const tfield=(name,x,yy,w,h,val,multi)=>{const f=form.createTextField(name); if(multi) f.enableMultiline(); if(val) f.setText(safe(val)); f.addToPage(page,{x,y:yy,width:w,height:h,borderColor:LINE,borderWidth:1,backgroundColor:WHITE,textColor:NAVY,font:F}); f.setFontSize(multi?9:10);};
+  const dd=(name,x,yy,w,h,val)=>{const f=form.createDropdown(name); f.addOptions(Object.values(MARK)); if(val) f.select(val); f.addToPage(page,{x,y:yy,width:w,height:h,borderColor:LINE,borderWidth:1,backgroundColor:WHITE,textColor:NAVY,font:F}); f.setFontSize(9);};
   const cbox=(name,x,yy,size,on)=>{const c=form.createCheckBox(name); c.addToPage(page,{x,y:yy,width:size,height:size,borderColor:NAVY,borderWidth:1,backgroundColor:WHITE,textColor:NAVY}); if(on) c.check();};
 
   newPage(true);
-  wrap("Fill this in on screen in Adobe Acrobat Reader (or any PDF reader with form support) and save it. Tick each action as you complete it, or note why it does not apply. Underlined titles link to University guidance.",F,9.5,CW).forEach(l=>{text(l,M,y,F,9.5,NAVY);y-=12.5;});
+  wrap("Fill this in on screen in Adobe Acrobat Reader (or any PDF reader with form support) and save it. For each action, choose a status from the drop-down: Yes: addressed, No: yet to be considered, Work in progress, or Not applicable to my research. Underlined titles link to University guidance.",F,9.5,CW).forEach(l=>{text(l,M,y,F,9.5,NAVY);y-=12.5;});
   y-=26;
   label("Name",M,y+20); tfield("name",M,y,CW*0.48,16);
   label("Date reviewed",M+CW*0.52,y+20); tfield("date",M+CW*0.52,y,CW*0.48,16,new Date().toLocaleDateString("en-GB"));
@@ -501,17 +525,18 @@ async function buildPdf(opts){
     let g=null;
     for(const it of its){
       const tl=wrap(it.title,FB,10.5,CW-150), wl=wrap(it.why,F,8.8,CW-150);
-      const need=tl.length*13+wl.length*11+20+(it.help?11:0)+(it.group&&it.group!==g?14:0);
+      const need=tl.length*13+wl.length*11+44+(it.help?11:0)+(it.group&&it.group!==g?14:0);
       if(y-need<50){newPage(false);label(s.name+" (continued)",M,y);y-=16;}
       if(it.group&&it.group!==g){g=it.group;text(g.toUpperCase(),M,y,FB,8,BLUE);y-=14;}
-      const top=y; cbox("done_"+it.id,M,y-4,13,opts.ticks&&state.done.has(it.id));
-      const x0=M+22, url=it.links.length?it.links[0][1]:null;
+      const top=y;
+      const x0=M, url=it.links.length?it.links[0][1]:null;
       tl.forEach(l=>{text(l,x0,y,FB,10.5,NAVY); if(url){const tw=FB.widthOfTextAtSize(l,10.5);page.drawLine({start:{x:x0,y:y-1.5},end:{x:x0+tw,y:y-1.5},thickness:.6,color:BLUE});link(url,x0,y-3,x0+tw,y+10);} y-=13;});
       wl.forEach(l=>{text(l,x0,y,F,8.8,MUTED);y-=11;});
       right(LVL[it.lvl][1].toUpperCase(),W-M,top,FB,7.5,LVC[it.lvl]);
       right(EFF[it.eff],W-M,top-10,F,7.5,MUTED);
       if(it.tags.length) right("if: "+it.tags.map(t=>SHORT[t]).join(" / "),W-M,top-20,F,7.5,BLUE);
       if(it.help){text("Who can help: "+it.help.replace(/<[^>]+>/g,""),x0,y,FI,8,MUTED);y-=11;}
+      text("Status:",x0,y-9,FB,8.5,MUTED); dd("status_"+it.id,x0+40,y-13,220,17,opts.ticks?MARK[state.mark[it.id]]:null); y-=26;
       y-=4; page.drawLine({start:{x:M,y:y+2},end:{x:W-M,y:y+2},thickness:.5,color:LINE}); y-=12;
     }
     if(y<90) newPage(false);
@@ -535,7 +560,7 @@ function pdfNote(){
   if(state.ctx.size) parts.push("Tailored to: "+[...state.ctx].map(ctxName).join("; ")+".");
   if(scope==="screen"){
     if(state.stage!=="all") parts.push("Stage: "+STAGES.find(s=>s.id===state.stage).name+".");
-    const lv={exp:"Expected items only.",quick:"Quick wins only.",todo:"Items not yet done."}[state.lvl]; if(lv) parts.push(lv);
+    const lv={exp:"Expected items only.",quick:"Quick wins only.",todo:"Items not yet addressed."}[state.lvl]; if(lv) parts.push(lv);
   }
   return parts.join(" ");
 }

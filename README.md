@@ -6,8 +6,8 @@ It is an interactive version of *From Closed to Open: Practices and Guidelines f
 
 - filter actions by research stage and by what their project involves
 - see which actions are expected, recommended or optional, with effort estimates
-- tick actions off (progress is saved in their own browser)
-- copy their checklist as text, or download a tailored, fillable PDF form
+- mark each action as Yes: addressed, No: yet to be considered, Work in progress, or Not applicable (saved in their own browser)
+- copy their checklist as text, or download a tailored, fillable PDF form with a status drop-down per action
 
 ## Guided adventure
 
