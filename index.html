@@ -144,13 +144,15 @@ const STAGE=[
  {id:"pgr",n:"Postgraduate researcher",d:"Working towards a PhD or research degree"},
  {id:"ecr",n:"Early career researcher",d:"Postdoc, research fellow, or new lecturer"},
  {id:"est",n:"Established researcher / PI / supervisor",d:"Leading projects, supervising, mentoring"},
- {id:"sup",n:"Research support / technical",d:"Technicians, research managers, data stewards"}
+ {id:"sup",n:"Research support / technical",d:"Technicians, research managers, data stewards"},
+ {id:"any",n:"Skip this / not sure",d:"Start without a career stage; you'll see the general steps without stage-specific tips"}
 ];
 const SCOPE=[
  {id:"small", n:"A small or single-author study",d:"One researcher, one question, no external contracts"},
  {id:"thesis",n:"A thesis project",d:"Master's or PhD research, ending in a thesis"},
  {id:"funded",n:"An externally funded project",d:"UKRI, charity, EU or other funder terms apply"},
- {id:"collab",n:"A collaborative or commercial project",d:"Industry, NHS, community or multi-institution partners"}
+ {id:"collab",n:"A collaborative or commercial project",d:"Industry, NHS, community or multi-institution partners"},
+ {id:"any",n:"Skip this / not sure",d:"Start without a project scope; you can still tick what it involves on the next step"}
 ];
 const INV=[
  {id:"people",n:"People or personal data"},
@@ -532,7 +534,7 @@ function renderScene(s){
 function summaryText(){
   const pa=path().filter(s=>s.t==="a");
   const lines=["My open research checklist (Ulster University)",
-    `${st.prof.d==='any'?'Any discipline':name(DISC,st.prof.d)} · ${name(STAGE,st.prof.st)} · ${name(SCOPE,st.prof.sc)}`,""];
+    [st.prof.d,st.prof.st,st.prof.sc].map((v,i)=>v==='any'?['Any discipline','Any career stage','Any project scope'][i]:name([DISC,STAGE,SCOPE][i],v)).join(' · '),""];
   [["done","Done"],["later","To do"],[null,"Not yet reviewed"]].forEach(([k,lab])=>{
     const items=pa.filter(s=>(st.mark[s.id]||null)===k);
     if(!items.length)return;
@@ -540,13 +542,20 @@ function summaryText(){
   });
   return lines.join("\n");
 }
+function who(){
+  const o=[];
+  if(st.prof.d!=="any")o.push(`<strong>${esc(name(DISC,st.prof.d))}</strong>`);
+  if(st.prof.st!=="any"){const n=name(STAGE,st.prof.st);o.push(esc(n[0].toLowerCase()+n.slice(1)))};
+  if(st.prof.sc!=="any")o.push("working on "+esc(name(SCOPE,st.prof.sc).toLowerCase()));
+  return o;
+}
 function renderSummary(){
   const pa=path().filter(s=>s.t==="a");
   const g=k=>pa.filter(s=>(st.mark[s.id]||null)===k);
   const sec=(k,label)=>{const it=g(k);return it.length?`<h3>${label}<span class="count">${it.length}</span></h3><ul>${it.map(s=>`<li><a href="#" data-j="${s.id}">${esc(s.title)}</a> <span class="mark">· ${LVL[s.lvl][1]}</span></li>`).join("")}</ul>`:"";};
   const done=g("done").length;
   $("stage").innerHTML=`<span class="eyebrow">Journey map</span><h1>Your open research map</h1>
-  <p class="story lead">${done} of ${pa.length} steps done for ${st.prof.d==='any'?'':`<strong>${esc(name(DISC,st.prof.d))}</strong>, `}${esc(name(STAGE,st.prof.st).toLowerCase())}, working on ${esc(name(SCOPE,st.prof.sc).toLowerCase())}.</p>
+  <p class="story lead">${done} of ${pa.length} steps done${who().length?' for '+who().join(', '):''}.</p>
   <div class="sum">${sec("later","To do later")}${sec(null,"Not yet reviewed")}${sec("done","Done")}${sec("skip","Not for me")}</div>
   <div class="actions"><button class="btn" id="copy">Copy my checklist</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="again">Revisit from the start</button></div>
   <span class="status" id="cs" role="status"></span><textarea id="fb" hidden readonly aria-label="Checklist text"></textarea>
