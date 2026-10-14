@@ -167,6 +167,7 @@ const CH=[
  {id:"publish",n:"Publish"},{id:"share",n:"Share data & code"},{id:"teach",n:"Teach"}
 ];
 const EFF={quick:"~ 10 min",some:"~ a few hours",big:"ongoing"};
+const MARK={yes:"Yes: addressed",no:"No: yet to be considered",wip:"Work in progress",na:"Not applicable to my research"};
 const LVL={exp:["exp","Expected"],rec:["rec","Recommended"],go:["go","Going further"]};
 
 /* ---------- Scenes ----------
@@ -405,7 +406,8 @@ let st=store.get("st",null)||{};
 st.prof=st.prof||{d:null,st:null,sc:null,inv:[]};
 st.ans=st.ans||{};      // fork answers: yes/no
 st.mark=st.mark||{};    // action marks: done/later/skip
-st.at=st.at||"start";   // current screen: start | profile step | scene id | summary
+st.at=st.at||"start";
+Object.keys(st.mark).forEach(k=>{st.mark[k]={done:"yes",later:"no",skip:"na"}[st.mark[k]]||st.mark[k];});   // current screen: start | profile step | scene id | summary
 const save=()=>store.set("st",st);
 
 function flags(){
@@ -436,7 +438,7 @@ function renderMap(){
   const pa=path(), cur=byId[st.at];
   m.innerHTML=CH.map(c=>{
     const acts=pa.filter(s=>s.ch===c.id&&s.t==="a");
-    const d=acts.filter(s=>st.mark[s.id]==="done").length;
+    const d=acts.filter(s=>st.mark[s.id]==="yes").length;
     const first=pa.find(s=>s.ch===c.id);
     const pct=acts.length?Math.round(d/acts.length*100):0;
     return `<li><button type="button" data-ch="${c.id}" ${first?"":"disabled"} ${cur&&cur.ch===c.id?'aria-current="step"':""}><span class="nm">${c.n}</span><span class="ct">${d} / ${acts.length}</span><span class="bar"><i style="width:${pct}%"></i></span></button></li>`;
@@ -520,12 +522,11 @@ function renderScene(s){
     ${tip.map(t=>`<p class="tip"><b>${esc(t[0])}</b>${esc(t[1])}</p>`).join("")}
     ${links?`<div class="res"><h3>Resources</h3><ul>${links}</ul></div>`:""}
     ${s.help?`<p class="help"><b>Who can help:</b> ${s.help}</p>`:""}
-    <p class="mark">${m?"You marked this: <b>"+({done:"Done",later:"Do later",skip:"Not for me"}[m])+"</b>":"What would you like to do with this step?"}</p>
-    <div class="actions"><button class="back" id="bk">Back</button>
-      <button class="btn ghost" data-m="skip">Not for me</button>
-      <button class="btn ghost" data-m="later">Do later</button>
-      <button class="btn ok" data-m="done">Done ✓</button></div>`;
+    <p class="q">Has this been addressed in your research?</p>
+    <ul class="choices two">${Object.entries(MARK).map(([k,v])=>`<li><button type="button" class="choice" data-m="${k}" aria-pressed="${m===k}"><b>${v}</b></button></li>`).join("")}</ul>
+    <div class="actions"><button class="back" id="bk">Back</button>${m?`<button class="btn ghost" id="nx">Next</button>`:""}</div>`;
     $("stage").innerHTML=h;
+    if($("nx"))$("nx").onclick=()=>go(nextFrom(s.id));
     $("stage").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{st.mark[s.id]=b.dataset.m;save();go(nextFrom(s.id));});
   }
   $("bk").onclick=()=>go(prevFrom(s.id));
@@ -535,10 +536,10 @@ function summaryText(){
   const pa=path().filter(s=>s.t==="a");
   const lines=["My open research checklist (Ulster University)",
     [st.prof.d,st.prof.st,st.prof.sc].map((v,i)=>v==='any'?['Any discipline','Any career stage','Any project scope'][i]:name([DISC,STAGE,SCOPE][i],v)).join(' · '),""];
-  [["done","Done"],["later","To do"],[null,"Not yet reviewed"]].forEach(([k,lab])=>{
+  [["yes","Addressed","[x]"],["wip","Work in progress","[~]"],["no","Yet to be considered","[ ]"],[null,"Not yet reviewed","[ ]"],["na","Not applicable to my research","[-]"]].forEach(([k,lab,box])=>{
     const items=pa.filter(s=>(st.mark[s.id]||null)===k);
     if(!items.length)return;
-    lines.push(lab+":");items.forEach(s=>lines.push(`${k==="done"?"[x]":"[ ]"} ${s.title} (${LVL[s.lvl][1]})`));lines.push("");
+    lines.push(lab+":");items.forEach(s=>lines.push(`${box} ${s.title} (${LVL[s.lvl][1]})`));lines.push("");
   });
   return lines.join("\n");
 }
@@ -553,10 +554,10 @@ function renderSummary(){
   const pa=path().filter(s=>s.t==="a");
   const g=k=>pa.filter(s=>(st.mark[s.id]||null)===k);
   const sec=(k,label)=>{const it=g(k);return it.length?`<h3>${label}<span class="count">${it.length}</span></h3><ul>${it.map(s=>`<li><a href="#" data-j="${s.id}">${esc(s.title)}</a> <span class="mark">· ${LVL[s.lvl][1]}</span></li>`).join("")}</ul>`:"";};
-  const done=g("done").length;
+  const done=g("yes").length;
   $("stage").innerHTML=`<span class="eyebrow">Journey map</span><h1>Your open research map</h1>
-  <p class="story lead">${done} of ${pa.length} steps done${who().length?' for '+who().join(', '):''}.</p>
-  <div class="sum">${sec("later","To do later")}${sec(null,"Not yet reviewed")}${sec("done","Done")}${sec("skip","Not for me")}</div>
+  <p class="story lead">${done} of ${pa.length} steps addressed${who().length?' for '+who().join(', '):''}.</p>
+  <div class="sum">${sec("wip","Work in progress")}${sec("no","Yet to be considered")}${sec(null,"Not yet reviewed")}${sec("yes","Addressed")}${sec("na","Not applicable to my research")}</div>
   <div class="actions"><button class="btn" id="copy">Copy my checklist</button><button class="btn ghost" id="print">Print</button><button class="btn ghost" id="again">Revisit from the start</button></div>
   <span class="status" id="cs" role="status"></span><textarea id="fb" hidden readonly aria-label="Checklist text"></textarea>
   <p class="story">Paste it into a DMP, PDR or supervision record. For help, start at <a href="${U}open-research" target="_blank" rel="noopener">Open research at Ulster ↗</a> or the <a href="${U}governance-and-ethics" target="_blank" rel="noopener">Governance and ethics ↗</a> pages.</p>`;
