@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Unofficial prototype: build and edit a project Gantt chart for a grant application. Drag bars, link activities so they reflow, show several start dates, and export to Excel.">
+<meta name="description" content="Unofficial prototype: build and edit a project Gantt chart for a grant application. Drag bars, link activities so they reflow, import from Excel, show several start dates, and export to Excel.">
 <title>Gantt Chart Maker</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
@@ -266,6 +266,16 @@ input[type=file]{font:inherit;max-width:100%}
  body{padding:0}
  .tbl input,.tbl select{border:0;background:transparent;padding:0}
 }
+dialog#impdlg{width:min(760px,94vw);border:2px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);padding:18px 20px;max-height:88vh;overflow:auto}
+dialog#impdlg::backdrop{background:rgba(10,20,40,.55)}
+.impsheet{border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0;display:grid;gap:4px}
+.impsheet.off{opacity:.65}
+.impsheet label{display:flex;gap:8px;align-items:center;font-size:15px}
+.impsheet input[type=checkbox]{width:18px;height:18px;flex:none}
+.rowlist{display:grid;gap:3px;max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin-top:6px;font-size:13.5px}
+.rowlist label{font-size:13.5px}
+.dupe{color:var(--warn)}
+#impdlg h3{font-size:16px;margin:12px 0 2px}
 </style>
 </head>
 <body>
@@ -281,7 +291,9 @@ input[type=file]{font:inherit;max-width:100%}
 
   <section class="card noprint" aria-label="Chart settings">
     <div class="tools">
-      <label>Project title<input type="text" id="title" maxlength="120" style="width:min(320px,80vw)"></label>
+      <label>Chart<select id="chartsel" style="max-width:min(300px,80vw)"></select></label>
+      <div class="row"><button class="btn ghost sm" id="chnew" type="button">New</button><button class="btn ghost sm" id="chdup" type="button">Duplicate</button><button class="btn ghost sm" id="chdel" type="button">Delete</button></div>
+      <label>Title<input type="text" id="title" maxlength="120" style="width:min(320px,80vw)"></label>
       <label>Months<input type="number" id="months" min="1" max="120"></label>
       <label>Zoom<input type="range" id="zoom" min="16" max="64" step="2" aria-label="Zoom"></label>
       <label class="fld" style="display:flex;gap:6px;align-items:center;font-size:12px"><input type="checkbox" id="showtask" style="width:18px;height:18px"> Task column</label>
@@ -304,6 +316,7 @@ input[type=file]{font:inherit;max-width:100%}
         </div></details>
       <details class="pop left"><summary class="btn ghost sm">Start from a template…</summary>
         <div class="popbody" id="tpls"></div></details>
+      <label class="btn sm" for="ximp" style="cursor:pointer">Import from Excel…</label><input type="file" id="ximp" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden>
       <button class="btn ghost sm" id="viewtoggle" type="button" aria-pressed="false">Table view</button>
       <details class="pop"><summary class="btn sm">Export…</summary>
         <div class="popbody" id="exportbody">
@@ -329,6 +342,7 @@ input[type=file]{font:inherit;max-width:100%}
     <div class="tblwrap"><table class="tbl" id="team"></table></div>
     <div class="row noprint"><button class="btn ghost sm" id="addperson" type="button">Add a person or group</button></div></section>
 
+  <dialog id="impdlg" aria-label="Import from Excel"></dialog>
   <div class="panel" id="panel" hidden aria-label="Selected activity"></div>
 
   <footer>
@@ -415,8 +429,8 @@ const TEMPLATES=[
 ];
 
 /* ---------- State ---------- */
-const KEY="gantt:v1";
-let P=null, sel=null, view="chart", undo=[], redo=[];
+const KEY="gantt:v1",KEY2="gantt:v2";
+let LIB=null,P=null,sel=null,view="chart",undo=[],redo=[];
 function blankProject(){return TEMPLATES[0][2]();}
 function sanitize(o){
   const s=(v,n=300)=>typeof v==="string"?v.slice(0,n):"";
@@ -426,12 +440,19 @@ function sanitize(o){
   const rows=(Array.isArray(o.rows)?o.rows:[]).slice(0,200).map(r=>({id:s(r.id,12)||uid(),wp:s(r.wp,160),task:s(r.task,200),strand:s(r.strand,100),
     bars:(Array.isArray(r.bars)?r.bars:[]).slice(0,200).map(b=>({id:s(b.id,12)||uid(),s:nn(b.s,1,1,240),l:nn(b.l,1,1,240),t:s(b.t,200),c:cid.has(b.c)?b.c:cats[0].id,after:typeof b.after==="string"?b.after:null,gap:nn(b.gap,0,-240,240)}))}));
   const ids=new Set(rows.flatMap(r=>r.bars.map(b=>b.id)));rows.forEach(r=>r.bars.forEach(b=>{if(b.after&&(!ids.has(b.after)||b.after===b.id))b.after=null;}));
-  return {title:s(o.title,120)||"Untitled project",showTask:o.showTask!==false,months:nn(o.months,24,1,120),block:[3,6,12].includes(+o.block)?+o.block:6,cw:nn(o.cw,34,16,64),
+  return {title:s(o.title,120)||"Untitled project",showTask:o.showTask!==false,src:s(o.src,200),hash:s(o.hash,20),months:nn(o.months,24,1,120),block:[3,6,12].includes(+o.block)?+o.block:6,cw:nn(o.cw,34,16,64),
     starts:(Array.isArray(o.starts)&&o.starts.length?o.starts:["2026-01"]).slice(0,5).map(x=>/^\d{4}-\d{2}$/.test(x)?x:"2026-01"),cats,rows,
     team:(Array.isArray(o.team)?o.team:[]).slice(0,100).map(p=>({id:s(p.id,12)||uid(),inst:s(p.inst,100),name:s(p.name,100),role:s(p.role,80),wps:(Array.isArray(p.wps)?p.wps:[]).filter(x=>typeof x==="string").slice(0,50)}))};
 }
-function load(){try{const v=localStorage.getItem(KEY);if(v)return sanitize(JSON.parse(v));}catch(e){}return TEMPLATES[3][2]();}
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(P));}catch(e){}}
+function loadLib(){
+  try{const v=localStorage.getItem(KEY2);if(v){const o=JSON.parse(v),charts=(o.charts||[]).slice(0,80).map(c=>({id:String(c.id||uid()).slice(0,12),p:sanitize(c.p||{})}));
+    if(charts.length)return {cur:charts.some(c=>c.id===o.cur)?o.cur:charts[0].id,charts};}}catch(e){}
+  try{const v=localStorage.getItem(KEY);if(v){const c={id:uid(),p:sanitize(JSON.parse(v))};return {cur:c.id,charts:[c]};}}catch(e){}
+  const c={id:uid(),p:sanitize(TEMPLATES[3][2]())};return {cur:c.id,charts:[c]};
+}
+function persist(){const e=LIB.charts.find(c=>c.id===LIB.cur);if(e)e.p=P;try{localStorage.setItem(KEY2,JSON.stringify(LIB));}catch(x){}}
+function addChart(p){const c={id:uid(),p:sanitize(p)};LIB.charts.push(c);return c;}
+function switchTo(id){const c=LIB.charts.find(x=>x.id===id);if(!c)return;P=c.p;LIB.cur=id;sel=null;undo=[];redo=[];persist();render();}
 function commit(fn){undo.push(JSON.stringify(P));if(undo.length>100)undo.shift();redo=[];fn();persist();render();}
 function doUndo(){if(!undo.length)return;redo.push(JSON.stringify(P));P=sanitize(JSON.parse(undo.pop()));persist();render();}
 function doRedo(){if(!redo.length)return;undo.push(JSON.stringify(P));P=sanitize(JSON.parse(redo.pop()));persist();render();}
@@ -466,7 +487,7 @@ function render(){
   const S=starts(),N=needMonths(S);if(N>P.months){P.months=N;}
   $("title").value=P.title;$("months").value=P.months;$("zoom").value=P.cw;$("block").value=P.block;
   $("showtask").checked=P.showTask;$("undo").disabled=!undo.length;$("redo").disabled=!redo.length;$("viewtoggle").setAttribute("aria-pressed",String(view==="table"));$("viewtoggle").textContent=view==="table"?"Chart view":"Table view";
-  renderStarts();renderLegend();renderShift();renderTemplates();
+  renderCharts();renderStarts();renderLegend();renderShift();renderTemplates();
   if(view==="table")renderTables(S);else renderChart(S,N);
   renderTeam();renderPanel(S);
 }
@@ -490,8 +511,7 @@ function renderShift(){
 function renderTemplates(){
   $("tpls").innerHTML=TEMPLATES.map((t,i)=>`<button class="btn ghost sm" type="button" data-t="${i}"><span><b>${esc(t[0])}</b><br><span class="note">${esc(t[1])}</span></span></button>`).join("");
   $("tpls").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{
-    if(allBars().length&&!confirm("Replace the current chart with this template? You can undo this."))return;
-    commit(()=>{P=sanitize(TEMPLATES[+b.dataset.t][2]());sel=null;});b.closest("details").open=false;});
+    const c=addChart(TEMPLATES[+b.dataset.t][2]());switchTo(c.id);b.closest("details").open=false;});
 }
 
 
@@ -508,10 +528,11 @@ function wrapLines(text,width,size,bold){
   return lines;
 }
 const BAR_PAD=5+12+4,BAR_LH=15;
+function maxWord(text,size){_cx.font=size+"px "+(getComputedStyle(document.body).fontFamily||"sans-serif");return Math.max(0,...String(text||"").split(/\s+/).map(w=>_cx.measureText(w).width));}
 /* Decide where a bar's text goes: wrapped inside, beside the bar in free space, or clamped */
 function planBar(b,S,sorted,i,N){
   const cw=P.cw,w=b.l*cw-2,inL=wrapLines(b.t,w-BAR_PAD,12.5,false);
-  if((inL<=3&&w-BAR_PAD>=28)||w>=150)return {mode:"in",h:Math.max(26,Math.min(inL,8)*BAR_LH+10)};
+  if((inL<=3&&w-BAR_PAD>=28&&maxWord(b.t,12.5)<=w-BAR_PAD)||w>=150)return {mode:"in",h:Math.max(26,Math.min(inL,8)*BAR_LH+10)};
   const s=S[b.id],e=s+b.l-1,nx=sorted[i+1],pv=sorted[i-1];
   const right=((nx?S[nx.id]-1:N)-e)*cw-8,rl=wrapLines(b.t,right,12.5,false);
   if(right>=90&&rl<=4)return {mode:"right",w:right,left:e*cw+6,h:Math.max(26,rl*BAR_LH+6)};
@@ -756,7 +777,7 @@ $("fit").onclick=()=>commit(()=>{const S=starts();let m=1;allBars().forEach(({b}
 $("undo").onclick=doUndo;$("redo").onclick=doRedo;
 $("viewtoggle").onclick=()=>{view=view==="table"?"chart":"table";render();};
 $("addperson").onclick=()=>commit(()=>P.team.push(person("","","",[])));
-$("newbtn").onclick=()=>{if(allBars().length&&!confirm("Start a new blank chart? You can undo this."))return;commit(()=>{P=blankProject();sel=null;});};
+$("newbtn").onclick=()=>{const c=addChart(blankProject());switchTo(c.id);};
 $("sh-go").onclick=()=>{
   const from=Math.max(1,parseInt($("sh-from").value,10)||1),by=parseInt($("sh-by").value,10)||0,scope=$("sh-scope").value;if(!by)return;
   const cur=sel&&allBars().find(x=>x.b.id===sel);
@@ -818,8 +839,254 @@ $("ex-print").onclick=()=>window.print();
 window.addEventListener("beforeprint",()=>{const g=$("g"),w=$("gwrap");if(g&&w){const full=g.scrollWidth,avail=1040;w.style.zoom=full>avail?String(avail/full):"";}});
 window.addEventListener("afterprint",()=>{const w=$("gwrap");if(w)w.style.zoom="";});
 $("ex-json").onclick=()=>{download(fname()+".gantt.json","application/json",JSON.stringify({app:"gantt-maker",version:1,project:P},null,2));exStatus("Saved.");};
-$("ex-load").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(!o||o.app!=="gantt-maker"||!o.project)throw 0;commit(()=>{P=sanitize(o.project);sel=null;});exStatus("Loaded.");}catch(x){exStatus("That file isn't a saved Gantt chart.");}e.target.value="";};
+$("ex-load").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(!o||o.app!=="gantt-maker"||!o.project)throw 0;{const c=addChart(o.project);switchTo(c.id);}exStatus("Loaded as a new chart.");}catch(x){exStatus("That file isn't a saved Gantt chart.");}e.target.value="";};
 
-P=load();render();
+
+
+
+/* ---------- Excel (.xlsx) reader ---------- */
+async function zipFiles(buf){
+  const v=new DataView(buf),u=new Uint8Array(buf),dec=new TextDecoder();let e=-1;
+  for(let i=u.length-22;i>=Math.max(0,u.length-65557);i--){if(v.getUint32(i,true)===0x06054b50){e=i;break;}}
+  if(e<0)throw new Error("That doesn't look like an Excel (.xlsx) file.");
+  const n=v.getUint16(e+10,true);let p=v.getUint32(e+16,true);const out={};
+  for(let i=0;i<n&&v.getUint32(p,true)===0x02014b50;i++){
+    const method=v.getUint16(p+10,true),cs=v.getUint32(p+20,true),nl=v.getUint16(p+28,true),xl=v.getUint16(p+30,true),cl=v.getUint16(p+32,true),lho=v.getUint32(p+42,true);
+    const name=dec.decode(u.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;
+    out[name]=async()=>{const st=lho+30+v.getUint16(lho+26,true)+v.getUint16(lho+28,true),d=u.subarray(st,st+cs);
+      return method===0?dec.decode(d):new Response(new Blob([d]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();};
+  }
+  return out;
+}
+const colNum=s=>{let n=0;for(const ch of s)n=n*26+ch.charCodeAt(0)-64;return n;};
+function hexToHsl(h){const n=parseInt(h.slice(1),16),r=(n>>16&255)/255,g=(n>>8&255)/255,b=(n&255)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;let hh=0,s=0;
+  if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);hh=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;hh/=6;}return [hh,s,l];}
+function hslToHex(h,s,l){const f=(p,q,t)=>{if(t<0)t+=1;if(t>1)t-=1;return t<1/6?p+(q-p)*6*t:t<1/2?q:t<2/3?p+(q-p)*(2/3-t)*6:p;};
+  let r,g,b;if(s===0)r=g=b=l;else{const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;r=f(p,q,h+1/3);g=f(p,q,h);b=f(p,q,h-1/3);}
+  return "#"+[r,g,b].map(x=>Math.round(x*255).toString(16).padStart(2,"0")).join("");}
+function tintHex(hex,t){if(!t)return hex;const [h,s,l]=hexToHsl(hex);return hslToHex(h,s,t<0?l*(1+t):l*(1-t)+t);}
+const INDEXED=["#000000","#ffffff","#ff0000","#00ff00","#0000ff","#ffff00","#ff00ff","#00ffff"];
+
+async function readXlsx(buf){
+  const z=await zipFiles(buf),txt=async n=>z[n]?await z[n]():"",dp=s=>new DOMParser().parseFromString(s,"application/xml");
+  const theme=[];
+  try{const t=dp(await txt("xl/theme/theme1.xml")),cs=t.getElementsByTagName("a:clrScheme")[0];
+    ["a:dk1","a:lt1","a:dk2","a:lt2","a:accent1","a:accent2","a:accent3","a:accent4","a:accent5","a:accent6"].forEach(n=>{
+      const el=cs&&cs.getElementsByTagName(n)[0],c=el&&(el.getElementsByTagName("a:srgbClr")[0]||el.getElementsByTagName("a:sysClr")[0]);
+      theme.push("#"+(c?(c.getAttribute("val")||c.getAttribute("lastClr")||"000000"):"000000"));});}catch(e){}
+  const TM=[1,0,3,2,4,5,6,7,8,9];
+  const colorOf=el=>{
+    let hex=null;
+    if(el.getAttribute("rgb"))hex="#"+el.getAttribute("rgb").slice(-6);
+    else if(el.getAttribute("theme")!=null)hex=theme[TM[+el.getAttribute("theme")]]||null;
+    else if(el.getAttribute("indexed")!=null)hex=INDEXED[+el.getAttribute("indexed")]||null;
+    if(!hex)return null;hex=tintHex(hex,parseFloat(el.getAttribute("tint"))||0);
+    const [,,l]=hexToHsl(hex);return l>=0.975?null:hex;};
+  const st=dp(await txt("xl/styles.xml")),fills=[...(st.getElementsByTagName("fills")[0]||{getElementsByTagName:()=>[]}).getElementsByTagName("fill")].map(f=>{
+    const pf=f.getElementsByTagName("patternFill")[0];if(!pf||pf.getAttribute("patternType")!=="solid")return null;const fg=pf.getElementsByTagName("fgColor")[0];return fg?colorOf(fg):null;});
+  const customFmt={};[...st.getElementsByTagName("numFmt")].forEach(n=>customFmt[n.getAttribute("numFmtId")]=n.getAttribute("formatCode")||"");
+  const isDateFmt=id=>(id>=14&&id<=22)||(id>=45&&id<=47)||(customFmt[id]&&/[ymd]/i.test(customFmt[id].replace(/"[^"]*"/g,"").replace(/\[[^\]]*\]/g,""))&&!/[hs]/i.test(customFmt[id].replace(/"[^"]*"/g,"")));
+  const xfs=[...((st.getElementsByTagName("cellXfs")[0]||{getElementsByTagName:()=>[]}).getElementsByTagName("xf"))].map(x=>({fill:fills[+x.getAttribute("fillId")||0]||null,date:isDateFmt(+x.getAttribute("numFmtId")||0)}));
+  const sst=[...dp(await txt("xl/sharedStrings.xml")).getElementsByTagName("si")].map(si=>[...si.getElementsByTagName("t")].filter(t=>!(t.parentNode&&t.parentNode.nodeName==="rPh")).map(t=>t.textContent).join(""));
+  const wb=dp(await txt("xl/workbook.xml")),rels=dp(await txt("xl/_rels/workbook.xml.rels")),relMap={};
+  [...rels.getElementsByTagName("Relationship")].forEach(r=>relMap[r.getAttribute("Id")]=r.getAttribute("Target"));
+  const sheets=[];
+  for(const s of [...wb.getElementsByTagName("sheet")]){
+    const rid=s.getAttribute("r:id"),tg=relMap[rid];if(!tg)continue;
+    const path=tg.startsWith("/")?tg.slice(1):"xl/"+tg.replace(/^\.\//,"");if(!z[path])continue;
+    const doc=dp(await txt(path)),cells=new Map();let maxR=0,maxC=0;
+    [...doc.getElementsByTagName("c")].forEach(c=>{
+      const m=/^([A-Z]+)(\d+)$/.exec(c.getAttribute("r")||"");if(!m)return;const col=colNum(m[1]),row=+m[2],t=c.getAttribute("t"),xf=xfs[+c.getAttribute("s")||0]||{},vEl=c.getElementsByTagName("v")[0];
+      let v=null;
+      if(t==="s"&&vEl)v=sst[+vEl.textContent]??null;
+      else if(t==="inlineStr")v=[...c.getElementsByTagName("t")].map(x=>x.textContent).join("");
+      else if(t==="str"&&vEl)v=vEl.textContent;
+      else if((t==null||t==="n")&&vEl&&vEl.textContent!==""){v=parseFloat(vEl.textContent);if(!isFinite(v))v=null;}
+      if(v==null&&!xf.fill)return;
+      cells.set(row+","+col,{v,fill:xf.fill||null,date:!!xf.date&&typeof v==="number"});
+      if(v!=null||xf.fill){maxR=Math.max(maxR,row);maxC=Math.max(maxC,col);}});
+    const merges=[...doc.getElementsByTagName("mergeCell")].map(m=>{const [a,b]=(m.getAttribute("ref")||"").split(":"),pa=/^([A-Z]+)(\d+)$/.exec(a||""),pb=/^([A-Z]+)(\d+)$/.exec(b||a||"");
+      return pa&&pb?{r1:+pa[2],c1:colNum(pa[1]),r2:+pb[2],c2:colNum(pb[1])}:null;}).filter(Boolean);
+    sheets.push({name:s.getAttribute("name"),cells,merges,maxR,maxC});
+  }
+  return sheets;
+}
+
+/* ---------- Find a Gantt chart in a sheet ---------- */
+const MON_I={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+function detectChart(sh){
+  const get=(r,c)=>sh.cells.get(r+","+c);
+  const mergeOf={},covered=new Set(),mergeTL={};
+  sh.merges.forEach(m=>{mergeTL[m.r1+","+m.c1]=m;for(let r=m.r1;r<=Math.min(m.r2,m.r1+60);r++)for(let c=m.c1;c<=Math.min(m.c2,m.c1+200);c++){mergeOf[r+","+c]=m;if(r!==m.r1||c!==m.c1)covered.add(r+","+c);}});
+  const val=(r,c)=>{const m=mergeOf[r+","+c],x=m?get(m.r1,m.c1):get(r,c);return x&&x.v!=null?x.v:null;};
+  const labVal=(r,c)=>{const m=mergeOf[r+","+c];return m&&m.c1!==c?null:val(r,c);};
+  const spanC=(r,c)=>{const m=mergeTL[r+","+c];return m?m.c2-c+1:1;};
+  // 1. the row of project month numbers 1, 2, 3 ...
+  let best=null;
+  for(let r=1;r<=Math.min(sh.maxR,25);r++){
+    const ent=[];
+    for(let c=1;c<=sh.maxC;c++){const x=get(r,c);if(!x||x.date)continue;const n=typeof x.v==="number"?x.v:(typeof x.v==="string"&&/^\d{1,3}$/.test(x.v.trim())?+x.v:null);
+      if(n!=null&&Number.isInteger(n)&&n>=1&&n<=240&&!covered.has(r+","+c))ent.push({c,n,span:spanC(r,c)});}
+    let run=[],top=[];
+    ent.forEach(e=>{const pv=run[run.length-1];if(pv&&e.n>pv.n&&e.n-pv.n<=6)run.push(e);else run=[e];if(run.length>top.length)top=run.slice();});
+    if(top.length>=6&&top[0].n===1&&(!best||top.length>best.run.length))best={r,run:top};
+  }
+  let numRow,monthOfCol={},firstCol,lastCol,N;
+  if(best){
+    numRow=best.r;const run=best.run;
+    run.forEach(e=>{for(let k=0;k<e.span;k++)monthOfCol[e.c+k]=e.n;});
+    firstCol=run[0].c;lastCol=run[run.length-1].c+run[run.length-1].span-1;N=run[run.length-1].n;
+  }else{
+    let bestR=null;
+    for(let r=1;r<=Math.min(sh.maxR,25);r++){
+      const ent=[];
+      for(let c=1;c<=sh.maxC;c++){const v=val(r,c);if(typeof v!=="string"||covered.has(r+","+c))continue;const m=/(\d{1,3})\s*[-–]\s*(\d{1,3})/.exec(v);
+        if(m&&+m[1]<+m[2]&&+m[2]<=240)ent.push({c,a:+m[1],b:+m[2],span:spanC(r,c)});}
+      let run=[],top=[];
+      ent.forEach(e=>{if(run.length&&e.a===run[run.length-1].b+1&&e.span===e.b-e.a+1)run.push(e);else run=(e.span===e.b-e.a+1)?[e]:[];if(run.length>top.length)top=run.slice();});
+      if(top.length>=3&&top[0].a===1&&(!bestR||top.length>bestR.run.length))bestR={r,run:top};
+    }
+    if(!bestR)return null;
+    numRow=bestR.r;
+    bestR.run.forEach(e=>{for(let k=0;k<e.span;k++)monthOfCol[e.c+k]=e.a+k;});
+    firstCol=bestR.run[0].c;lastCol=bestR.run[bestR.run.length-1].c+bestR.run[bestR.run.length-1].span-1;N=bestR.run[bestR.run.length-1].b;
+  }
+  const monthAt=c=>{if(monthOfCol[c])return monthOfCol[c];for(let k=c;k>=firstCol;k--)if(monthOfCol[k])return monthOfCol[k];return 1;};
+  // 2. calendar start dates from the rows above the number row
+  const ymOf=(t,hint)=>{const m=/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?/i.exec(t);if(!m)return null;
+    let y=null;const y4=/\b(20\d\d)\b/.exec(t);if(y4)y=+y4[1];else{const y2=/\b(\d{2})\b/.exec(t.replace(m[0],""));if(y2&&+y2[1]>=10&&+y2[1]<=60)y=2000+ +y2[1];}
+    const own=y!=null;if(y==null)y=hint;if(y==null)return null;return {ym:y+"-"+String(MON_I[m[1].toLowerCase()]+1).padStart(2,"0"),combo:!own};};
+  const cands=[];
+  for(let r=numRow;r>=Math.max(1,numRow-8);r--){
+    let x=get(r,firstCol);const v=val(r,firstCol);if(v==null)continue;
+    let ym=null;
+    if(x&&x.date){const d=new Date(Math.round((x.v-25569)*864e5));ym={ym:d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0"),combo:false};}
+    else if(typeof v==="string"){let hint=null;for(let k=r-1;k>=Math.max(1,r-3);k--){const hv=val(k,firstCol);if(hv!=null&&/^\s*(20\d\d)\s*$/.test(String(hv))){hint=+String(hv);break;}}
+      ym=ymOf(v,hint);}
+    if(ym)cands.push({r,...ym});
+  }
+  const combo=cands.filter(c=>c.combo).sort((a,b)=>b.r-a.r),others=cands.filter(c=>!c.combo).sort((a,b)=>a.r-b.r);
+  const starts=[...new Set(combo.slice(0,1).concat(others,combo.slice(1)).map(c=>c.ym))].slice(0,5);
+  const guessedStart=!starts.length;if(guessedStart)starts.push("2026-01");
+  // 3. label columns: the first three columns left of the months that hold text
+  const counts={};
+  for(let c=1;c<firstCol;c++){let n=0;for(let r=numRow+1;r<=sh.maxR;r++){const v=labVal(r,c);if(typeof v==="string"&&v.trim())n++;}if(n)counts[c]=n;}
+  const labCols=Object.keys(counts).map(Number).sort((a,b)=>a-b).slice(0,3);
+  const clean=v=>v==null?"":String(typeof v==="number"?v:v).replace(/\s+/g," ").trim();
+  // 4. rows and bars
+  const rows=[];let lastWp="",lastTask="";
+  for(let r=numRow+1;r<=sh.maxR;r++){
+    const L=labCols.map(c=>clean(labVal(r,c))),bars=[],used=new Set(),xs=[];
+    for(let c=firstCol;c<=lastCol;c++){
+      const key=r+","+c;if(covered.has(key))continue;const x=get(r,c),m=mergeTL[key],c2=Math.min(m?m.c2:c,lastCol);
+      const text=x&&x.v!=null?clean(x.v):"";if(!text)continue;
+      const s=monthAt(c),e=monthAt(c2);for(let k=c;k<=c2;k++)used.add(k);
+      if(/^x$/i.test(text)){for(let q=s;q<=e;q++)xs.push(q);continue;}
+      bars.push({s,l:Math.max(1,e-s+1),t:text,fill:x.fill||null});
+    }
+    // coloured cells with no text, in runs of the same colour
+    let runStart=null,runFill=null;
+    const flush=c=>{if(runStart!=null){const s=monthAt(runStart),e=monthAt(c-1);if(e-s+1<N*0.8)bars.push({s,l:e-s+1,t:"",fill:runFill});runStart=null;}};
+    for(let c=firstCol;c<=lastCol+1;c++){
+      const mm=c<=lastCol?mergeOf[r+","+c]:null;if(mm&&mm.r1!==r){flush(c);continue;}
+      const x=c<=lastCol&&!used.has(c)?get(r,c):null,m=mergeOf[r+","+c],fx=x?x.fill:(m&&!used.has(c)?(get(m.r1,m.c1)||{}).fill:null);
+      if(fx&&(!x||x.v==null)){if(runStart==null){runStart=c;runFill=fx;}else if(runFill!==fx){flush(c);runStart=c;runFill=fx;}}else flush(c);
+    }
+    if(xs.length){const ms=[...new Set(xs)].sort((a,b)=>a-b);let a=ms[0],p=a;const lab=L[L.length-1]||L[0]||"Activity";
+      const push=(a,b)=>bars.push({s:a,l:b-a+1,t:lab,fill:null});for(let i=1;i<=ms.length;i++){if(ms[i]===p+1){p=ms[i];continue;}push(a,p);a=ms[i];p=ms[i];}}
+    let wp="",task="",strand="";
+    const k=labCols.length;
+    if(k>=3){wp=L[0];task=L[1];strand=L[2];}else if(k===2){wp=L[0];strand=L[1];}else if(k===1){strand=L[0];}
+    if(!bars.length&&!L.some(Boolean))continue;
+    if(k>=2){if(wp){if(wp!==lastWp)lastTask="";lastWp=wp;}else wp=lastWp;}
+    if(k>=3){if(task)lastTask=task;else task=lastTask;}
+    rows.push({r,wp,task,strand,bars});
+  }
+  const nb=rows.reduce((n,x)=>n+x.bars.length,0);if(nb<3)return null;
+  // 5. colours become activity types
+  const stats=new Map();
+  rows.forEach(x=>x.bars.forEach(b=>{const k=b.fill||"none";if(!stats.has(k))stats.set(k,{n:0,texts:{}});const s=stats.get(k);s.n++;const tk=b.t.toLowerCase();if(tk){s.texts[tk]=(s.texts[tk]||0)+1;s.orig=s.orig||{};s.orig[tk]=s.orig[tk]||b.t;}}));
+  const order=[...stats.entries()].sort((a,b)=>b[1].n-a[1].n),cats=[];
+  order.slice(0,8).forEach(([k,s],i)=>{const top=Object.entries(s.texts).sort((a,b)=>b[1]-a[1])[0];
+    let name=k==="none"?"Activity":(top&&top[1]>=2?s.orig[top[0]]:"Type "+(i+1));
+    if(name.length>40)name=name.slice(0,38)+"…";if(cats.some(c=>c.name===name))name+=" "+(i+1);cats.push({key:k,name,slot:i+1,id:"i"+i});});
+  const catFor=f=>(cats.find(c=>c.key===(f||"none"))||cats[cats.length-1]).id;
+  return {name:sh.name,N,starts,guessedStart,labCols:labCols.length,rows,cats,catFor,bars:nb};
+}
+function chartToProject(ch,keepRows,src){
+  const rows=ch.rows.filter(r=>keepRows.has(r.r)).map(r=>({id:uid(),wp:r.wp,task:r.task,strand:r.strand,bars:r.bars.map(b=>({id:uid(),s:b.s,l:b.l,t:b.t,c:ch.catFor(b.fill),after:null,gap:0}))}));
+  const N=Math.min(120,Math.max(1,ch.N));
+  const p={title:ch.name,showTask:ch.labCols>=3,months:N,block:N<=18?3:N<=48?6:12,cw:N<=24?40:N<=36?32:N<=48?26:20,starts:ch.starts,
+    cats:ch.cats.map(c=>({id:c.id,name:c.name,slot:c.slot})),rows,team:[],src:src||""};
+  p.hash=hashOf(p);return p;
+}
+function hashOf(p){let h=5381;const s=JSON.stringify(p.rows.map(r=>[r.wp,r.task,r.strand,r.bars.map(b=>[b.s,b.l,b.t])]));for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return String(h>>>0);}
+
+/* ---------- Chart library ---------- */
+function renderCharts(){
+  $("chartsel").innerHTML=LIB.charts.map(c=>`<option value="${esc(c.id)}" ${c.id===LIB.cur?"selected":""}>${esc(c.p.title)}</option>`).join("");
+}
+$("chartsel").onchange=e=>switchTo(e.target.value);
+$("chnew").onclick=()=>{const c=addChart(blankProject());switchTo(c.id);};
+$("chdup").onclick=()=>{const c=addChart(JSON.parse(JSON.stringify(P)));c.p.title=(P.title+" (copy)").slice(0,120);switchTo(c.id);};
+$("chdel").onclick=()=>{
+  if(!confirm("Delete “"+P.title+"”? This can't be undone."))return;
+  const i=LIB.charts.findIndex(c=>c.id===LIB.cur);LIB.charts.splice(i,1);
+  if(!LIB.charts.length)LIB.charts.push({id:uid(),p:sanitize(blankProject())});
+  switchTo(LIB.charts[Math.max(0,i-1)].id);
+};
+
+/* ---------- Import from Excel ---------- */
+let IMP=[];
+const fmtYM=ym=>{const [y,m]=ym.split("-").map(Number);return MN[m-1]+" "+y;};
+$("ximp").onchange=async e=>{
+  const files=[...e.target.files];e.target.value="";if(!files.length)return;
+  exStatus("Reading "+files.length+" file"+(files.length===1?"":"s")+"…");IMP=[];
+  const seen=new Set(LIB.charts.map(c=>c.p.hash).filter(Boolean));
+  for(const f of files){
+    try{
+      const sheets=await readXlsx(await f.arrayBuffer()),ent={file:f.name,sheets:[]};
+      sheets.forEach(sh=>{
+        let ch=null;try{ch=detectChart(sh);}catch(err){}
+        const o={name:sh.name,chart:ch,dupe:false,checked:false};
+        if(ch){o.rows=new Set(ch.rows.map(r=>r.r));o.hash=chartToProject(ch,o.rows,"").hash;o.dupe=seen.has(o.hash);if(!o.dupe){o.checked=true;seen.add(o.hash);}}
+        ent.sheets.push(o);});
+      IMP.push(ent);
+    }catch(err){IMP.push({file:f.name,error:err.message||"Could not read this file."});}
+  }
+  exStatus("");openImport();
+};
+function openImport(){
+  const d=$("impdlg");
+  const body=IMP.map((ent,fi)=>ent.error?`<h3>${esc(ent.file)}</h3><p class="warnbox">${esc(ent.error)}</p>`:
+    `<h3>${esc(ent.file)}</h3>`+ent.sheets.map((o,si)=>{
+      if(!o.chart)return `<div class="impsheet off"><b>${esc(o.name)}</b> <span class="note">no Gantt chart found (no row of project month numbers)</span></div>`;
+      const ch=o.chart;
+      return `<div class="impsheet"><label><input type="checkbox" data-f="${fi}" data-s="${si}" ${o.checked?"checked":""}> <b>${esc(o.name)}</b></label>
+        <span class="note">${ch.N} months · ${ch.rows.length} rows · ${ch.bars} bars · starts ${ch.guessedStart?"not found (set it after importing)":ch.starts.map(fmtYM).join(", ")}${o.dupe?' · <em class="dupe">same as a chart you already have</em>':""}</span>
+        <details><summary>Choose rows (<span data-cnt="${fi}-${si}">${o.rows.size}</span> of ${ch.rows.length})</summary>
+          <div class="row"><button type="button" class="btn ghost sm" data-all="${fi}-${si}">All</button><button type="button" class="btn ghost sm" data-none="${fi}-${si}">None</button></div>
+          <div class="rowlist">${ch.rows.map(r=>`<label><input type="checkbox" data-rf="${fi}-${si}" data-r="${r.r}" ${o.rows.has(r.r)?"checked":""}> <span>row ${r.r}: ${esc([wpShort(r.wp),r.task,r.strand].filter(Boolean).join(" · ")||"(no label)")} <i class="note">${r.bars.length} bar${r.bars.length===1?"":"s"}</i></span></label>`).join("")}</div>
+        </details></div>`;}).join(""));
+  d.innerHTML=`<h2>Import from Excel</h2>
+    <p class="note">We look for Gantt charts: a row of project month numbers (1, 2, 3 …) or ranges such as “1 – 4”, with activities as merged or coloured cells. Layouts vary, so check each result after importing. Charts that match one you already have are left unticked.</p>
+    <div id="impbody">${body}</div>
+    <div class="row" style="margin-top:12px"><button class="btn" id="impgo" type="button">Import selected</button><button class="btn ghost" id="impno" type="button">Cancel</button><span class="note" id="impcount"></span></div>`;
+  const count=()=>{const n=IMP.flatMap(e=>e.sheets||[]).filter(o=>o.checked).length;$("impcount").textContent=n+" chart"+(n===1?"":"s")+" selected";$("impgo").disabled=!n;};
+  d.querySelectorAll("[data-f]").forEach(i=>i.onchange=()=>{IMP[+i.dataset.f].sheets[+i.dataset.s].checked=i.checked;count();});
+  d.querySelectorAll("[data-rf]").forEach(i=>i.onchange=()=>{const [fi,si]=i.dataset.rf.split("-").map(Number),o=IMP[fi].sheets[si];i.checked?o.rows.add(+i.dataset.r):o.rows.delete(+i.dataset.r);d.querySelector(`[data-cnt="${fi}-${si}"]`).textContent=o.rows.size;});
+  d.querySelectorAll("[data-all]").forEach(b=>b.onclick=()=>{const [fi,si]=b.dataset.all.split("-").map(Number),o=IMP[fi].sheets[si];o.rows=new Set(o.chart.rows.map(r=>r.r));d.querySelectorAll(`[data-rf="${fi}-${si}"]`).forEach(x=>x.checked=true);d.querySelector(`[data-cnt="${fi}-${si}"]`).textContent=o.rows.size;});
+  d.querySelectorAll("[data-none]").forEach(b=>b.onclick=()=>{const [fi,si]=b.dataset.none.split("-").map(Number),o=IMP[fi].sheets[si];o.rows=new Set();d.querySelectorAll(`[data-rf="${fi}-${si}"]`).forEach(x=>x.checked=false);d.querySelector(`[data-cnt="${fi}-${si}"]`).textContent=0;});
+  $("impno").onclick=()=>d.close();
+  $("impgo").onclick=()=>{
+    let n=0,first=null;
+    IMP.forEach(ent=>(ent.sheets||[]).forEach(o=>{if(!o.checked||!o.rows.size)return;
+      const c=addChart(chartToProject(o.chart,o.rows,ent.file+" · "+o.name));if(!first)first=c.id;n++;}));
+    d.close();if(first){switchTo(first);exStatus("Imported "+n+" chart"+(n===1?"":"s")+". Use the Chart menu at the top to switch between them.");}
+  };
+  count();d.showModal();
+}
+
+LIB=loadLib();P=LIB.charts.find(c=>c.id===LIB.cur).p;render();
 </script>
 </body></html>
