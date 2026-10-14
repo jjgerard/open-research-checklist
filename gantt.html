@@ -228,8 +228,8 @@ input[type=file]{font:inherit;max-width:100%}
 .dragghost{position:absolute;top:4px;height:24px;border:2px dashed var(--accent);border-radius:4px;background:var(--accent-soft);opacity:.8;pointer-events:none}
 .bar{position:absolute;min-height:26px;border-radius:4px;border-left:5px solid var(--c);background:color-mix(in srgb,var(--c) 26%,var(--surface));color:var(--ink);padding:5px 6px;font-size:12.5px;line-height:15px;overflow:hidden;white-space:normal;overflow-wrap:anywhere;cursor:grab;touch-action:none;user-select:none;box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent) inset}
 .bar::after{content:"";position:absolute;right:0;top:0;bottom:0;width:7px;cursor:ew-resize}
-.bar.clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
-.barlbl{position:absolute;font-size:12.5px;line-height:15px;padding:5px 0;color:var(--ink);pointer-events:none;overflow-wrap:anywhere}
+.barlbl{position:absolute;width:max-content;font-size:12.5px;line-height:15px;padding:5px 8px;color:var(--ink);background:color-mix(in srgb,var(--c) 26%,var(--surface));box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent) inset;pointer-events:none;overflow-wrap:break-word;box-sizing:border-box}
+.bar.solid{background:color-mix(in srgb,var(--c) 62%,var(--surface))}
 .bar.lk::before{content:"⛓ ";font-size:11px}
 .bar:focus-visible,.bar.sel{outline:3px solid var(--accent);outline-offset:1px;z-index:5}
 .bar.dep{box-shadow:0 0 0 2px var(--accent) inset}
@@ -444,10 +444,15 @@ function sanitize(o){
     starts:(Array.isArray(o.starts)&&o.starts.length?o.starts:["2026-01"]).slice(0,5).map(x=>/^\d{4}-\d{2}$/.test(x)?x:"2026-01"),cats,rows,
     team:(Array.isArray(o.team)?o.team:[]).slice(0,100).map(p=>({id:s(p.id,12)||uid(),inst:s(p.inst,100),name:s(p.name,100),role:s(p.role,80),wps:(Array.isArray(p.wps)?p.wps:[]).filter(x=>typeof x==="string").slice(0,50)}))};
 }
+function refreshOldDefault(lib){
+  let old=null;try{old=hashOf(sanitize(TEMPLATES[4][2]()));}catch(e){}
+  lib.charts.forEach(c=>{if(old&&c.p.title==="Language comprehension project (example)"&&hashOf(c.p)===old)c.p=sanitize(TEMPLATES[3][2]());});
+  return lib;
+}
 function loadLib(){
   try{const v=localStorage.getItem(KEY2);if(v){const o=JSON.parse(v),charts=(o.charts||[]).slice(0,80).map(c=>({id:String(c.id||uid()).slice(0,12),p:sanitize(c.p||{})}));
-    if(charts.length)return {cur:charts.some(c=>c.id===o.cur)?o.cur:charts[0].id,charts};}}catch(e){}
-  try{const v=localStorage.getItem(KEY);if(v){const c={id:uid(),p:sanitize(JSON.parse(v))};return {cur:c.id,charts:[c]};}}catch(e){}
+    if(charts.length)return refreshOldDefault({cur:charts.some(c=>c.id===o.cur)?o.cur:charts[0].id,charts});}}catch(e){}
+  try{const v=localStorage.getItem(KEY);if(v){const c={id:uid(),p:sanitize(JSON.parse(v))};return refreshOldDefault({cur:c.id,charts:[c]});}}catch(e){}
   const c={id:uid(),p:sanitize(TEMPLATES[3][2]())};return {cur:c.id,charts:[c]};
 }
 function persist(){const e=LIB.charts.find(c=>c.id===LIB.cur);if(e)e.p=P;try{localStorage.setItem(KEY2,JSON.stringify(LIB));}catch(x){}}
@@ -530,24 +535,32 @@ function wrapLines(text,width,size,bold){
 const BAR_PAD=5+12+4,BAR_LH=15;
 function maxWord(text,size){_cx.font=size+"px "+(getComputedStyle(document.body).fontFamily||"sans-serif");return Math.max(0,...String(text||"").split(/\s+/).map(w=>_cx.measureText(w).width));}
 /* Decide where a bar's text goes: wrapped inside, beside the bar in free space, or clamped */
-function planBar(b,S,sorted,i,N){
-  const cw=P.cw,w=b.l*cw-2,inL=wrapLines(b.t,w-BAR_PAD,12.5,false);
-  if((inL<=3&&w-BAR_PAD>=28&&maxWord(b.t,12.5)<=w-BAR_PAD)||w>=150)return {mode:"in",h:Math.max(26,Math.min(inL,8)*BAR_LH+10)};
-  const s=S[b.id],e=s+b.l-1,nx=sorted[i+1],pv=sorted[i-1];
-  const right=((nx?S[nx.id]-1:N)-e)*cw-8,rl=wrapLines(b.t,right,12.5,false);
-  if(right>=90&&rl<=4)return {mode:"right",w:right,left:e*cw+6,h:Math.max(26,rl*BAR_LH+6)};
-  const left=(s-1-(pv?S[pv.id]+pv.l-1:0))*cw-8,ll=wrapLines(b.t,left,12.5,false);
-  if(left>=90&&ll<=4)return {mode:"left",w:left,left:(s-1)*cw-6-left,h:Math.max(26,ll*BAR_LH+6)};
-  return {mode:"clamp",h:4*BAR_LH+10};
+function textW(text,size){_cx.font=size+"px "+(getComputedStyle(document.body).fontFamily||"sans-serif");return _cx.measureText(String(text||"")).width;}
+/* Where does a bar's text go? Inside if it fits; otherwise in a coloured label box beside the bar.
+   The bar's footprint includes that box, and lanes are assigned so footprints never overlap. */
+function fitBar(b,S,N){
+  const cw=P.cw,w=b.l*cw-2,s=S[b.id],x0=(s-1)*cw,barEnd=x0+w+2,rowW=N*cw,pad=w<44?9:BAR_PAD,inner=w-pad;
+  const inL=wrapLines(b.t,inner,12.5,false);
+  if((inL<=3&&inner>=14&&maxWord(b.t,12.5)<=inner)||w>=150)return {mode:"in",tiny:w<44,h:Math.max(26,Math.min(inL,8)*BAR_LH+10),fs:x0,fe:barEnd};
+  const LP=18,cap=Math.min(240,rowW);
+  let lw=Math.min(textW(b.t,12.5)+LP+6,cap);
+  if(barEnd+lw+4<=rowW)return {mode:"right",lw,h:Math.max(26,wrapLines(b.t,lw-LP-6,12.5,false)*BAR_LH+10),fs:x0,fe:barEnd+lw+4};
+  if(x0-lw-4>=0)return {mode:"left",lw,h:Math.max(26,wrapLines(b.t,lw-LP-6,12.5,false)*BAR_LH+10),fs:x0-lw-4,fe:barEnd};
+  const rr=rowW-barEnd-4,ll=x0-4,mode=rr>=ll?"right":"left";lw=Math.max(48,Math.max(rr,ll));
+  return {mode,lw,h:Math.max(26,wrapLines(b.t,lw-LP-6,12.5,false)*BAR_LH+10),fs:mode==="left"?x0-lw-4:x0,fe:mode==="left"?barEnd:barEnd+lw+4};
+}
+function lanesPx(r,S,N){
+  const plan={};r.bars.forEach(b=>plan[b.id]=fitBar(b,S,N));
+  const bs=r.bars.slice().sort((a,b)=>plan[a.id].fs-plan[b.id].fs||plan[b.id].fe-plan[a.id].fe),ends=[],lane={};
+  bs.forEach(b=>{const p=plan[b.id];let i=ends.findIndex(e=>e<=p.fs);if(i<0){i=ends.length;ends.push(0);}ends[i]=p.fe+2;lane[b.id]=i;});
+  return {lane,n:Math.max(1,ends.length),plan};
 }
 const cssPx=n=>parseFloat(getComputedStyle(document.documentElement).getPropertyValue(n))||0;
 function layoutRows(S,lanes,N){
   const w1=cssPx("--w1"),w2=P.showTask?cssPx("--w2"):0,w3=cssPx("--w3");
   const out=P.rows.map((r,ri)=>{
-    const L=lanes[ri],laneH=Array(L.n).fill(26),bh={};
-    const laneBars=Array.from({length:L.n},()=>[]);
-    r.bars.slice().sort((a,b)=>S[a.id]-S[b.id]).forEach(b=>laneBars[L.lane[b.id]].push(b));
-    laneBars.forEach(arr=>arr.forEach((b,i)=>{const pl=planBar(b,S,arr,i,N);bh[b.id]=pl;laneH[L.lane[b.id]]=Math.max(laneH[L.lane[b.id]],pl.h);}));
+    const L=lanes[ri],laneH=Array(L.n).fill(26),bh=L.plan;
+    r.bars.forEach(b=>{laneH[L.lane[b.id]]=Math.max(laneH[L.lane[b.id]],bh[b.id].h);});
     const tops=[];let y=4;laneH.forEach(h=>{tops.push(y);y+=h+4;});
     const need=Math.max(36,y+2,wrapLines(r.strand,w3-16-2,13.5,false)*17+12);
     return {h:need,tops,bh};});
@@ -563,7 +576,7 @@ function layoutRows(S,lanes,N){
 
 function renderChart(S,N){
   const hdr=P.starts.length+1,blk=P.block,nameRows=P.rows;
-  const lanes=P.rows.map(r=>lanesFor(r,S));
+  const lanes=P.rows.map(r=>lanesPx(r,S,N));
   const lay=layoutRows(S,lanes,N),heights=lay.map(x=>x.h);
   let h=`<div class="gwrap" id="gwrap"><div class="g ${P.showTask?"":"nt"} ${P.cw<24?"tight":""}" id="g" style="--n:${N};--cw:${P.cw}px;--blk:${blk};grid-template-rows:repeat(${hdr},var(--hh)) ${heights.map(x=>x+"px").join(" ")}">`;
   // header
@@ -583,9 +596,12 @@ function renderChart(S,N){
     const gr=hdr+1+ri;
     h+=`<div class="lab l3" style="grid-row:${gr};grid-column:3"><span contenteditable="true" spellcheck="true" role="textbox" aria-label="Row label" data-g="strand" data-a="${ri}" style="flex:1;min-width:0;outline:none">${esc(r.strand)}</span><span class="ctl" role="group" aria-label="Row controls"><button type="button" data-rc="bar" data-i="${ri}" title="Add an activity to this row" aria-label="Add an activity to this row">＋</button><button type="button" data-rc="up" data-i="${ri}" title="Move row up" aria-label="Move row up">↑</button><button type="button" data-rc="down" data-i="${ri}" title="Move row down" aria-label="Move row down">↓</button><button type="button" data-rc="dup" data-i="${ri}" title="Add a row below" aria-label="Add a row below">⤓</button><button type="button" data-rc="del" data-i="${ri}" title="Delete row" aria-label="Delete row">✕</button></span></div>`;
     h+=`<div class="rowbg" data-row="${ri}" style="grid-row:${gr}">`;
-    r.bars.forEach(b=>{const s=S[b.id],c=catOf(b.c),top=lay[ri].tops[lanes[ri].lane[b.id]],pl=lay[ri].bh[b.id],inside=pl.mode==="in"||pl.mode==="clamp";
-      h+=`<div class="bar ${b.after?"lk":""} ${pl.mode==="clamp"?"clamp":""} ${sel===b.id?"sel":""}" tabindex="0" role="button" data-bar="${b.id}" style="--c:var(--s${c.slot});left:${(s-1)*P.cw}px;width:${b.l*P.cw-2}px;top:${top}px;height:${inside?pl.h:26}px" title="${esc(b.t)} · ${esc(c.name)} · months ${s}-${s+b.l-1}" aria-label="${esc(b.t)}, ${esc(c.name)}, months ${s} to ${s+b.l-1}">${inside?esc(b.t):""}</div>`;
-      if(!inside)h+=`<span class="barlbl" aria-hidden="true" style="left:${pl.left}px;top:${top}px;width:${pl.w}px;text-align:${pl.mode==="left"?"right":"left"}">${esc(b.t)}</span>`;});
+    r.bars.forEach(b=>{const s=S[b.id],c=catOf(b.c),top=lay[ri].tops[lanes[ri].lane[b.id]],pl=lay[ri].bh[b.id],inside=pl.mode==="in",x0=(s-1)*P.cw,bw=b.l*P.cw-2;
+      h+=`<div class="bar ${b.after?"lk":""} ${inside?"":"solid"} ${sel===b.id?"sel":""}" tabindex="0" role="button" data-bar="${b.id}" style="--c:var(--s${c.slot});left:${x0}px;width:${bw}px;top:${top}px;height:${inside?pl.h:26}px${pl.tiny?";padding:5px 2px;text-align:center":""}" title="${esc(b.t)} · ${esc(c.name)} · months ${s}-${s+b.l-1}" aria-label="${esc(b.t)}, ${esc(c.name)}, months ${s} to ${s+b.l-1}">${inside?esc(b.t):""}</div>`;
+      if(!inside){
+        const pos=pl.mode==="right"?`left:${x0+bw+2}px;top:${top}px;max-width:${pl.lw}px;border-radius:0 4px 4px 0`
+          :`right:${N*P.cw-x0}px;top:${top}px;max-width:${pl.lw}px;border-radius:4px 0 0 4px;text-align:right`;
+        h+=`<span class="barlbl" aria-hidden="true" style="--c:var(--s${c.slot});${pos}">${esc(b.t)}</span>`;}});
     h+=`</div>`;
   });
   h+=`</div></div>`;
