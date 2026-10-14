@@ -42,6 +42,10 @@ The UKRI list is a snapshot and goes stale quickly, so each card links to its li
 
 Charts autosave in the browser (`localStorage`) and nothing is uploaded.
 
+## Look and feel
+
+All four pages share `theme.css`, loaded after each page's own styles. It sets the colours, radii, shadows, buttons, chips, cards, badges and the header in one place, with a light and a dark theme (following the system setting), a sticky navigation bar across the four tools (static on phones), and gentle motion that is switched off for people who prefer reduced motion. To change the look site-wide, edit the tokens at the top of `theme.css`. The typeface is Inter, self-hosted in `vendor/fonts/` (SIL Open Font License), so pages make no requests to Google Fonts. The Gantt chart's activity colours are a separately validated palette defined in `gantt.html`.
+
 ## Credits
 
 Content: Hanna, L., Evans, E., Bond, R., Butter, S., Cahoon, A., Casey, F., McChesney, I. and Shukla, P. (2026) *From Closed to Open: Practices and Guidelines for Open Research at Ulster*. Ulster University. Licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
