@@ -11,7 +11,7 @@ It is an interactive version of *From Closed to Open: Practices and Guidelines f
 
 ## Guided adventure
 
-`adventure.html` is a choose-your-own-adventure route through the same checklist. Readers pick a discipline, career stage and project scope, then move through Plan, Ethics & governance, Conduct, Publish, Share and Teach chapters. Fork questions add or remove steps, and each step has discipline and career-stage tips plus Ulster resource links. See `PLAN.md` for the design. The Ulster site blocked automated access while this was built, so **all links need a manual click-through before publishing**.
+`index.html` is a choose-your-own-adventure route through the same checklist. Readers pick a discipline, career stage and project scope, then move through Plan, Ethics & governance, Conduct, Publish, Share and Teach chapters. Fork questions add or remove steps, and each step has discipline and career-stage tips plus Ulster resource links. See `PLAN.md` for the design. The Ulster site blocked automated access while this was built, so **all links need a manual click-through before publishing**.
 
 ## Credits
 
@@ -21,4 +21,4 @@ The Expected / Recommended / Going further labels, effort estimates and "applies
 
 ## Editing
 
-Everything is in `index.html`. The checklist items are a single list near the top of the `<script>` block; the colours are set at the top of the `<style>` block.
+The original checklist is `checklist.html` and everything for it is in that file. The checklist items are a single list near the top of the `<script>` block; the colours are set at the top of the `<style>` block.
