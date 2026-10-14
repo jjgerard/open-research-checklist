@@ -204,13 +204,15 @@ input[type=file]{font:inherit;max-width:100%}
 .gwrap{overflow:auto;max-height:74vh;border:1px solid var(--line);border-radius:6px;background:var(--surface);position:relative}
 .g{display:grid;grid-template-columns:var(--w1) var(--w2) var(--w3) repeat(var(--n),var(--cw));width:max-content;font-size:13.5px}
 .g>*{min-width:0}
+.g.tight .hc.num{font-size:9px;padding:0}
+.g.tight .hc.sc{font-size:10px}
 .g.nt{--w2:0px}
 .g.nt .lab.l2{display:none}
 .hc{position:sticky;z-index:4;background:var(--bg);border-bottom:1px solid var(--line);border-right:1px solid var(--line);font:500 11.5px var(--mono);color:var(--muted);display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;padding:0 4px}
 .hc.corner{justify-content:flex-start;z-index:6;left:0;color:var(--ink);font-weight:600;padding-left:8px;border-right:0}
 .hc.num{color:var(--ink);font-weight:600}
 .hc.sc{background:var(--accent-soft);color:var(--accent-ink)}
-.lab{position:sticky;z-index:3;background:var(--surface);border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:6px 8px;line-height:1.3;display:flex;align-items:center;overflow:hidden}
+.lab{position:sticky;z-index:3;background:var(--surface);border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:6px 8px;line-height:17px;overflow-wrap:anywhere;display:flex;align-items:center;overflow:hidden}
 .lab.l1{left:0;font-weight:700}
 .lab.l2{left:var(--w1)}
 .lab.l3{left:calc(var(--w1) + var(--w2));color:var(--muted);box-shadow:2px 0 0 var(--line)}
@@ -224,8 +226,10 @@ input[type=file]{font:inherit;max-width:100%}
  background-image:linear-gradient(to right,color-mix(in srgb,var(--ink) 30%,transparent) 1px,transparent 1px),linear-gradient(to right,var(--line) 1px,transparent 1px);
  background-size:calc(var(--cw)*var(--blk)) 100%,var(--cw) 100%;cursor:crosshair;touch-action:pan-x pan-y}
 .dragghost{position:absolute;top:4px;height:24px;border:2px dashed var(--accent);border-radius:4px;background:var(--accent-soft);opacity:.8;pointer-events:none}
-.bar{position:absolute;height:26px;border-radius:4px;border-left:5px solid var(--c);background:color-mix(in srgb,var(--c) 26%,var(--surface));color:var(--ink);padding:0 6px;font-size:12.5px;line-height:26px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:grab;touch-action:none;user-select:none;box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent) inset}
+.bar{position:absolute;min-height:26px;border-radius:4px;border-left:5px solid var(--c);background:color-mix(in srgb,var(--c) 26%,var(--surface));color:var(--ink);padding:5px 6px;font-size:12.5px;line-height:15px;overflow:hidden;white-space:normal;overflow-wrap:anywhere;cursor:grab;touch-action:none;user-select:none;box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent) inset}
 .bar::after{content:"";position:absolute;right:0;top:0;bottom:0;width:7px;cursor:ew-resize}
+.bar.clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
+.barlbl{position:absolute;font-size:12.5px;line-height:15px;padding:5px 0;color:var(--ink);pointer-events:none;overflow-wrap:anywhere}
 .bar.lk::before{content:"⛓ ";font-size:11px}
 .bar:focus-visible,.bar.sel{outline:3px solid var(--accent);outline-offset:1px;z-index:5}
 .bar.dep{box-shadow:0 0 0 2px var(--accent) inset}
@@ -490,11 +494,57 @@ function renderTemplates(){
     commit(()=>{P=sanitize(TEMPLATES[+b.dataset.t][2]());sel=null;});b.closest("details").open=false;});
 }
 
+
+/* ---------- Text fitting: bars and labels wrap, rows grow to fit ---------- */
+const _cx=document.createElement("canvas").getContext("2d");
+function wrapLines(text,width,size,bold){
+  if(width<12)return 99;
+  _cx.font=(bold?"700 ":"")+size+"px "+(getComputedStyle(document.body).fontFamily||"sans-serif");
+  const sp=_cx.measureText(" ").width;let lines=1,cur=0;
+  String(text||"").split(/\s+/).filter(Boolean).forEach(w=>{
+    let ww=_cx.measureText(w).width;
+    if(ww>width){const extra=Math.ceil(ww/width)-1;if(cur>0)lines++;lines+=extra;cur=ww-extra*width;return;}
+    if(cur===0)cur=ww;else if(cur+sp+ww<=width)cur+=sp+ww;else{lines++;cur=ww;}});
+  return lines;
+}
+const BAR_PAD=5+12+4,BAR_LH=15;
+/* Decide where a bar's text goes: wrapped inside, beside the bar in free space, or clamped */
+function planBar(b,S,sorted,i,N){
+  const cw=P.cw,w=b.l*cw-2,inL=wrapLines(b.t,w-BAR_PAD,12.5,false);
+  if((inL<=3&&w-BAR_PAD>=28)||w>=150)return {mode:"in",h:Math.max(26,Math.min(inL,8)*BAR_LH+10)};
+  const s=S[b.id],e=s+b.l-1,nx=sorted[i+1],pv=sorted[i-1];
+  const right=((nx?S[nx.id]-1:N)-e)*cw-8,rl=wrapLines(b.t,right,12.5,false);
+  if(right>=90&&rl<=4)return {mode:"right",w:right,left:e*cw+6,h:Math.max(26,rl*BAR_LH+6)};
+  const left=(s-1-(pv?S[pv.id]+pv.l-1:0))*cw-8,ll=wrapLines(b.t,left,12.5,false);
+  if(left>=90&&ll<=4)return {mode:"left",w:left,left:(s-1)*cw-6-left,h:Math.max(26,ll*BAR_LH+6)};
+  return {mode:"clamp",h:4*BAR_LH+10};
+}
+const cssPx=n=>parseFloat(getComputedStyle(document.documentElement).getPropertyValue(n))||0;
+function layoutRows(S,lanes,N){
+  const w1=cssPx("--w1"),w2=P.showTask?cssPx("--w2"):0,w3=cssPx("--w3");
+  const out=P.rows.map((r,ri)=>{
+    const L=lanes[ri],laneH=Array(L.n).fill(26),bh={};
+    const laneBars=Array.from({length:L.n},()=>[]);
+    r.bars.slice().sort((a,b)=>S[a.id]-S[b.id]).forEach(b=>laneBars[L.lane[b.id]].push(b));
+    laneBars.forEach(arr=>arr.forEach((b,i)=>{const pl=planBar(b,S,arr,i,N);bh[b.id]=pl;laneH[L.lane[b.id]]=Math.max(laneH[L.lane[b.id]],pl.h);}));
+    const tops=[];let y=4;laneH.forEach(h=>{tops.push(y);y+=h+4;});
+    const need=Math.max(36,y+2,wrapLines(r.strand,w3-16-2,13.5,false)*17+12);
+    return {h:need,tops,bh};});
+  const grow=(vals,width,bold)=>{ // make merged label groups tall enough for their text
+    groups(P.rows,vals,(a,b)=>true).forEach(g=>{
+      if(!g.v)return;const need=wrapLines(g.v,width-16-2,13.5,bold)*17+14;
+      let have=0;for(let i=g.a;i<=g.b;i++)have+=out[i].h;if(have<need)out[g.b].h+=need-have;});};
+  grow(r=>r.wp,w1,true);
+  if(P.showTask)groups(P.rows,r=>r.task,(a,b)=>a.wp===b.wp).forEach(g=>{
+    if(!g.v)return;const need=wrapLines(g.v,w2-16-2,13.5,false)*17+14;let have=0;for(let i=g.a;i<=g.b;i++)have+=out[i].h;if(have<need)out[g.b].h+=need-have;});
+  return out;
+}
+
 function renderChart(S,N){
   const hdr=P.starts.length+1,blk=P.block,nameRows=P.rows;
   const lanes=P.rows.map(r=>lanesFor(r,S));
-  const heights=lanes.map(l=>Math.max(36,l.n*30+8));
-  let h=`<div class="gwrap" id="gwrap"><div class="g ${P.showTask?"":"nt"}" id="g" style="--n:${N};--cw:${P.cw}px;--blk:${blk};grid-template-rows:repeat(${hdr},var(--hh)) ${heights.map(x=>x+"px").join(" ")}">`;
+  const lay=layoutRows(S,lanes,N),heights=lay.map(x=>x.h);
+  let h=`<div class="gwrap" id="gwrap"><div class="g ${P.showTask?"":"nt"} ${P.cw<24?"tight":""}" id="g" style="--n:${N};--cw:${P.cw}px;--blk:${blk};grid-template-rows:repeat(${hdr},var(--hh)) ${heights.map(x=>x+"px").join(" ")}">`;
   // header
   P.starts.forEach((s,i)=>{
     h+=`<div class="hc corner" style="grid-row:${i+1};grid-column:1 / 4;top:calc(var(--hh)*${i})">${i===0?"Calendar (start "+MN[addM(s,0).m]+" "+addM(s,0).y+")":"If it starts "+MN[addM(s,0).m]+" "+addM(s,0).y}</div>`;
@@ -512,8 +562,9 @@ function renderChart(S,N){
     const gr=hdr+1+ri;
     h+=`<div class="lab l3" style="grid-row:${gr};grid-column:3"><span contenteditable="true" spellcheck="true" role="textbox" aria-label="Row label" data-g="strand" data-a="${ri}" style="flex:1;min-width:0;outline:none">${esc(r.strand)}</span><span class="ctl" role="group" aria-label="Row controls"><button type="button" data-rc="bar" data-i="${ri}" title="Add an activity to this row" aria-label="Add an activity to this row">＋</button><button type="button" data-rc="up" data-i="${ri}" title="Move row up" aria-label="Move row up">↑</button><button type="button" data-rc="down" data-i="${ri}" title="Move row down" aria-label="Move row down">↓</button><button type="button" data-rc="dup" data-i="${ri}" title="Add a row below" aria-label="Add a row below">⤓</button><button type="button" data-rc="del" data-i="${ri}" title="Delete row" aria-label="Delete row">✕</button></span></div>`;
     h+=`<div class="rowbg" data-row="${ri}" style="grid-row:${gr}">`;
-    r.bars.forEach(b=>{const s=S[b.id],c=catOf(b.c),top=4+lanes[ri].lane[b.id]*30;
-      h+=`<div class="bar ${b.after?"lk":""} ${sel===b.id?"sel":""}" tabindex="0" role="button" data-bar="${b.id}" style="--c:var(--s${c.slot});left:${(s-1)*P.cw}px;width:${b.l*P.cw-2}px;top:${top}px" title="${esc(b.t)} · ${esc(c.name)} · months ${s}-${s+b.l-1}" aria-label="${esc(b.t)}, ${esc(c.name)}, months ${s} to ${s+b.l-1}">${esc(b.t)}</div>`;});
+    r.bars.forEach(b=>{const s=S[b.id],c=catOf(b.c),top=lay[ri].tops[lanes[ri].lane[b.id]],pl=lay[ri].bh[b.id],inside=pl.mode==="in"||pl.mode==="clamp";
+      h+=`<div class="bar ${b.after?"lk":""} ${pl.mode==="clamp"?"clamp":""} ${sel===b.id?"sel":""}" tabindex="0" role="button" data-bar="${b.id}" style="--c:var(--s${c.slot});left:${(s-1)*P.cw}px;width:${b.l*P.cw-2}px;top:${top}px;height:${inside?pl.h:26}px" title="${esc(b.t)} · ${esc(c.name)} · months ${s}-${s+b.l-1}" aria-label="${esc(b.t)}, ${esc(c.name)}, months ${s} to ${s+b.l-1}">${inside?esc(b.t):""}</div>`;
+      if(!inside)h+=`<span class="barlbl" aria-hidden="true" style="left:${pl.left}px;top:${top}px;width:${pl.w}px;text-align:${pl.mode==="left"?"right":"left"}">${esc(b.t)}</span>`;});
     h+=`</div>`;
   });
   h+=`</div></div>`;
@@ -698,7 +749,7 @@ function renderTeam(){
 /* ---------- Toolbar ---------- */
 $("title").onchange=e=>commit(()=>{P.title=e.target.value.slice(0,120)||"Untitled project";});
 $("months").onchange=e=>commit(()=>{P.months=clamp(parseInt(e.target.value,10)||P.months,1,120);});
-$("zoom").oninput=e=>{P.cw=+e.target.value;persist();const g=$("g");if(g){g.style.setProperty("--cw",P.cw+"px");document.querySelectorAll(".bar").forEach(el=>{const f=allBars().find(x=>x.b.id===el.dataset.bar);if(f){const S=starts();el.style.left=(S[f.b.id]-1)*P.cw+"px";el.style.width=f.b.l*P.cw-2+"px";}});}};
+$("zoom").oninput=e=>{P.cw=+e.target.value;persist();render();};
 $("showtask").onchange=e=>commit(()=>{P.showTask=e.target.checked;});
 $("block").onchange=e=>commit(()=>{P.block=+e.target.value;});
 $("fit").onclick=()=>commit(()=>{const S=starts();let m=1;allBars().forEach(({b})=>{m=Math.max(m,S[b.id]+b.l-1);});P.months=m;});
