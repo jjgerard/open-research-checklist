@@ -174,9 +174,9 @@ input[type=file]{font:inherit;max-width:100%}
 </style>
 <style>
 /* Gantt palette: validated categorical slots (light and dark), used as tinted fills with ink text */
-:root{--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s8:#e34948;--w1:150px;--w2:210px;--w3:124px;--rh:34px;--hh:26px}
+:root{--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s8:#e34948;--w1:150px;--w2:210px;--w3:142px;--rh:34px;--hh:26px}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#e66767}}
-@media (max-width:700px){:root{--w1:96px;--w2:128px;--w3:70px}}
+@media (max-width:700px){:root{--w1:96px;--w2:128px;--w3:84px}}
 .wrap.wide{max-width:none}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-top:12px;display:grid;gap:10px}
 .card h2{font-size:20px}
@@ -221,6 +221,7 @@ input[type=file]{font:inherit;max-width:100%}
 .grip:hover{color:var(--ink);background:var(--accent-soft)}
 .grip:focus-visible{outline:3px solid var(--accent)}
 .grip:active{cursor:grabbing}
+.lab.l3 .grip{position:relative;z-index:4}
 .lab.dropbefore{box-shadow:inset 0 4px 0 var(--accent)}
 .lab.dropafter{box-shadow:inset 0 -4px 0 var(--accent)}
 .tbl tr.dropbefore td{box-shadow:inset 0 3px 0 var(--accent)}
@@ -602,7 +603,7 @@ function renderChart(S,N){
   place(wpGroups,"l1","wp");place(taskGroups,"l2","task");
   P.rows.forEach((r,ri)=>{
     const gr=hdr+1+ri;
-    h+=`<div class="lab l3" style="grid-row:${gr};grid-column:3"><span contenteditable="true" spellcheck="true" role="textbox" aria-label="Row label" data-g="strand" data-a="${ri}" style="flex:1;min-width:0;outline:none">${esc(r.strand)}</span><span class="ctl" role="group" aria-label="Row controls"><button type="button" data-rc="bar" data-i="${ri}" title="Add an activity to this row" aria-label="Add an activity to this row">＋</button><button type="button" data-rc="up" data-i="${ri}" title="Move row up" aria-label="Move row up">↑</button><button type="button" data-rc="down" data-i="${ri}" title="Move row down" aria-label="Move row down">↓</button><button type="button" data-rc="dup" data-i="${ri}" title="Add a row below" aria-label="Add a row below">⤓</button><button type="button" data-rc="del" data-i="${ri}" title="Delete row" aria-label="Delete row">✕</button></span></div>`;
+    h+=`<div class="lab l3" data-gk="row" data-ga="${ri}" data-gb="${ri}" data-wp="${esc(r.wp)}" style="grid-row:${gr};grid-column:3"><span class="grip" role="button" tabindex="0" draggable="true" data-grip="row" aria-label="Move row ${ri+1}${r.strand?": "+esc(r.strand):""}. Drag, or press arrow up or down" title="Drag to reorder, or press arrow up or down. Dropping on another work package or task moves the row into it">⠿</span><span contenteditable="true" spellcheck="true" role="textbox" aria-label="Row label" data-g="strand" data-a="${ri}" style="flex:1;min-width:0;outline:none">${esc(r.strand)}</span><span class="ctl" role="group" aria-label="Row controls"><button type="button" data-rc="bar" data-i="${ri}" title="Add an activity to this row" aria-label="Add an activity to this row">＋</button><button type="button" data-rc="up" data-i="${ri}" title="Move row up" aria-label="Move row up">↑</button><button type="button" data-rc="down" data-i="${ri}" title="Move row down" aria-label="Move row down">↓</button><button type="button" data-rc="dup" data-i="${ri}" title="Add a row below" aria-label="Add a row below">⤓</button><button type="button" data-rc="del" data-i="${ri}" title="Delete row" aria-label="Delete row">✕</button></span></div>`;
     h+=`<div class="rowbg" data-row="${ri}" style="grid-row:${gr}">`;
     r.bars.forEach(b=>{const s=S[b.id],c=catOf(b.c),top=lay[ri].tops[lanes[ri].lane[b.id]],pl=lay[ri].bh[b.id],inside=pl.mode==="in",x0=(s-1)*P.cw,bw=b.l*P.cw-2;
       h+=`<div class="bar ${b.after?"lk":""} ${inside?"":"solid"} ${sel===b.id?"sel":""}" tabindex="0" role="button" data-bar="${b.id}" style="--c:var(--s${c.slot});left:${x0}px;width:${bw}px;top:${top}px;height:${inside?pl.h:26}px${pl.tiny?";padding:5px 2px;text-align:center":""}" title="${esc(b.t)} · ${esc(c.name)} · months ${s}-${s+b.l-1}" aria-label="${esc(b.t)}, ${esc(c.name)}, months ${s} to ${s+b.l-1}">${inside?esc(b.t):""}</div>`;
@@ -644,12 +645,13 @@ function moveRows(a,b,tg){ // move rows a..b to before group tg (if above) or af
   const seg=P.rows.splice(a,b-a+1);
   const at=tg.a>b?tg.b+1-seg.length:tg.a;
   P.rows.splice(at,0,...seg);return at;}
-function groupsOf(kind){return kind==="wp"?groups(P.rows,r=>r.wp,()=>true):groups(P.rows,r=>r.task,(a,b)=>a.wp===b.wp);}
+function groupsOf(kind){if(kind==="row")return P.rows.map((r,i)=>({a:i,b:i}));return kind==="wp"?groups(P.rows,r=>r.wp,()=>true):groups(P.rows,r=>r.task,(a,b)=>a.wp===b.wp);}
 function moveGroup(kind,ga,tga){
   const gs=groupsOf(kind),g=gs.find(x=>x.a===ga),tg=gs.find(x=>x.a===tga);
   if(!g||!tg||g===tg)return;
   if(kind==="task"&&P.rows[g.a].wp!==P.rows[tg.a].wp)return;
-  commit(()=>{pendingFocus={kind,a:moveRows(g.a,g.b,tg)};});}
+  const dest=kind==="row"?{wp:P.rows[tg.a].wp,task:P.rows[tg.a].task}:null; // a moved row joins the work package and task it lands in
+  commit(()=>{const at=moveRows(g.a,g.b,tg);if(dest){P.rows[at].wp=dest.wp;P.rows[at].task=dest.task;}pendingFocus={kind,a:at};});}
 function stepGroup(kind,ga,dir){
   const gs=groupsOf(kind),i=gs.findIndex(x=>x.a===ga),t=gs[i+dir];
   if(!t)return;if(kind==="task"&&P.rows[t.a].wp!==P.rows[ga].wp)return;
@@ -664,7 +666,7 @@ function bindGroupDrag(g){
     gr.onkeydown=e=>{if(e.key==="ArrowUp"||e.key==="ArrowDown"){e.preventDefault();stepGroup(lab.dataset.gk,+lab.dataset.ga,e.key==="ArrowUp"?-1:1);}};
   });
   g.querySelectorAll(".lab[data-gk]").forEach(lab=>{
-    const ok=()=>dragInfo&&dragInfo.kind===lab.dataset.gk&&+lab.dataset.ga!==dragInfo.a&&(dragInfo.kind==="wp"||lab.dataset.wp===dragInfo.wp);
+    const ok=()=>dragInfo&&dragInfo.kind===lab.dataset.gk&&+lab.dataset.ga!==dragInfo.a&&(dragInfo.kind!=="task"||lab.dataset.wp===dragInfo.wp);
     lab.ondragover=e=>{if(!ok())return;e.preventDefault();clearDrops(g);lab.classList.add(+lab.dataset.ga>dragInfo.a?"dropafter":"dropbefore");};
     lab.ondragleave=()=>lab.classList.remove("dropbefore","dropafter");
     lab.ondrop=e=>{if(!ok())return;e.preventDefault();const d=dragInfo;dragInfo=null;moveGroup(d.kind,d.a,+lab.dataset.ga);};
