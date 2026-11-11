@@ -216,8 +216,17 @@ input[type=file]{font:inherit;max-width:100%}
 .lab.l1{left:0;font-weight:700}
 .lab.l2{left:var(--w1)}
 .lab.l3{left:calc(var(--w1) + var(--w2));color:var(--muted);box-shadow:2px 0 0 var(--line)}
-.lab[contenteditable]{cursor:text}
-.lab:focus{outline:3px solid var(--accent);outline-offset:-3px;z-index:5}
+.lab [contenteditable]{cursor:text}
+.grip{cursor:grab;user-select:none;flex:none;width:20px;text-align:center;color:var(--muted);font-size:17px;line-height:1;border-radius:4px;margin-right:4px}
+.grip:hover{color:var(--ink);background:var(--accent-soft)}
+.grip:focus-visible{outline:3px solid var(--accent)}
+.grip:active{cursor:grabbing}
+.lab.dropbefore{box-shadow:inset 0 4px 0 var(--accent)}
+.lab.dropafter{box-shadow:inset 0 -4px 0 var(--accent)}
+.tbl tr.dropbefore td{box-shadow:inset 0 3px 0 var(--accent)}
+.tbl tr.dropafter td{box-shadow:inset 0 -3px 0 var(--accent)}
+.gripcell{width:28px;padding-right:0!important}
+.lab:focus,.lab:focus-within{outline:3px solid var(--accent);outline-offset:-3px;z-index:5}
 .lab .ctl{display:none;position:absolute;right:2px;top:2px;gap:1px;background:var(--surface);border:1px solid var(--line);border-radius:4px}
 .lab.l3:hover .ctl,.lab.l3:focus-within .ctl{display:flex}
 .ctl button{all:unset;cursor:pointer;font-size:13px;line-height:1;padding:4px 5px;color:var(--muted)}
@@ -346,7 +355,7 @@ dialog#impdlg::backdrop{background:rgba(10,20,40,.55)}
   <section class="card" aria-label="Chart"><div id="chartarea"></div></section>
 
   <section class="card" aria-label="Team" id="teamcard"><h2>Team and work packages</h2>
-    <p class="note">Who is involved in which work package. This table is included in exports.</p>
+    <p class="note">Who is involved in which work package. This table is included in exports. Drag the ⠿ handle to reorder people, or focus it and press the up or down arrow.</p>
     <div id="wpkey" class="wpkey note"></div>
     <div class="tblwrap"><table class="tbl" id="team"></table></div>
     <div class="row noprint"><button class="btn ghost sm" id="addperson" type="button">Add a person or group</button></div></section>
@@ -493,7 +502,7 @@ function render(){
   $("showtask").checked=P.showTask;$("undo").disabled=!undo.length;$("redo").disabled=!redo.length;$("viewtoggle").setAttribute("aria-pressed",String(view==="table"));$("viewtoggle").textContent=view==="table"?"Chart view":"Table view";
   renderCharts();renderStarts();renderLegend();renderShift();renderTemplates();
   if(view==="table")renderTables(S);else renderChart(S,N);
-  renderTeam();renderPanel(S);
+  renderTeam();renderPanel(S);restoreFocus();
 }
 function renderStarts(){
   $("starts").innerHTML=P.starts.map((s,i)=>`<span class="chip2"><input type="month" data-si="${i}" value="${esc(s)}" aria-label="Calendar start ${i+1}" pattern="\\d{4}-\\d{2}" placeholder="YYYY-MM">${P.starts.length>1?`<button type="button" data-sx="${i}" aria-label="Remove start date ${i+1}">✕</button>`:""}</span>`).join("")+(P.starts.length<5?`<button class="btn ghost sm" type="button" id="addstart">+ Add a start date</button>`:"");
@@ -589,7 +598,7 @@ function renderChart(S,N){
   // rows and merged labels
   let rowN=hdr;
   const wpGroups=groups(nameRows,r=>r.wp,()=>true),taskGroups=groups(nameRows,r=>r.task,(a,b)=>a.wp===b.wp);
-  const place=(g,cls,key)=>g.forEach(x=>{h+=`<div class="lab ${cls}" contenteditable="true" spellcheck="true" role="textbox" aria-label="${key} name" data-g="${key}" data-a="${x.a}" data-b="${x.b}" style="grid-row:${hdr+1+x.a} / span ${x.b-x.a+1};grid-column:${cls==="l1"?1:2}">${esc(x.v)}</div>`;});
+  const place=(g,cls,key)=>g.forEach(x=>{h+=`<div class="lab ${cls}" data-gk="${key}" data-ga="${x.a}" data-gb="${x.b}" data-wp="${esc(nameRows[x.a].wp)}" style="grid-row:${hdr+1+x.a} / span ${x.b-x.a+1};grid-column:${cls==="l1"?1:2}"><span class="grip" role="button" tabindex="0" draggable="true" data-grip="${key}" aria-label="Move ${key==="wp"?"work package":"task"} ${esc(x.v)}. Drag, or press arrow up or down" title="Drag to reorder, or press arrow up or down">⠿</span><span contenteditable="true" spellcheck="true" role="textbox" aria-label="${key} name" data-g="${key}" data-a="${x.a}" data-b="${x.b}" style="flex:1;min-width:0;outline:none">${esc(x.v)}</span></div>`;});
   place(wpGroups,"l1","wp");place(taskGroups,"l2","task");
   P.rows.forEach((r,ri)=>{
     const gr=hdr+1+ri;
@@ -626,8 +635,45 @@ function bindChart(){
   ab("addtask",()=>commit(()=>{const l=P.rows[P.rows.length-1]||{wp:"New work package"};P.rows.push(row(l.wp,"New task","",[]));}));
   ab("addwp",()=>commit(()=>{P.rows.push(row("WP"+(new Set(P.rows.map(r=>r.wp)).size+1)+": New work package","New task","",[]));}));
   g.onpointerdown=pointerDown;
+  bindGroupDrag(g);
   g.querySelectorAll(".bar").forEach(el=>el.onkeydown=barKey);
 }
+/* ---------- Reordering work packages, tasks and people ---------- */
+let pendingFocus=null,dragInfo=null;
+function moveRows(a,b,tg){ // move rows a..b to before group tg (if above) or after it (if below)
+  const seg=P.rows.splice(a,b-a+1);
+  const at=tg.a>b?tg.b+1-seg.length:tg.a;
+  P.rows.splice(at,0,...seg);return at;}
+function groupsOf(kind){return kind==="wp"?groups(P.rows,r=>r.wp,()=>true):groups(P.rows,r=>r.task,(a,b)=>a.wp===b.wp);}
+function moveGroup(kind,ga,tga){
+  const gs=groupsOf(kind),g=gs.find(x=>x.a===ga),tg=gs.find(x=>x.a===tga);
+  if(!g||!tg||g===tg)return;
+  if(kind==="task"&&P.rows[g.a].wp!==P.rows[tg.a].wp)return;
+  commit(()=>{pendingFocus={kind,a:moveRows(g.a,g.b,tg)};});}
+function stepGroup(kind,ga,dir){
+  const gs=groupsOf(kind),i=gs.findIndex(x=>x.a===ga),t=gs[i+dir];
+  if(!t)return;if(kind==="task"&&P.rows[t.a].wp!==P.rows[ga].wp)return;
+  moveGroup(kind,ga,t.a);}
+function clearDrops(root){root.querySelectorAll(".dropbefore,.dropafter").forEach(e=>e.classList.remove("dropbefore","dropafter"));}
+function bindGroupDrag(g){
+  g.querySelectorAll(".grip").forEach(gr=>{
+    const lab=gr.closest(".lab");
+    gr.onpointerdown=e=>e.stopPropagation();
+    gr.ondragstart=e=>{dragInfo={kind:lab.dataset.gk,a:+lab.dataset.ga,wp:lab.dataset.wp};e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",lab.dataset.gk);if(e.dataTransfer.setDragImage)e.dataTransfer.setDragImage(lab,10,10);};
+    gr.ondragend=()=>{dragInfo=null;clearDrops(g);};
+    gr.onkeydown=e=>{if(e.key==="ArrowUp"||e.key==="ArrowDown"){e.preventDefault();stepGroup(lab.dataset.gk,+lab.dataset.ga,e.key==="ArrowUp"?-1:1);}};
+  });
+  g.querySelectorAll(".lab[data-gk]").forEach(lab=>{
+    const ok=()=>dragInfo&&dragInfo.kind===lab.dataset.gk&&+lab.dataset.ga!==dragInfo.a&&(dragInfo.kind==="wp"||lab.dataset.wp===dragInfo.wp);
+    lab.ondragover=e=>{if(!ok())return;e.preventDefault();clearDrops(g);lab.classList.add(+lab.dataset.ga>dragInfo.a?"dropafter":"dropbefore");};
+    lab.ondragleave=()=>lab.classList.remove("dropbefore","dropafter");
+    lab.ondrop=e=>{if(!ok())return;e.preventDefault();const d=dragInfo;dragInfo=null;moveGroup(d.kind,d.a,+lab.dataset.ga);};
+  });
+}
+function restoreFocus(){
+  if(!pendingFocus)return;const f=pendingFocus;pendingFocus=null;
+  const el=f.kind==="team"?document.querySelector(`#team [data-tgrip="${f.a}"]`):document.querySelector(`.lab[data-gk="${f.kind}"][data-ga="${f.a}"] .grip`);
+  if(el)el.focus();}
 function rowAction(a,i){
   commit(()=>{
     if(a==="del"){if(P.rows[i].bars.some(b=>P.rows.some(r=>r.bars.some(x=>x.after===b.id)))||true){const ids=new Set(P.rows[i].bars.map(b=>b.id));allBars().forEach(({b})=>{if(ids.has(b.after))b.after=null;});}P.rows.splice(i,1);}
@@ -778,12 +824,22 @@ function renderTeam(){
   const nm=m=>m.name||m.inst||"this person";
   $("wpkey").innerHTML=wps.length?`<b>Work package key:</b> <ul>`+wps.map(w=>`<li><b>${esc(wpShort(w))}</b> ${esc(w.includes(":")?w.slice(w.indexOf(":")+1).trim():w)}</li>`).join("")+`</ul>`:"";
   const ta=(f,i,v,l)=>`<textarea rows="1" data-tf="${f}" data-i="${i}" aria-label="${l} for ${esc(nm(P.team[i]))}">${esc(v)}</textarea>`;
-  $("team").innerHTML=`<thead><tr><th scope="col">Institution or group</th><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Work packages (press to switch on or off)</th><th scope="col"><span class="sr">Remove</span></th></tr></thead><tbody>`+
-   (P.team.length?P.team.map((m,i)=>`<tr><td>${ta("inst",i,m.inst,"Institution")}</td><td>${ta("name",i,m.name,"Name")}</td><td>${ta("role",i,m.role,"Role")}</td><td><div class="wpchips" role="group" aria-label="Work packages for ${esc(nm(m))}">${wps.map(w=>`<button type="button" class="wpchip" data-tw="${i}" data-w="${esc(w)}" aria-pressed="${m.wps.includes(w)}" aria-label="${esc(nm(m))} on ${esc(w)}" title="${esc(w)}">${esc(wpShort(w))}</button>`).join("")}</div></td><td><button class="x" type="button" data-td="${i}" aria-label="Remove ${esc(nm(m))}">✕</button></td></tr>`).join(""):`<tr><td colspan="5" class="note">No team members yet.</td></tr>`)+`</tbody>`;
+  $("team").innerHTML=`<thead><tr><th scope="col"><span class="sr">Reorder</span></th><th scope="col">Institution or group</th><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Work packages (press to switch on or off)</th><th scope="col"><span class="sr">Remove</span></th></tr></thead><tbody>`+
+   (P.team.length?P.team.map((m,i)=>`<tr data-ti="${i}"><td class="gripcell"><span class="grip" role="button" tabindex="0" draggable="true" data-tgrip="${i}" aria-label="Move ${esc(nm(m))}. Drag, or press arrow up or down" title="Drag to reorder, or press arrow up or down">⠿</span></td><td>${ta("inst",i,m.inst,"Institution")}</td><td>${ta("name",i,m.name,"Name")}</td><td>${ta("role",i,m.role,"Role")}</td><td><div class="wpchips" role="group" aria-label="Work packages for ${esc(nm(m))}">${wps.map(w=>`<button type="button" class="wpchip" data-tw="${i}" data-w="${esc(w)}" aria-pressed="${m.wps.includes(w)}" aria-label="${esc(nm(m))} on ${esc(w)}" title="${esc(w)}">${esc(wpShort(w))}</button>`).join("")}</div></td><td><button class="x" type="button" data-td="${i}" aria-label="Remove ${esc(nm(m))}">✕</button></td></tr>`).join(""):`<tr><td colspan="6" class="note">No team members yet.</td></tr>`)+`</tbody>`;
   const grow=t=>{t.style.height="auto";t.style.height=t.scrollHeight+"px";};
   $("team").querySelectorAll("textarea[data-tf]").forEach(t=>{grow(t);t.oninput=()=>grow(t);t.onkeydown=e=>{if(e.key==="Enter")e.preventDefault();};});
   $("team").querySelectorAll("[data-tf]").forEach(i=>i.onchange=e=>commit(()=>{P.team[+i.dataset.i][i.dataset.tf]=e.target.value.slice(0,100);}));
   $("team").querySelectorAll("[data-tw]").forEach(b=>b.onclick=()=>commit(()=>{const m=P.team[+b.dataset.tw],w=b.dataset.w,i=m.wps.indexOf(w);i<0?m.wps.push(w):m.wps.splice(i,1);}));
+  const mvTeam=(from,to)=>{if(to<0||to>=P.team.length||to===from)return;commit(()=>{const [m]=P.team.splice(from,1);P.team.splice(to,0,m);pendingFocus={kind:"team",a:to};});};
+  let tdrag=null;
+  $("team").querySelectorAll("[data-tgrip]").forEach(gr=>{const i=+gr.dataset.tgrip,tr=gr.closest("tr");
+    gr.ondragstart=e=>{tdrag=i;e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain","team");e.dataTransfer.setDragImage&&e.dataTransfer.setDragImage(tr,10,10);};
+    gr.ondragend=()=>{tdrag=null;clearDrops($("team"));};
+    gr.onkeydown=e=>{if(e.key==="ArrowUp"||e.key==="ArrowDown"){e.preventDefault();mvTeam(i,i+(e.key==="ArrowUp"?-1:1));}};});
+  $("team").querySelectorAll("tr[data-ti]").forEach(tr=>{const i=+tr.dataset.ti;
+    tr.ondragover=e=>{if(tdrag===null||tdrag===i)return;e.preventDefault();clearDrops($("team"));tr.classList.add(i>tdrag?"dropafter":"dropbefore");};
+    tr.ondragleave=()=>tr.classList.remove("dropbefore","dropafter");
+    tr.ondrop=e=>{if(tdrag===null)return;e.preventDefault();const f=tdrag;tdrag=null;mvTeam(f,i);};});
   $("team").querySelectorAll("[data-td]").forEach(b=>b.onclick=()=>commit(()=>P.team.splice(+b.dataset.td,1)));
 }
 
