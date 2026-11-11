@@ -246,11 +246,18 @@ input[type=file]{font:inherit;max-width:100%}
 .tblwrap{overflow:auto;border:1px solid var(--line);border-radius:6px}
 .tbl{border-collapse:collapse;width:100%;font-size:14px}
 .tbl th,.tbl td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:middle}
-.tbl th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--bg);position:sticky;top:0}
+.tbl th{font:600 12.5px var(--mono);text-transform:uppercase;letter-spacing:.04em;color:var(--ink);background:var(--bg);position:sticky;top:0}
 .tbl input[type=text]{width:100%;min-width:110px}
 .tbl input[type=number]{width:64px}
-.wpchip{font:500 12px var(--mono);border:1px solid var(--line);border-radius:999px;padding:3px 9px;background:var(--bg);color:var(--ink);cursor:pointer;margin:2px}
+.tbl textarea{font:inherit;font-size:15px;padding:7px 9px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:100%;min-width:150px;resize:none;min-height:0;overflow:hidden;line-height:1.35;display:block}
+.tbl td{vertical-align:top}
+.wpchips{display:flex;flex-wrap:wrap;gap:2px;min-width:160px}
+.wpkey ul{display:flex;flex-wrap:wrap;gap:4px 18px;list-style:none;margin:4px 0 10px;padding:0}
+.wpkey{margin:8px 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wpchip{font:600 13px var(--mono);border:2px solid var(--line);border-radius:999px;padding:4px 10px;background:var(--bg);color:var(--ink);cursor:pointer;margin:2px}
 .wpchip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.wpchip[aria-pressed="true"]::before{content:"✓ "}
 .pop{position:relative}
 .pop>summary{list-style:none;cursor:pointer}
 .pop>summary::-webkit-details-marker{display:none}
@@ -264,7 +271,7 @@ input[type=file]{font:inherit;max-width:100%}
  .gwrap{max-height:none;overflow:visible;border:0}
  .card{border:0;padding:0}
  body{padding:0}
- .tbl input,.tbl select{border:0;background:transparent;padding:0}
+ .tbl input,.tbl select,.tbl textarea{border:0;background:transparent;padding:0}
 }
 dialog#impdlg{width:min(760px,94vw);border:2px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);padding:18px 20px;max-height:88vh;overflow:auto}
 dialog#impdlg::backdrop{background:rgba(10,20,40,.55)}
@@ -340,6 +347,7 @@ dialog#impdlg::backdrop{background:rgba(10,20,40,.55)}
 
   <section class="card" aria-label="Team" id="teamcard"><h2>Team and work packages</h2>
     <p class="note">Who is involved in which work package. This table is included in exports.</p>
+    <div id="wpkey" class="wpkey note"></div>
     <div class="tblwrap"><table class="tbl" id="team"></table></div>
     <div class="row noprint"><button class="btn ghost sm" id="addperson" type="button">Add a person or group</button></div></section>
 
@@ -467,7 +475,11 @@ function lanesFor(r,S){
 }
 function needMonths(S){let m=P.months;allBars().forEach(({b})=>{m=Math.max(m,S[b.id]+b.l-1);});return Math.min(120,m);}
 const catOf=id=>P.cats.find(c=>c.id===id)||P.cats[0];
-const wpShort=n=>(String(n).split(":")[0]||n).trim();
+const wpBase=n=>(String(n).split(":")[0]||n).trim();
+/* Short label for a work package: the text before ":" if that is distinct, otherwise WP1, WP2... by order, so labels are never all "WP". */
+const wpShort=n=>{const all=[...new Set(P.rows.map(r=>r.wp))].filter(Boolean),b=wpBase(n);
+  if(b.toLowerCase()!=="wp"&&all.filter(w=>wpBase(w)===b).length<=1)return b;
+  const i=all.indexOf(n);return i<0?b:"WP"+(i+1);};
 function addM(ym,i){const [y,m]=ym.split("-").map(Number),t=y*12+m-1+i;return {y:Math.floor(t/12),m:t%12};}
 const yy=y=>String(y).slice(2);
 function blockLabel(ym,from,to){const a=addM(ym,from-1),b=addM(ym,to-1);
@@ -763,8 +775,13 @@ function renderTables(S){
 /* ---------- Team ---------- */
 function renderTeam(){
   const wps=[...new Set(P.rows.map(r=>r.wp))].filter(Boolean);
-  $("team").innerHTML=`<thead><tr><th>Institution or group</th><th>Name</th><th>Role</th><th>Work packages</th><th></th></tr></thead><tbody>`+
-   (P.team.length?P.team.map((m,i)=>`<tr><td><input type="text" data-tf="inst" data-i="${i}" value="${esc(m.inst)}" aria-label="Institution"></td><td><input type="text" data-tf="name" data-i="${i}" value="${esc(m.name)}" aria-label="Name"></td><td><input type="text" data-tf="role" data-i="${i}" value="${esc(m.role)}" aria-label="Role"></td><td>${wps.map(w=>`<button type="button" class="wpchip" data-tw="${i}" data-w="${esc(w)}" aria-pressed="${m.wps.includes(w)}" title="${esc(w)}">${esc(wpShort(w))}</button>`).join("")}</td><td><button class="x" type="button" data-td="${i}" aria-label="Remove ${esc(m.name)}">✕</button></td></tr>`).join(""):`<tr><td colspan="5" class="note">No team members yet.</td></tr>`)+`</tbody>`;
+  const nm=m=>m.name||m.inst||"this person";
+  $("wpkey").innerHTML=wps.length?`<b>Work package key:</b> <ul>`+wps.map(w=>`<li><b>${esc(wpShort(w))}</b> ${esc(w.includes(":")?w.slice(w.indexOf(":")+1).trim():w)}</li>`).join("")+`</ul>`:"";
+  const ta=(f,i,v,l)=>`<textarea rows="1" data-tf="${f}" data-i="${i}" aria-label="${l} for ${esc(nm(P.team[i]))}">${esc(v)}</textarea>`;
+  $("team").innerHTML=`<thead><tr><th scope="col">Institution or group</th><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Work packages (press to switch on or off)</th><th scope="col"><span class="sr">Remove</span></th></tr></thead><tbody>`+
+   (P.team.length?P.team.map((m,i)=>`<tr><td>${ta("inst",i,m.inst,"Institution")}</td><td>${ta("name",i,m.name,"Name")}</td><td>${ta("role",i,m.role,"Role")}</td><td><div class="wpchips" role="group" aria-label="Work packages for ${esc(nm(m))}">${wps.map(w=>`<button type="button" class="wpchip" data-tw="${i}" data-w="${esc(w)}" aria-pressed="${m.wps.includes(w)}" aria-label="${esc(nm(m))} on ${esc(w)}" title="${esc(w)}">${esc(wpShort(w))}</button>`).join("")}</div></td><td><button class="x" type="button" data-td="${i}" aria-label="Remove ${esc(nm(m))}">✕</button></td></tr>`).join(""):`<tr><td colspan="5" class="note">No team members yet.</td></tr>`)+`</tbody>`;
+  const grow=t=>{t.style.height="auto";t.style.height=t.scrollHeight+"px";};
+  $("team").querySelectorAll("textarea[data-tf]").forEach(t=>{grow(t);t.oninput=()=>grow(t);t.onkeydown=e=>{if(e.key==="Enter")e.preventDefault();};});
   $("team").querySelectorAll("[data-tf]").forEach(i=>i.onchange=e=>commit(()=>{P.team[+i.dataset.i][i.dataset.tf]=e.target.value.slice(0,100);}));
   $("team").querySelectorAll("[data-tw]").forEach(b=>b.onclick=()=>commit(()=>{const m=P.team[+b.dataset.tw],w=b.dataset.w,i=m.wps.indexOf(w);i<0?m.wps.push(w):m.wps.splice(i,1);}));
   $("team").querySelectorAll("[data-td]").forEach(b=>b.onclick=()=>commit(()=>P.team.splice(+b.dataset.td,1)));
@@ -827,6 +844,7 @@ function tableHtml(){
   h+=`</tbody></table>`;
   h+=`<p style="font:12px Calibri,Arial"><b>Key:</b> `+P.cats.map(c=>`<span style="background:${mixHex(SLOT_HEX[c.slot-1],.32)};border-left:4px solid ${SLOT_HEX[c.slot-1]};padding:1px 6px;margin-right:8px">${esc(c.name)}</span>`).join("")+`</p>`;
   if(P.team.length){const wps=[...new Set(P.rows.map(r=>r.wp))].filter(Boolean);
+    h+=`<p style="font:12px Calibri,Arial"><b>Work packages:</b> `+wps.map(w=>`${esc(wpShort(w))} = ${esc(w)}`).join("; ")+`</p>`;
     h+=`<table border="1" cellspacing="0" cellpadding="3" style="border-collapse:collapse;font:11px Calibri,Arial"><tr><th>Institution</th><th>Name</th><th>Role</th>${wps.map(w=>`<th>${esc(wpShort(w))}</th>`).join("")}</tr>`+
       P.team.map(m=>`<tr><td>${esc(m.inst)}</td><td>${esc(m.name)}</td><td>${esc(m.role)}</td>${wps.map(w=>`<td style="text-align:center;${m.wps.includes(w)?"background:#e2eefb":""}">${m.wps.includes(w)?"✓":""}</td>`).join("")}</tr>`).join("")+`</table>`;}
   return h;
